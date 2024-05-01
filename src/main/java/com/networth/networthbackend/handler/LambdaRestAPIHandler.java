@@ -4,30 +4,59 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.EmployeeService;
+import com.networth.networthbackend.entity.IncomeTag;
+import com.networth.networthbackend.entity.IncomeType;
+import com.networth.networthbackend.entity.User;
+import com.networth.networthbackend.service.IncomeTagService;
+import com.networth.networthbackend.service.IncomeTypeService;
+import com.networth.networthbackend.service.UserService;
 
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
-        EmployeeService employeeService = new EmployeeService();
+        if (apiGatewayRequest.getPath().startsWith("/user")) {
+            return handleUserRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/income_type")) {
+            return handleIncomeTypeRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/income_tag")) {
+            return handleIncomeTagRequest(apiGatewayRequest, context);
+        } else {
+            throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleUserRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        UserService userService = new UserService();
         switch (apiGatewayRequest.getHttpMethod()) {
-
             case "POST":
-                return employeeService.saveEmployee(apiGatewayRequest, context);
-
-            case "GET":
-                if (apiGatewayRequest.getPathParameters() != null) {
-                    return employeeService.getEmployeeById(apiGatewayRequest, context);
-                }
-                return employeeService.getEmployees(apiGatewayRequest, context);
-            case "DELETE":
-                if (apiGatewayRequest.getPathParameters() != null) {
-                    return employeeService.deleteEmployeeById(apiGatewayRequest, context);
-                }
+                return userService.save(apiGatewayRequest, context, User.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
 
+    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        IncomeTypeService incomeTypeService = new IncomeTypeService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "POST":
+                return incomeTypeService.save(apiGatewayRequest, context, IncomeType.class);
+            case "GET":
+                return incomeTypeService.getAllByUserID(apiGatewayRequest, context, IncomeType.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        IncomeTagService incomeTagService = new IncomeTagService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "POST":
+                return incomeTagService.save(apiGatewayRequest, context, IncomeTag.class);
+            case "GET":
+                return incomeTagService.getAllByUserID(apiGatewayRequest, context, IncomeTag.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
     }
 }
