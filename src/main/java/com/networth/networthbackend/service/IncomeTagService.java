@@ -3,7 +3,6 @@ package com.networth.networthbackend.service;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.networth.networthbackend.entity.IncomeTag;
-import com.networth.networthbackend.entity.IncomeType;
 
 import java.util.ArrayList;
 import java.util.List;

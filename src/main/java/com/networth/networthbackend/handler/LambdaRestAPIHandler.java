@@ -4,9 +4,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.entity.Income;
 import com.networth.networthbackend.entity.IncomeTag;
 import com.networth.networthbackend.entity.IncomeType;
 import com.networth.networthbackend.entity.User;
+import com.networth.networthbackend.service.IncomeService;
 import com.networth.networthbackend.service.IncomeTagService;
 import com.networth.networthbackend.service.IncomeTypeService;
 import com.networth.networthbackend.service.UserService;
@@ -17,6 +19,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         if (apiGatewayRequest.getPath().startsWith("/user")) {
             return handleUserRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/income") && !apiGatewayRequest.getPath().contains("_")) {
+            return handleIncomeRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income_type")) {
             return handleIncomeTypeRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income_tag")) {
@@ -31,6 +35,18 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
                 return userService.save(apiGatewayRequest, context, User.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        IncomeService incomeService = new IncomeService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "POST":
+                return incomeService.save(apiGatewayRequest, context, Income.class);
+            case "GET":
+                return incomeService.getAllByUserID(apiGatewayRequest, context, Income.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
