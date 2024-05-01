@@ -26,6 +26,12 @@ public class EmployeeService {
         return createAPIResponse(jsonBody, 201, Utility.createHeaders());
     }
 
+    public void saveEmployee() {
+        initDynamoDB();
+        Employee employee = new Employee(null, "Kalpesh", "kalpesh@gmai.com");
+        dynamoDBMapper.save(employee);
+    }
+
     public APIGatewayProxyResponseEvent getEmployeeById(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         initDynamoDB();
         String empId = apiGatewayRequest.getPathParameters().get("empId");
