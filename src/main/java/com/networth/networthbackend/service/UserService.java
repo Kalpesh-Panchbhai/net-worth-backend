@@ -22,7 +22,6 @@ public class UserService extends Service<User> {
 
     @Override
     public APIGatewayProxyResponseEvent save(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<User> aClass) {
-        initDynamoDB();
         User user = utility.convertStringToObj(apiGatewayRequest.getBody(), context, User.class);
         if (checkIfUserAlreadyExist(user, context)) {
             context.getLogger().log("User already exist in dynamodb:::" + jsonBody);

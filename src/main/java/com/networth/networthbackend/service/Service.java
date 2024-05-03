@@ -17,13 +17,13 @@ import java.util.Map;
 
 public abstract class Service<T> implements ServiceImpl<T> {
 
-    private final Utility<T> utility = new Utility<>();
+    public final Utility<T> utility = new Utility<>();
     public String tableName = "";
     String jsonBody = null;
     AmazonDynamoDB client;
     DynamoDBMapper dynamoDBMapper;
 
-    public void initDynamoDB() {
+    public Service() {
         client = AmazonDynamoDBClientBuilder.standard().build();
         dynamoDBMapper = new DynamoDBMapper(client);
     }
@@ -38,7 +38,6 @@ public abstract class Service<T> implements ServiceImpl<T> {
 
     @Override
     public APIGatewayProxyResponseEvent save(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
-        initDynamoDB();
         T data = utility.convertStringToObj(apiGatewayRequest.getBody(), context, tClass);
         dynamoDBMapper.save(data);
         jsonBody = utility.convertObjToString(data, context);
@@ -47,8 +46,27 @@ public abstract class Service<T> implements ServiceImpl<T> {
     }
 
     @Override
+    public APIGatewayProxyResponseEvent update(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
+        T data = utility.convertStringToObj(apiGatewayRequest.getBody(), context, tClass);
+        dynamoDBMapper.save(data);
+        jsonBody = utility.convertObjToString(data, context);
+        context.getLogger().log("data updated successfully to dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
+        Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
+
+        T data = dynamoDBMapper.load(tClass, pathParams.get("id"));
+        dynamoDBMapper.delete(data);
+        jsonBody = utility.convertObjToString(data, context);
+        context.getLogger().log("data deleted successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
     public APIGatewayProxyResponseEvent getAllByUserID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
-        initDynamoDB();
         Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();

@@ -4,14 +4,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.Income;
-import com.networth.networthbackend.entity.IncomeTag;
-import com.networth.networthbackend.entity.IncomeType;
-import com.networth.networthbackend.entity.User;
-import com.networth.networthbackend.service.IncomeService;
-import com.networth.networthbackend.service.IncomeTagService;
-import com.networth.networthbackend.service.IncomeTypeService;
-import com.networth.networthbackend.service.UserService;
+import com.networth.networthbackend.entity.*;
+import com.networth.networthbackend.service.*;
 
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
@@ -19,6 +13,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         if (apiGatewayRequest.getPath().startsWith("/user")) {
             return handleUserRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/account")) {
+            return handleAccountRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income") && !apiGatewayRequest.getPath().contains("_")) {
             return handleIncomeRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income_type")) {
@@ -40,6 +36,18 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
+    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        AccountService accountService = new AccountService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "POST":
+                return accountService.save(apiGatewayRequest, context, Account.class);
+            case "GET":
+                return accountService.getAllByUserID(apiGatewayRequest, context, Account.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
+
     public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         IncomeService incomeService = new IncomeService();
         switch (apiGatewayRequest.getHttpMethod()) {
@@ -47,6 +55,10 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeService.save(apiGatewayRequest, context, Income.class);
             case "GET":
                 return incomeService.getAllByUserID(apiGatewayRequest, context, Income.class);
+            case "PATCH":
+                return incomeService.update(apiGatewayRequest, context, Income.class);
+            case "DELETE":
+                return incomeService.delete(apiGatewayRequest, context, Income.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -59,6 +71,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeTypeService.save(apiGatewayRequest, context, IncomeType.class);
             case "GET":
                 return incomeTypeService.getAllByUserID(apiGatewayRequest, context, IncomeType.class);
+            case "PATCH":
+                return incomeTypeService.update(apiGatewayRequest, context, IncomeType.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -71,6 +85,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeTagService.save(apiGatewayRequest, context, IncomeTag.class);
             case "GET":
                 return incomeTagService.getAllByUserID(apiGatewayRequest, context, IncomeTag.class);
+            case "PATCH":
+                return incomeTagService.update(apiGatewayRequest, context, IncomeTag.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }

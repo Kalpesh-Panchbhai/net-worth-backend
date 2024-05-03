@@ -12,7 +12,11 @@ public interface ServiceImpl<T> {
 
     APIGatewayProxyResponseEvent save(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass);
 
+    APIGatewayProxyResponseEvent update(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass);
+
     APIGatewayProxyResponseEvent getAllByUserID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass);
+
+    APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass);
 
     List<T> convertToListOfObject(ScanResult scanResult);
 }
