@@ -45,4 +45,7 @@ public class Account {
 
     @DynamoDBAttribute(attributeName = "userId")
     private String userId;
+
+    @DynamoDBIgnore
+    private String accountOpenedDate;
 }

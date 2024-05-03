@@ -4,11 +4,14 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.entity.AccountBroker;
+import com.networth.networthbackend.model.DeleteResponse;
 import com.networth.networthbackend.utility.Utility;
 
 import java.util.HashMap;
@@ -37,7 +40,7 @@ public abstract class Service<T> implements ServiceImpl<T> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent save(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
+    public APIGatewayProxyResponseEvent add(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
         T data = utility.convertStringToObj(apiGatewayRequest.getBody(), context, tClass);
         dynamoDBMapper.save(data);
         jsonBody = utility.convertObjToString(data, context);
@@ -55,18 +58,28 @@ public abstract class Service<T> implements ServiceImpl<T> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
+        String key = pathParams.get("id");
+        deleteDataByPrimaryField(key);
 
-        T data = dynamoDBMapper.load(tClass, pathParams.get("id"));
-        dynamoDBMapper.delete(data);
-        jsonBody = utility.convertObjToString(data, context);
+        DeleteResponse deleteResponse = new DeleteResponse(key);
+        jsonBody = new Utility<DeleteResponse>().convertObjToString(deleteResponse, context);
         context.getLogger().log("data deleted successfully from dynamodb:::" + jsonBody);
+
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getAllByUserID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
+    public void deleteDataByPrimaryField(String primaryValue) {
+        HashMap<String, AttributeValue> keyToDelete = new HashMap<>();
+        keyToDelete.put("id", new AttributeValue().withS(primaryValue));
+        DeleteItemRequest deleteItemRequest = new DeleteItemRequest().withTableName(tableName).withKey(keyToDelete);
+        client.deleteItem(deleteItemRequest);
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getAllByUniqueID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> tClass) {
         Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
 
         Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
@@ -79,5 +92,15 @@ public abstract class Service<T> implements ServiceImpl<T> {
         jsonBody = utility.convertListOfObjToString(dataList, context);
         context.getLogger().log("fetch" + tClass.getName() + " List:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    public List<T> getAllByUniqueID(String fieldName, String fieldValue) {
+        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
+        expressionAttributeValues.put(":val", new AttributeValue().withS(fieldValue));
+
+        ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withFilterExpression(fieldName + " = :val").withExpressionAttributeValues(expressionAttributeValues);
+        ScanResult scanResult = client.scan(scanRequest);
+
+        return convertToListOfObject(scanResult);
     }
 }
