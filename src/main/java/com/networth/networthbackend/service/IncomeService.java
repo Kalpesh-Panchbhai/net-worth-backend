@@ -2,33 +2,52 @@ package com.networth.networthbackend.service;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import com.networth.networthbackend.entity.Income;
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.Repository.IncomeRepository;
+import com.networth.networthbackend.entity.IncomeEntity;
+import com.networth.networthbackend.model.IncomeRest;
+import com.networth.networthbackend.model.RestResponse;
+import com.networth.networthbackend.utility.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class IncomeService extends Service<Income> {
+public class IncomeService extends Service<IncomeRest, IncomeEntity> {
 
     public IncomeService() {
-        tableName = "income";
+        super(new IncomeRepository());
     }
 
     @Override
-    public List<Income> convertToListOfObject(ScanResult scanResult) {
-        List<Income> dataList = new ArrayList<>();
-        for (Map<String, AttributeValue> valueMap : scanResult.getItems()) {
-            Income income = new Income();
-            income.setId(valueMap.get("id").getS());
-            income.setAmount(Double.parseDouble(valueMap.get("amount").getN()));
-            income.setTaxPaid(Double.parseDouble(valueMap.get("taxPaid").getN()));
-            income.setCurrency(valueMap.get("currency").getS());
-            income.setIncomeType(valueMap.get("incomeType").getS());
-            income.setIncomeTag(valueMap.get("incomeTag").getS());
-            income.setCreditedOn(valueMap.get("creditedOn").getS());
-            income.setUserId(valueMap.get("userId").getS());
-            dataList.add(income);
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeRest> type) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<IncomeRest> incomeRestList = new ArrayList<>();
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), Double.parseDouble(attributeValueMap.get("amount").getN()), Double.parseDouble(attributeValueMap.get("taxPaid").getN()), attributeValueMap.get("creditedOn").getS(), attributeValueMap.get("currency").getS(), attributeValueMap.get("incomeType").getS(), attributeValueMap.get("incomeTag").getS());
+            incomeRestList.add(incomeRest);
         }
-        return dataList;
+        String jsonBody = utilityRest.convertListOfObjToString(incomeRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeEntity> entityType) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        IncomeEntity incomeEntity = repository.getByPrimaryField(id, entityType);
+        repository.delete(incomeEntity);
+        RestResponse restResponse = Utility.generateRestResponse("success");
+        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
+        context.getLogger().log("data deleted successfully to dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public IncomeEntity convertRequestToEntity(IncomeRest data) {
+        return new IncomeEntity(data.getId(), data.getUserId(), data.getAmount(), data.getTaxPaid(), data.getCreditedOn(), data.getCurrency(), data.getIncomeType(), data.getIncomeTag());
     }
 }

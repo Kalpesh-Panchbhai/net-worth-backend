@@ -1,59 +1,66 @@
 package com.networth.networthbackend.service;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.IncomeType;
+import com.networth.networthbackend.Repository.IncomeTypeRepository;
+import com.networth.networthbackend.entity.IncomeTypeEntity;
+import com.networth.networthbackend.model.TypeRest;
+import com.networth.networthbackend.utility.Utility;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class IncomeTypeService extends Service<IncomeType> {
+public class IncomeTypeService extends Service<TypeRest, IncomeTypeEntity> {
 
     public IncomeTypeService() {
-        tableName = "income_type";
+        super(new IncomeTypeRepository());
     }
 
     @Override
-    public List<IncomeType> convertToListOfObject(ScanResult scanResult) {
-        List<IncomeType> dataList = new ArrayList<>();
-        for (Map<String, AttributeValue> valueMap : scanResult.getItems()) {
-            IncomeType incomeType = new IncomeType();
-            incomeType.setId(valueMap.get("id").getS());
-            incomeType.setUserId(valueMap.get("userId").getS());
-            incomeType.setName(valueMap.get("name").getS());
-            incomeType.setIsDefault(valueMap.get("isDefault").getBOOL());
-            dataList.add(incomeType);
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<TypeRest> typeRestList = new ArrayList<>();
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            TypeRest typeRest = new TypeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("name").getS(), attributeValueMap.get("isDefault").getBOOL());
+            typeRestList.add(typeRest);
         }
-        return dataList;
+        String jsonBody = utilityRest.convertListOfObjToString(typeRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
     @Override
-    public APIGatewayProxyResponseEvent update(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeType> incomeTypeClass) {
-        IncomeType updatedIncomeType = utility.convertStringToObj(apiGatewayRequest.getBody(), context, incomeTypeClass);
-
-        Map<String, String> expressionAttributesNames = new HashMap<>();
-        expressionAttributesNames.put("#val1", "userId");
-        expressionAttributesNames.put("#val2", "isDefault");
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":val1", new AttributeValue().withS(updatedIncomeType.getUserId()));
-        expressionAttributeValues.put(":val2", new AttributeValue().withBOOL(true));
-
-        ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withFilterExpression("#val1 = :val1 AND #val2 = :val2").withExpressionAttributeNames(expressionAttributesNames).withExpressionAttributeValues(expressionAttributeValues);
-        ScanResult scanResult = client.scan(scanRequest);
-
-        List<IncomeType> dataList = convertToListOfObject(scanResult);
-        if (!dataList.isEmpty()) {
-            IncomeType oldIncomeType = dataList.get(0);
-            oldIncomeType.setIsDefault(false);
-            dynamoDBMapper.save(oldIncomeType);
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
+        TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
+        if(requestData.getIsDefault()) {
+            makeOtherRecordNonDefault(requestData.getUserId());
         }
-        return super.update(apiGatewayRequest, context, incomeTypeClass);
+        return super.post(apiGatewayRequest, context, type);
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
+        TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
+        makeOtherRecordNonDefault(requestData.getUserId());
+        return super.post(apiGatewayRequest, context, type);
+    }
+
+    @Override
+    public IncomeTypeEntity convertRequestToEntity(TypeRest data) {
+        return new IncomeTypeEntity(data.getId(), data.getUserId(), data.getName(), data.getIsDefault());
+    }
+
+    private void makeOtherRecordNonDefault(String userId) {
+        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            if (attributeValueMap.get("isDefault").getBOOL()) {
+                repository.update(new IncomeTypeEntity(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("name").getS(), false));
+            }
+        }
     }
 }

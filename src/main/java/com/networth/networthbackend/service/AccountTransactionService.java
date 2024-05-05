@@ -1,54 +1,52 @@
 package com.networth.networthbackend.service;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.AccountTransaction;
+import com.networth.networthbackend.Repository.AccountTransactionRepository;
+import com.networth.networthbackend.entity.AccountTransactionEntity;
+import com.networth.networthbackend.model.AccountTransactionRest;
 import com.networth.networthbackend.utility.Utility;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AccountTransactionService extends Service<AccountTransaction> {
+public class AccountTransactionService extends Service<AccountTransactionRest, AccountTransactionEntity> {
 
     public AccountTransactionService() {
-        tableName = "account_transaction";
+        super(new AccountTransactionRepository());
     }
 
     @Override
-    public List<AccountTransaction> convertToListOfObject(ScanResult scanResult) {
-        List<AccountTransaction> dataList = new ArrayList<>();
-        for (Map<String, AttributeValue> valueMap : scanResult.getItems()) {
-            AccountTransaction accountTransaction = new AccountTransaction();
-            accountTransaction.setId(valueMap.get("id").getS());
-            accountTransaction.setAccountId(valueMap.get("accountId").getS());
-            accountTransaction.setTimestamp(valueMap.get("timestamp").getS());
-            accountTransaction.setCurrentBalance(Double.parseDouble(valueMap.get("currentBalance").getN()));
-            accountTransaction.setPaid(valueMap.get("paid").getBOOL());
-            dataList.add(accountTransaction);
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionRest> type) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        ScanResult scanResult = repository.getBySecondaryField("accountId", id);
+        List<AccountTransactionRest> accountTransactionRestList = new ArrayList<>();
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            AccountTransactionRest accountTransactionRestRequest = new AccountTransactionRest(attributeValueMap.get("id").getS(),
+                    attributeValueMap.get("accountId").getS(),
+                    attributeValueMap.get("timestamp").getS(),
+                    Double.parseDouble(attributeValueMap.get("currentBalance").getN()),
+                    attributeValueMap.get("paid").getBOOL(),
+                    "");
+            accountTransactionRestList.add(accountTransactionRestRequest);
         }
-        return dataList;
+        String jsonBody = utilityRest.convertListOfObjToString(accountTransactionRestList, context);
+        context.getLogger().log("data saved successfully to dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getAllByUniqueID(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransaction> accountTransactionClass) {
-        Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
-
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":val", new AttributeValue().withS(pathParams.get("id")));
-
-        ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withFilterExpression("accountId = :val").withExpressionAttributeValues(expressionAttributeValues);
-        ScanResult scanResult = client.scan(scanRequest);
-
-        List<AccountTransaction> dataList = convertToListOfObject(scanResult);
-        jsonBody = utility.convertListOfObjToString(dataList, context);
-        context.getLogger().log("fetch" + accountTransactionClass.getName() + " List:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    public AccountTransactionEntity convertRequestToEntity(AccountTransactionRest data) {
+        AccountTransactionEntity accountTransactionEntity = new AccountTransactionEntity();
+        accountTransactionEntity.setId(data.getId());
+        accountTransactionEntity.setAccountId(data.getAccountId());
+        accountTransactionEntity.setTimestamp(data.getTimestamp());
+        accountTransactionEntity.setCurrentBalance(data.getAmount());
+        accountTransactionEntity.setPaid(data.getPaid());
+        return accountTransactionEntity;
     }
 }

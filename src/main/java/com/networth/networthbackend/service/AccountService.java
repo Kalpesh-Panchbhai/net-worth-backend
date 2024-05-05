@@ -5,91 +5,73 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.Account;
-import com.networth.networthbackend.entity.AccountBroker;
-import com.networth.networthbackend.entity.AccountTransaction;
+import com.networth.networthbackend.Repository.AccountRepository;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.entity.AccountTransactionEntity;
+import com.networth.networthbackend.model.AccountRest;
+import com.networth.networthbackend.model.BalanceRest;
+import com.networth.networthbackend.utility.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-public class AccountService extends Service<Account> {
+public class AccountService extends Service<AccountRest, AccountEntity> {
+
+    private final AccountBrokerService accountBrokerService = new AccountBrokerService();
+    private final AccountTransactionService accountTransactionService = new AccountTransactionService();
 
     public AccountService() {
-        tableName = "account";
+        super(new AccountRepository());
     }
 
     @Override
-    public APIGatewayProxyResponseEvent add(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<Account> accountClass) {
-        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.add(apiGatewayRequest, context, accountClass);
-
-        Account account = utility.convertStringToObj(apiGatewayProxyResponseEvent.getBody(), context, Account.class);
-
-        if (!account.getAccountOpenedDate().isBlank()) {
-            AccountTransactionService accountTransactionService = new AccountTransactionService();
-            APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            AccountTransaction accountTransaction = new AccountTransaction(null, account.getId(), account.getAccountOpenedDate(), account.getCurrentBalance(), true, "UPDATE");
-            apiGatewayProxyRequestEvent.setBody(accountTransactionService.utility.convertObjToString(accountTransaction, context));
-            accountTransactionService.add(apiGatewayProxyRequestEvent, context, AccountTransaction.class);
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<AccountRest> accountRestList = new ArrayList<>();
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            AccountRest accountRestResponse = new AccountRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("accountName").getS(), attributeValueMap.get("accountType").getS(), attributeValueMap.containsKey("loanType") ? attributeValueMap.get("loanType").getS() : "", attributeValueMap.get("currency").getS(), attributeValueMap.get("active").getBOOL(), new BalanceRest());
+            accountRestList.add(accountRestResponse);
         }
-        return apiGatewayProxyResponseEvent;
+        String jsonBody = utilityRest.convertListOfObjToString(accountRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
-
     @Override
-    public List<Account> convertToListOfObject(ScanResult scanResult) {
-        List<Account> dataList = new ArrayList<>();
-        for (Map<String, AttributeValue> valueMap : scanResult.getItems()) {
-            Account account = new Account();
-            account.setId(valueMap.get("id").getS());
-            account.setAccountType(valueMap.get("accountType").getS());
-            if (valueMap.containsKey("loanType")) {
-                account.setLoanType(valueMap.get("loanType").getS());
-            } else {
-                account.setLoanType("");
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountEntity> entityType) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        AccountEntity accountEntity = repository.getByPrimaryField(id, entityType);
+        if (accountEntity.getAccountType().equals("Broker")) {
+            ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
+            for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+                ScanResult scanResult1 = accountTransactionService.repository.getBySecondaryField("accountId", attributeValueMap.get("id").getS());
+                for (Map<String, AttributeValue> attributeValueMap1 : scanResult1.getItems()) {
+                    accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap1.get("id").getS(), "", "", 0.0, false));
+                }
+                accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", ""));
             }
-            account.setAccountName(valueMap.get("accountName").getS());
-            account.setCurrentBalance(Double.parseDouble(valueMap.get("currentBalance").getN()));
-            account.setPaymentReminder(valueMap.get("paymentReminder").getBOOL());
-            account.setPaymentDate(Integer.parseInt(valueMap.get("paymentDate").getN()));
-            account.setCurrency(valueMap.get("currency").getS());
-            account.setActive(valueMap.get("active").getBOOL());
-            account.setUserId(valueMap.get("userId").getS());
-            account.setAccountOpenedDate("");
-            dataList.add(account);
-        }
-        return dataList;
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
-        Map<String, String> pathParams = apiGatewayRequest.getPathParameters();
-        String accountId = pathParams.get("id");
-        deleteAccount(accountId);
-        return super.delete(apiGatewayRequest, context);
-    }
-
-    public void deleteAccount(String accountID) {
-        AccountBrokerService accountBrokerService = new AccountBrokerService();
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
-        Account account = dynamoDBMapper.load(Account.class, accountID);
-        if (Objects.nonNull(account)) {
-            if (account.getAccountType().equals("Broker")) {
-                List<AccountBroker> accountBrokerList = accountBrokerService.getAllByUniqueID("accountId", accountID);
-                for (AccountBroker accountBroker : accountBrokerList) {
-                    List<AccountTransaction> accountTransactionList = accountTransactionService.getAllByUniqueID("accountId", accountBroker.getId());
-                    for (AccountTransaction accountTransaction : accountTransactionList) {
-                        accountTransactionService.deleteDataByPrimaryField(accountTransaction.getId());
-                    }
-                    accountBrokerService.deleteDataByPrimaryField(accountBroker.getId());
-                }
-            } else {
-                List<AccountTransaction> accountTransactionList = accountTransactionService.getAllByUniqueID("accountId", accountID);
-                for (AccountTransaction accountTransaction : accountTransactionList) {
-                    accountTransactionService.deleteDataByPrimaryField(accountTransaction.getId());
-                }
+        } else {
+            ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", id);
+            for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+                accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap.get("id").getS(), "", "", 0.0, false));
             }
         }
+        return super.delete(apiGatewayRequest, context, entityType);
+    }
+
+    @Override
+    public AccountEntity convertRequestToEntity(AccountRest accountRestRequest) {
+        AccountEntity accountEntity = new AccountEntity();
+        accountEntity.setId(accountRestRequest.getId());
+        accountEntity.setUserId(accountRestRequest.getUserId());
+        accountEntity.setAccountName(accountRestRequest.getAccountName());
+        accountEntity.setAccountType(accountRestRequest.getAccountType());
+        accountEntity.setLoanType(accountRestRequest.getLoanType());
+        accountEntity.setCurrency(accountRestRequest.getCurrency());
+        accountEntity.setActive(accountRestRequest.getActive());
+        return accountEntity;
     }
 }

@@ -4,7 +4,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.*;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.entity.AccountTransactionEntity;
+import com.networth.networthbackend.entity.IncomeEntity;
+import com.networth.networthbackend.model.*;
 import com.networth.networthbackend.service.*;
 
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -34,7 +38,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         UserService userService = new UserService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return userService.add(apiGatewayRequest, context, User.class);
+                return userService.post(apiGatewayRequest, context, UserRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -44,11 +48,13 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         AccountService accountService = new AccountService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return accountService.add(apiGatewayRequest, context, Account.class);
+                return accountService.post(apiGatewayRequest, context, AccountRest.class);
             case "GET":
-                return accountService.getAllByUniqueID(apiGatewayRequest, context, Account.class);
+                return accountService.getBySecondaryField(apiGatewayRequest, context, AccountRest.class);
             case "DELETE":
-                return accountService.delete(apiGatewayRequest, context);
+                return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
+            case "PATCH":
+                return accountService.patch(apiGatewayRequest, context, AccountRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -58,11 +64,11 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return accountBrokerService.add(apiGatewayRequest, context, AccountBroker.class);
+                return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerRest.class);
             case "GET":
-                return accountBrokerService.getAllByUniqueID(apiGatewayRequest, context, AccountBroker.class);
+                return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerRest.class);
             case "DELETE":
-                return accountBrokerService.delete(apiGatewayRequest, context);
+                return accountBrokerService.delete(apiGatewayRequest, context, AccountBrokerEntity.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -72,11 +78,11 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return accountTransactionService.add(apiGatewayRequest, context, AccountTransaction.class);
+                return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionRest.class);
             case "GET":
-                return accountTransactionService.getAllByUniqueID(apiGatewayRequest, context, AccountTransaction.class);
+                return accountTransactionService.getBySecondaryField(apiGatewayRequest, context, AccountTransactionRest.class);
             case "DELETE":
-                return accountTransactionService.delete(apiGatewayRequest, context);
+                return accountTransactionService.delete(apiGatewayRequest, context, AccountTransactionEntity.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -86,13 +92,13 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         IncomeService incomeService = new IncomeService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return incomeService.add(apiGatewayRequest, context, Income.class);
+                return incomeService.post(apiGatewayRequest, context, IncomeRest.class);
             case "GET":
-                return incomeService.getAllByUniqueID(apiGatewayRequest, context, Income.class);
+                return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeRest.class);
             case "PATCH":
-                return incomeService.update(apiGatewayRequest, context, Income.class);
+                return incomeService.patch(apiGatewayRequest, context, IncomeRest.class);
             case "DELETE":
-                return incomeService.delete(apiGatewayRequest, context);
+                return incomeService.delete(apiGatewayRequest, context, IncomeEntity.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -102,11 +108,11 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         IncomeTypeService incomeTypeService = new IncomeTypeService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return incomeTypeService.add(apiGatewayRequest, context, IncomeType.class);
+                return incomeTypeService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
-                return incomeTypeService.getAllByUniqueID(apiGatewayRequest, context, IncomeType.class);
+                return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, TypeRest.class);
             case "PATCH":
-                return incomeTypeService.update(apiGatewayRequest, context, IncomeType.class);
+                return incomeTypeService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -116,11 +122,11 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         IncomeTagService incomeTagService = new IncomeTagService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
-                return incomeTagService.add(apiGatewayRequest, context, IncomeTag.class);
+                return incomeTagService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
-                return incomeTagService.getAllByUniqueID(apiGatewayRequest, context, IncomeTag.class);
+                return incomeTagService.getBySecondaryField(apiGatewayRequest, context, TypeRest.class);
             case "PATCH":
-                return incomeTagService.update(apiGatewayRequest, context, IncomeTag.class);
+                return incomeTagService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
