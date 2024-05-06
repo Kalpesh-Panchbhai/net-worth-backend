@@ -18,5 +18,7 @@ public class AccountBrokerRest {
 
     private String name;
 
+    private Double currentUnit;
+
     private BalanceRest balance;
 }

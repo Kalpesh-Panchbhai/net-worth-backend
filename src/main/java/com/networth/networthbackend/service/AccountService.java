@@ -32,12 +32,28 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         ScanResult scanResult = repository.getBySecondaryField("userId", id);
         List<AccountRest> accountRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountRest accountRestResponse = new AccountRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("accountName").getS(), attributeValueMap.get("accountType").getS(), attributeValueMap.containsKey("loanType") ? attributeValueMap.get("loanType").getS() : "", attributeValueMap.get("currency").getS(), attributeValueMap.get("active").getBOOL(), new BalanceRest());
+            AccountRest accountRestResponse = new AccountRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("accountName").getS(), attributeValueMap.get("accountType").getS(), attributeValueMap.containsKey("loanType") ? attributeValueMap.get("loanType").getS() : "", attributeValueMap.get("currency").getS(), attributeValueMap.get("active").getBOOL(), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
             accountRestList.add(accountRestResponse);
         }
         String jsonBody = utilityRest.convertListOfObjToString(accountRestList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
+        BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
+        ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", accountId);
+        if (scanResult.getCount() > 0) {
+            List<Map<String, AttributeValue>> map = scanResult.getItems();
+            if (map.size() > 1) {
+                map.sort((o1, o2) -> o2.get("timestamp").getS().compareTo(o1.get("timestamp").getS()));
+                Double previousDayBalance = Double.parseDouble(map.get(1).get("currentBalance").getN());
+                balanceRest.setPreviousDayValue(previousDayBalance);
+            }
+            Double currentDayBalance = Double.parseDouble(map.get(0).get("currentBalance").getN());
+            balanceRest.setCurrentDayValue(currentDayBalance);
+        }
+        return balanceRest;
     }
 
     @Override
