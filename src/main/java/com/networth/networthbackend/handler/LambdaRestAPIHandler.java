@@ -4,10 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.entity.AccountBrokerEntity;
-import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
-import com.networth.networthbackend.entity.IncomeEntity;
+import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.*;
 import com.networth.networthbackend.service.*;
 
@@ -29,6 +26,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             return handleIncomeTypeRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income_tag")) {
             return handleIncomeTagRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/watch")) {
+            return handleWatchRequest(apiGatewayRequest, context);
         } else {
             throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
         }
@@ -127,6 +126,22 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeTagService.getBySecondaryField(apiGatewayRequest, context, TypeRest.class);
             case "PATCH":
                 return incomeTagService.patch(apiGatewayRequest, context, TypeRest.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        WatchService watchService = new WatchService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "POST":
+                return watchService.post(apiGatewayRequest, context, WatchRest.class);
+            case "GET":
+                return watchService.getBySecondaryField(apiGatewayRequest, context, WatchRest.class);
+            case "PATCH":
+                return watchService.patch(apiGatewayRequest, context, WatchRest.class);
+            case "DELETE":
+                return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
