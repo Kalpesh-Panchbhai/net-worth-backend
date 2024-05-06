@@ -23,15 +23,20 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<TypeRest> typeRestList = getIncomeTagList(id);
+        String jsonBody = utilityRest.convertListOfObjToString(typeRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    public List<TypeRest> getIncomeTagList(String userId) {
+        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<TypeRest> typeRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             TypeRest typeRest = new TypeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("name").getS(), attributeValueMap.get("isDefault").getBOOL());
             typeRestList.add(typeRest);
         }
-        String jsonBody = utilityRest.convertListOfObjToString(typeRestList, context);
-        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+        return typeRestList;
     }
 
     @Override

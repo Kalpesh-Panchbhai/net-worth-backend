@@ -24,15 +24,20 @@ public class IncomeService extends Service<IncomeRest, IncomeEntity> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeRest> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<IncomeRest> incomeRestList = getIncomeList(id);
+        String jsonBody = utilityRest.convertListOfObjToString(incomeRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    public List<IncomeRest> getIncomeList(String userId) {
+        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<IncomeRest> incomeRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), Double.parseDouble(attributeValueMap.get("amount").getN()), Double.parseDouble(attributeValueMap.get("taxPaid").getN()), attributeValueMap.get("creditedOn").getS(), attributeValueMap.get("currency").getS(), attributeValueMap.get("incomeType").getS(), attributeValueMap.get("incomeTag").getS());
             incomeRestList.add(incomeRest);
         }
-        String jsonBody = utilityRest.convertListOfObjToString(incomeRestList, context);
-        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+        return incomeRestList;
     }
 
     @Override

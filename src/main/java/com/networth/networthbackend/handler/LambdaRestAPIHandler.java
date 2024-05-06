@@ -38,6 +38,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
                 return userService.post(apiGatewayRequest, context, UserRest.class);
+            case "DELETE":
+                return userService.delete(apiGatewayRequest, context, UserEntity.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }

@@ -27,16 +27,21 @@ public class WatchService extends Service<WatchRest, WatchEntity> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<WatchRest> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        ScanResult scanResult = repository.getBySecondaryField("userId", id);
+        List<WatchRest> watchRestList = getWatchList(id);
+        String jsonBody = utilityRest.convertListOfObjToString(watchRestList, context);
+        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    public List<WatchRest> getWatchList(String userId) {
+        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<WatchRest> watchRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             List<String> accountList = attributeValueMap.get("accountList").getL().stream().map(AttributeValue::getS).collect(Collectors.toList());
             WatchRest watchRest = new WatchRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("name").getS(), accountList);
             watchRestList.add(watchRest);
         }
-        String jsonBody = utilityRest.convertListOfObjToString(watchRestList, context);
-        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+        return watchRestList;
     }
 
     @Override
