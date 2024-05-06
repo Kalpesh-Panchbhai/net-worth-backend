@@ -112,6 +112,13 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
                 accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap.get("id").getS(), "", "", 0.0, false));
             }
         }
+        watchService.repository.getBySecondaryField("userId", accountEntity.getUserId()).getItems().forEach((data) -> {
+            WatchEntity watchEntity = watchService.repository.getByPrimaryField(data.get("id").getS(), WatchEntity.class);
+            if (watchEntity.getAccountList().contains(accountEntity.getId())) {
+                watchEntity.getAccountList().remove(accountEntity.getId());
+                watchService.repository.update(watchEntity);
+            }
+        });
     }
 
     @Override
