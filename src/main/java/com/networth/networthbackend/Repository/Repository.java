@@ -20,8 +20,7 @@ public class Repository<T> implements RepositoryImpl<T> {
     public String tableName;
 
     public Repository() {
-        client = AmazonDynamoDBClientBuilder.standard()
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("dynamodb.ap-south-1.amazonaws.com", "ap-south-1")).withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("AKIAUF72G2OIBNECZK4F","EXCUuNK4xD14hqxkrpB04l7XI9TR+JvuthBv9+tZ"))).build();
+        client = AmazonDynamoDBClientBuilder.standard().build();
         dynamoDBMapper = new DynamoDBMapper(client);
     }
 
