@@ -23,6 +23,7 @@ public class UserService extends Service<UserRest, UserEntity> {
     private final IncomeService incomeService = new IncomeService();
     private final IncomeTagService incomeTagService = new IncomeTagService();
     private final IncomeTypeService incomeTypeService = new IncomeTypeService();
+    private final ChartDataService chartDataService = new ChartDataService();
     private Boolean isUserAvailable = false;
 
     public UserService() {
@@ -58,6 +59,10 @@ public class UserService extends Service<UserRest, UserEntity> {
         for (TypeRest typeRest : incomeTypeList) {
             incomeTypeService.repository.delete(incomeTypeService.convertRequestToEntity(typeRest));
         }
+        chartDataService.repository.getBySecondaryField("userId", userId).getItems().forEach(attributeValueMap -> {
+            chartDataService.repository.delete(chartDataService.convertRequestToEntity(new ChartDataRest(attributeValueMap.get("id").getS(), null, null, null)));
+            System.out.println("Deleted chart data");
+        });
     }
 
     @Override

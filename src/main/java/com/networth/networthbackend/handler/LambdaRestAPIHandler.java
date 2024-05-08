@@ -28,6 +28,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             return handleIncomeTagRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/watch")) {
             return handleWatchRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/chart")) {
+            return handleChartRequest(apiGatewayRequest, context);
         } else {
             throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
         }
@@ -144,6 +146,16 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return watchService.patch(apiGatewayRequest, context, WatchRest.class);
             case "DELETE":
                 return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
+            default:
+                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleChartRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        ChartDataService chartDataService = new ChartDataService();
+        switch (apiGatewayRequest.getHttpMethod()) {
+            case "GET":
+                return chartDataService.getBySecondaryField(apiGatewayRequest, context, ChartDataRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }

@@ -18,6 +18,7 @@ import com.networth.networthbackend.utility.Utility;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class AccountService extends Service<AccountRest, AccountEntity> {
@@ -97,7 +98,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     public void deleteOneAccount(String id, Class<AccountEntity> entityType) {
         AccountEntity accountEntity = repository.getByPrimaryField(id, entityType);
-        if (accountEntity.getAccountType().equals("Broker")) {
+        if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getAccountType()) && accountEntity.getAccountType().equals("Broker")) {
             ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
             for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
                 ScanResult scanResult1 = accountTransactionService.repository.getBySecondaryField("accountId", attributeValueMap.get("id").getS());
@@ -112,13 +113,15 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
                 accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap.get("id").getS(), "", "", 0.0, false));
             }
         }
-        watchService.repository.getBySecondaryField("userId", accountEntity.getUserId()).getItems().forEach((data) -> {
-            WatchEntity watchEntity = watchService.repository.getByPrimaryField(data.get("id").getS(), WatchEntity.class);
-            if (watchEntity.getAccountList().contains(accountEntity.getId())) {
-                watchEntity.getAccountList().remove(accountEntity.getId());
-                watchService.repository.update(watchEntity);
-            }
-        });
+        if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getUserId())) {
+            watchService.repository.getBySecondaryField("userId", accountEntity.getUserId()).getItems().forEach((data) -> {
+                WatchEntity watchEntity = watchService.repository.getByPrimaryField(data.get("id").getS(), WatchEntity.class);
+                if (watchEntity.getAccountList().contains(accountEntity.getId())) {
+                    watchEntity.getAccountList().remove(accountEntity.getId());
+                    watchService.repository.update(watchEntity);
+                }
+            });
+        }
     }
 
     @Override
