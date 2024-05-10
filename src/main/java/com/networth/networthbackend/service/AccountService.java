@@ -5,11 +5,9 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountRepository;
-import com.networth.networthbackend.entity.AccountBrokerEntity;
-import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
-import com.networth.networthbackend.entity.WatchEntity;
+import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.AccountRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
@@ -25,6 +23,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
     private final AccountTransactionService accountTransactionService = new AccountTransactionService();
+    private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final WatchService watchService = new WatchService();
 
     public AccountService() {
@@ -75,16 +74,10 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
         BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
-        ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", accountId);
-        if (scanResult.getCount() > 0) {
-            List<Map<String, AttributeValue>> map = scanResult.getItems();
-            if (map.size() > 1) {
-                map.sort((o1, o2) -> o2.get("timestamp").getS().compareTo(o1.get("timestamp").getS()));
-                Double previousDayBalance = Double.parseDouble(map.get(1).get("currentBalance").getN());
-                balanceRest.setPreviousDayValue(previousDayBalance);
-            }
-            Double currentDayBalance = Double.parseDouble(map.get(0).get("currentBalance").getN());
-            balanceRest.setCurrentDayValue(currentDayBalance);
+        AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);
+        if (Objects.nonNull(accountBalanceEntity)) {
+            balanceRest.setCurrentDayValue(accountBalanceEntity.getBalance().get("currentDayValue"));
+            balanceRest.setPreviousDayValue(accountBalanceEntity.getBalance().get("previousDayValue"));
         }
         return balanceRest;
     }

@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.yahooapimodel.ChartData;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
@@ -31,6 +32,7 @@ public class ChartDataGenerator {
     private final AccountTransactionService accountTransactionService = new AccountTransactionService();
     private final WatchService watchService = new WatchService();
     private final ChartDataService chartDataService = new ChartDataService();
+    private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final List<AccountEntity> accountList = new ArrayList<>();
     private final List<AccountBrokerEntity> accountBrokerEntityList = new ArrayList<>();
     private final List<AccountTransactionEntity> accountTransactionList = new ArrayList<>();
@@ -194,12 +196,35 @@ public class ChartDataGenerator {
         generateAccountTypeData();
         generateWatchData();
 
-        deleteExistingChart();
+        updateAccountBalance();
+
+//        deleteExistingChart();
+//        for (Map.Entry<String, List<ChartData>> entry : chartDataMap.entrySet()) {
+//            for (ChartData chartData : entry.getValue()) {
+//                ChartDataEntity chartDataEntity = new ChartDataEntity(null, userId, entry.getKey(), chartData.getLocalDate().toString(), chartData.getValue());
+//                chartDataService.repository.save(chartDataEntity);
+//            }
+//        }
+    }
+
+    private void updateAccountBalance() {
         for (Map.Entry<String, List<ChartData>> entry : chartDataMap.entrySet()) {
-            for (ChartData chartData : entry.getValue()) {
-                ChartDataEntity chartDataEntity = new ChartDataEntity(null, userId, entry.getKey(), chartData.getLocalDate().toString(), chartData.getValue());
-                chartDataService.repository.save(chartDataEntity);
+            double currentDayValue = 0.0;
+            double previousDayValue = 0.0;
+            if (entry.getValue().size() >= 2) {
+                currentDayValue = entry.getValue().get(entry.getValue().size() - 1).getValue();
+                previousDayValue = entry.getValue().get(entry.getValue().size() - 2).getValue();
+            } else if (!entry.getValue().isEmpty()) {
+                currentDayValue = entry.getValue().get(0).getValue();
+                previousDayValue = 0.0;
             }
+            AccountBalanceEntity accountBalanceEntity = new AccountBalanceEntity();
+            accountBalanceEntity.setId(entry.getKey());
+            Map<String, Double> balance = new HashMap<>();
+            balance.put("currentDayValue", currentDayValue);
+            balance.put("previousDayValue", previousDayValue);
+            accountBalanceEntity.setBalance(balance);
+            accountBalanceRepository.save(accountBalanceEntity);
         }
     }
 
