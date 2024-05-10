@@ -198,13 +198,13 @@ public class ChartDataGenerator {
 
         updateAccountBalance();
 
-//        deleteExistingChart();
-//        for (Map.Entry<String, List<ChartData>> entry : chartDataMap.entrySet()) {
-//            for (ChartData chartData : entry.getValue()) {
-//                ChartDataEntity chartDataEntity = new ChartDataEntity(null, userId, entry.getKey(), chartData.getLocalDate().toString(), chartData.getValue());
-//                chartDataService.repository.save(chartDataEntity);
-//            }
-//        }
+        for (Map.Entry<String, List<ChartData>> entry : chartDataMap.entrySet()) {
+            deleteExistingChart(entry.getKey());
+            for (ChartData chartData : entry.getValue()) {
+                ChartDataEntity chartDataEntity = new ChartDataEntity(null, userId, entry.getKey(), chartData.getLocalDate().toString(), chartData.getValue());
+                chartDataService.repository.save(chartDataEntity);
+            }
+        }
     }
 
     private void updateAccountBalance() {
@@ -228,8 +228,8 @@ public class ChartDataGenerator {
         }
     }
 
-    private void deleteExistingChart() {
-        chartDataService.repository.getBySecondaryField("userId", userId).getItems().forEach(item -> {
+    private void deleteExistingChart(String accountId) {
+        chartDataService.repository.getBySecondaryField("accountId", accountId).getItems().forEach(item -> {
             chartDataService.repository.delete(new ChartDataEntity(item.get("id").getS(), "", "", "", 0.0));
         });
     }
