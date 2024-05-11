@@ -42,14 +42,14 @@ public class DataGenerator {
     }
 
     private void generateAccountBrokerData() {
-        AccountBrokerEntity accountBroker1 = new AccountBrokerEntity("accountBroker1", "account5", "NOW", "");
-        AccountBrokerEntity accountBroker2 = new AccountBrokerEntity("accountBroker2", "account5", "AAPL", "");
+        AccountBrokerEntity accountBroker1 = new AccountBrokerEntity("accountBroker1", "account5", "NOW", "", 0.0);
+        AccountBrokerEntity accountBroker2 = new AccountBrokerEntity("accountBroker2", "account5", "AAPL", "", 0.0);
         accountBrokerEntityList.add(accountBroker1);
         accountBrokerEntityList.add(accountBroker2);
 
 
-        AccountBrokerEntity accountBroker3 = new AccountBrokerEntity("accountBroker3", "account6", "0P00011MAX.BO", "");
-        AccountBrokerEntity accountBroker4 = new AccountBrokerEntity("accountBroker4", "account6", "AMZN", "");
+        AccountBrokerEntity accountBroker3 = new AccountBrokerEntity("accountBroker3", "account6", "0P00011MAX.BO", "", 0.0);
+        AccountBrokerEntity accountBroker4 = new AccountBrokerEntity("accountBroker4", "account6", "AMZN", "", 0.0);
         accountBrokerEntityList.add(accountBroker3);
         accountBrokerEntityList.add(accountBroker4);
     }

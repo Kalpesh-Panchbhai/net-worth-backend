@@ -29,4 +29,7 @@ public class AccountBrokerEntity {
     @DynamoDBAttribute(attributeName = "name")
     private String name;
 
+    @DynamoDBAttribute(attributeName = "currentUnit")
+    private Double currentUnit;
+
 }

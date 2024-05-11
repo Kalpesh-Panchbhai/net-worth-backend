@@ -34,7 +34,14 @@ public class IncomeService extends Service<IncomeRest, IncomeEntity> {
         ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<IncomeRest> incomeRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), Double.parseDouble(attributeValueMap.get("amount").getN()), Double.parseDouble(attributeValueMap.get("taxPaid").getN()), attributeValueMap.get("creditedOn").getS(), attributeValueMap.get("currency").getS(), attributeValueMap.get("incomeType").getS(), attributeValueMap.get("incomeTag").getS());
+            IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(),
+                    attributeValueMap.get("userId").getS(),
+                    Double.parseDouble(attributeValueMap.get("amount").getN()),
+                    Double.parseDouble(attributeValueMap.get("taxPaid").getN()),
+                    attributeValueMap.get("creditedOn").getS(),
+                    attributeValueMap.get("currency").getS(),
+                    attributeValueMap.get("incomeType").getS(),
+                    attributeValueMap.get("incomeTag").getS());
             incomeRestList.add(incomeRest);
         }
         return incomeRestList;

@@ -36,7 +36,7 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         List<AccountBrokerRest> accountBrokerRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             Double currentUnit = 0.0;
-            AccountBrokerRest accountRestResponse = new AccountBrokerRest(attributeValueMap.get("id").getS(), attributeValueMap.get("accountId").getS(), attributeValueMap.get("symbol").getS(), attributeValueMap.get("name").getS(), currentUnit, getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
+            AccountBrokerRest accountRestResponse = new AccountBrokerRest(attributeValueMap.get("id").getS(), attributeValueMap.get("accountId").getS(), attributeValueMap.get("symbol").getS(), attributeValueMap.get("name").getS(), Double.parseDouble(attributeValueMap.get("currentUnit").getN()), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
             accountBrokerRestList.add(accountRestResponse);
         }
         String jsonBody = utilityRest.convertListOfObjToString(accountBrokerRestList, context);
@@ -66,6 +66,6 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
 
     @Override
     public AccountBrokerEntity convertRequestToEntity(AccountBrokerRest data) {
-        return new AccountBrokerEntity(data.getId(), data.getAccountId(), data.getSymbol(), data.getName());
+        return new AccountBrokerEntity(data.getId(), data.getAccountId(), data.getSymbol(), data.getName(), data.getCurrentUnit());
     }
 }

@@ -98,7 +98,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
                 for (Map<String, AttributeValue> attributeValueMap1 : scanResult1.getItems()) {
                     accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap1.get("id").getS(), "", "", 0.0, false));
                 }
-                accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", ""));
+                accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", "", 0.0));
             }
         } else {
             ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", id);
