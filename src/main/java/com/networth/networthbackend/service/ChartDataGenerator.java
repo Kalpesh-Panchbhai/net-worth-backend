@@ -16,11 +16,13 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ChartDataGenerator {
@@ -29,13 +31,11 @@ public class ChartDataGenerator {
     private final UserService userService = new UserService();
     private final AccountService accountService = new AccountService();
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
-    private final AccountTransactionService accountTransactionService = new AccountTransactionService();
     private final WatchService watchService = new WatchService();
     private final ChartDataService chartDataService = new ChartDataService();
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final List<AccountEntity> accountList = new ArrayList<>();
     private final List<AccountBrokerEntity> accountBrokerEntityList = new ArrayList<>();
-    private final List<AccountTransactionEntity> accountTransactionList = new ArrayList<>();
     private final List<WatchEntity> watchList = new ArrayList<>();
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss Z");
@@ -145,7 +145,7 @@ public class ChartDataGenerator {
             if (accountEntity.getAccountType().equals("Broker")) {
                 getAccountBrokerList(accountEntity.getId());
             } else {
-                getAccountTransactionList(accountEntity.getId());
+
             }
             accountList.add(accountEntity);
         }
@@ -159,21 +159,7 @@ public class ChartDataGenerator {
             accountBrokerEntity.setAccountId(scanResult.getItems().get(i).get("accountId").getS());
             accountBrokerEntity.setName(scanResult.getItems().get(i).get("name").getS());
             accountBrokerEntity.setSymbol(scanResult.getItems().get(i).get("symbol").getS());
-            getAccountTransactionList(accountBrokerEntity.getId());
             accountBrokerEntityList.add(accountBrokerEntity);
-        }
-    }
-
-    private void getAccountTransactionList(String id) {
-        ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", id);
-        for (int i = 0; i < scanResult.getItems().size(); i++) {
-            AccountTransactionEntity accountTransactionEntity = new AccountTransactionEntity();
-            accountTransactionEntity.setId(scanResult.getItems().get(i).get("id").getS());
-            accountTransactionEntity.setAccountId(scanResult.getItems().get(i).get("accountId").getS());
-            accountTransactionEntity.setTimestamp(scanResult.getItems().get(i).get("timestamp").getS());
-            accountTransactionEntity.setCurrentBalance(Double.parseDouble(scanResult.getItems().get(i).get("currentBalance").getN()));
-            accountTransactionEntity.setPaid(scanResult.getItems().get(i).get("paid").getBOOL());
-            accountTransactionList.add(accountTransactionEntity);
         }
     }
 
@@ -271,7 +257,6 @@ public class ChartDataGenerator {
                 if (entry.getKey().equals("Broker")) {
                     generateDataForBrokerAccount(accountEntity);
                 } else {
-                    generateDataForNonBrokerAccount(accountEntity);
                 }
             }
         }
@@ -280,7 +265,6 @@ public class ChartDataGenerator {
     private void generateDataForBrokerAccount(AccountEntity accountEntity) throws IOException, URISyntaxException, InterruptedException {
         List<AccountBrokerEntity> accountBrokerList = extractAccountBrokerList(accountEntity.getId());
         for (AccountBrokerEntity accountBrokerEntity : accountBrokerList) {
-            generateDataForOneAccountInBroker(accountBrokerEntity);
         }
         chartDataMap.put(accountEntity.getId(), generateDataForAllAccountInABroker(accountBrokerList));
     }
@@ -337,46 +321,6 @@ public class ChartDataGenerator {
             }
         }
         return endDate;
-    }
-
-    private void generateDataForOneAccountInBroker(AccountBrokerEntity accountBrokerEntity) throws IOException, URISyntaxException, InterruptedException {
-        List<AccountTransactionEntity> accountTransactionList = extractAccountTransactionlist(accountBrokerEntity.getId());
-        accountTransactionList.sort(Comparator.comparing(AccountTransactionEntity::getTimestamp));
-        List<ChartData> symbolData = generateData(accountBrokerEntity.getSymbol(), LocalDateTime.parse(accountTransactionList.get(0).getTimestamp(), dateTimeFormatter).toLocalDate(), LocalDateTime.parse(accountTransactionList.get(accountTransactionList.size() - 1).getTimestamp(), dateTimeFormatter).toLocalDate(), accountTransactionList.get(accountTransactionList.size() - 1).getCurrentBalance() == 0.0);
-        List<ChartData> chartDataList = generateChartDataForOneSymbol(symbolData, accountTransactionList);
-        chartDataMap.put(accountBrokerEntity.getId(), chartDataList);
-    }
-
-    private List<ChartData> generateChartDataForOneSymbol(List<ChartData> symbolList, List<AccountTransactionEntity> accountTransactionList) {
-        List<ChartData> chartDataList = new ArrayList<>();
-        symbolList = removeUnnecessaryData(symbolList, accountTransactionList.get(0));
-        for (ChartData symbol : symbolList) {
-            List<AccountTransactionEntity> accountTransactionEntityList = accountTransactionList.stream().filter(accountTransactionEntity -> symbol.getLocalDate().isEqual(LocalDateTime.parse(accountTransactionEntity.getTimestamp(), dateTimeFormatter).toLocalDate()) || symbol.getLocalDate().isAfter(LocalDateTime.parse(accountTransactionEntity.getTimestamp(), dateTimeFormatter).toLocalDate())).collect(Collectors.toList());
-            if (!accountTransactionEntityList.isEmpty()) {
-                ChartData chartData = new ChartData();
-                chartData.setLocalDate(symbol.getLocalDate());
-                AccountTransactionEntity lastTransaction = accountTransactionEntityList.get(accountTransactionEntityList.size() - 1);
-                if (lastTransaction.getCurrentBalance() == 0.0) {
-                    chartData.setValue(0.0);
-                    chartDataList.add(chartData);
-                    break;
-                } else {
-                    chartData.setValue(symbol.getValue() * lastTransaction.getCurrentBalance());
-                }
-                chartDataList.add(chartData);
-            }
-        }
-        return chartDataList;
-    }
-
-    private List<ChartData> removeUnnecessaryData(List<ChartData> symbolList, AccountTransactionEntity accountTransactionEntity) {
-        LocalDate firstTransactionDate = LocalDateTime.parse(accountTransactionEntity.getTimestamp(), dateTimeFormatter).toLocalDate();
-        List<ChartData> removedSymbolList1 = symbolList.stream().filter(data -> data.getLocalDate().isAfter(firstTransactionDate) || data.getLocalDate().isEqual(firstTransactionDate)).collect(Collectors.toList());
-        List<ChartData> removedSymbolList2 = symbolList.stream().filter(data -> data.getLocalDate().isBefore(firstTransactionDate)).collect(Collectors.toList());
-        if (!removedSymbolList2.isEmpty()) {
-            removedSymbolList1.add(0, removedSymbolList2.get(removedSymbolList2.size() - 1));
-        }
-        return removedSymbolList1;
     }
 
     private List<ChartData> generateData(String symbol, LocalDate firstTransactionDate, LocalDate lastTransactionDate, Boolean isAccountClosed) throws IOException, URISyntaxException, InterruptedException {
@@ -478,24 +422,7 @@ public class ChartDataGenerator {
         return instant.atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
-    private void generateDataForNonBrokerAccount(AccountEntity accountEntity) {
-        List<AccountTransactionEntity> accountTransactionList = extractAccountTransactionlist(accountEntity.getId());
-        accountTransactionList.sort(Comparator.comparing(AccountTransactionEntity::getTimestamp));
-        List<ChartData> chartDataList = new ArrayList<>();
-        for (AccountTransactionEntity accountTransactionEntity : accountTransactionList) {
-            ChartData chartData = new ChartData();
-            chartData.setLocalDate(LocalDateTime.parse(accountTransactionEntity.getTimestamp(), dateTimeFormatter).toLocalDate());
-            chartData.setValue(accountTransactionEntity.getCurrentBalance());
-            chartDataList.add(chartData);
-        }
-        chartDataMap.put(accountEntity.getId(), chartDataList);
-    }
-
     private List<AccountBrokerEntity> extractAccountBrokerList(String accountId) {
         return accountBrokerEntityList.stream().filter(accountBrokerEntity -> accountBrokerEntity.getAccountId().equals(accountId)).collect(Collectors.toList());
-    }
-
-    private List<AccountTransactionEntity> extractAccountTransactionlist(String accountId) {
-        return accountTransactionList.stream().filter(accountTransactionEntity -> accountTransactionEntity.getAccountId().equals(accountId)).collect(Collectors.toList());
     }
 }

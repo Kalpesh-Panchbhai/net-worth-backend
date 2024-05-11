@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 public class WatchService extends Service<WatchRest, WatchEntity> {
 
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
-    private final AccountTransactionService accountTransactionService = new AccountTransactionService();
 
     public WatchService() {
         super(new WatchRepository());

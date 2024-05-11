@@ -9,18 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AccountTransactionRest {
 
-    private String id;
-
     private String accountId;
 
-    private String timestamp;
-
     private Double amount;
-
-    private Boolean paid;
 
     private String operation;
 
     private Boolean isAccountTransaction;
-
 }

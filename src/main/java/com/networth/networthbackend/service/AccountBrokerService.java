@@ -9,7 +9,6 @@ import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountBrokerRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
 import com.networth.networthbackend.model.AccountBrokerRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.utility.Utility;
@@ -21,7 +20,6 @@ import java.util.Objects;
 
 public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrokerEntity> {
 
-    private final AccountTransactionService accountTransactionService = new AccountTransactionService();
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
 
@@ -52,16 +50,6 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
             balanceRest.setPreviousDayValue(accountBalanceEntity.getBalance().get("previousDayValue"));
         }
         return balanceRest;
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountBrokerEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", id);
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap.get("id").getS(), "", "", 0.0, false));
-        }
-        return super.delete(apiGatewayRequest, context, entityType);
     }
 
     @Override

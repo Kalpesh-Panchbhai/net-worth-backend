@@ -7,7 +7,10 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountRepository;
-import com.networth.networthbackend.entity.*;
+import com.networth.networthbackend.entity.AccountBalanceEntity;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.AccountRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
@@ -22,7 +25,6 @@ import java.util.stream.Collectors;
 public class AccountService extends Service<AccountRest, AccountEntity> {
 
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
-    private final AccountTransactionService accountTransactionService = new AccountTransactionService();
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final WatchService watchService = new WatchService();
 
@@ -94,16 +96,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getAccountType()) && accountEntity.getAccountType().equals("Broker")) {
             ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
             for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-                ScanResult scanResult1 = accountTransactionService.repository.getBySecondaryField("accountId", attributeValueMap.get("id").getS());
-                for (Map<String, AttributeValue> attributeValueMap1 : scanResult1.getItems()) {
-                    accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap1.get("id").getS(), "", "", 0.0, false));
-                }
                 accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", "", 0.0));
-            }
-        } else {
-            ScanResult scanResult = accountTransactionService.repository.getBySecondaryField("accountId", id);
-            for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-                accountTransactionService.repository.delete(new AccountTransactionEntity(attributeValueMap.get("id").getS(), "", "", 0.0, false));
             }
         }
         if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getUserId())) {

@@ -19,7 +19,7 @@ public class NetWorthApplication {
         AccountService accountService = new AccountService();
         APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent();
         request.setPathParameters(Map.of("id", "2eb7e548-6e43-40d5-84b0-cef71e300764"));
-        accountService.getBySecondaryField(request, getContext(), AccountRest.class);
+//        accountService.getBySecondaryField(request, getContext(), AccountRest.class);
     }
 
     public static Context getContext() {
