@@ -93,10 +93,12 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     public void deleteOneAccount(String id, Class<AccountEntity> entityType) {
         AccountEntity accountEntity = repository.getByPrimaryField(id, entityType);
+        accountBalanceRepository.delete(new AccountBalanceEntity(id, null));
         if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getAccountType()) && accountEntity.getAccountType().equals("Broker")) {
             ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
             for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
                 accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", "", 0.0));
+                accountBalanceRepository.delete(new AccountBalanceEntity(attributeValueMap.get("id").getS(), null));
             }
         }
         if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getUserId())) {

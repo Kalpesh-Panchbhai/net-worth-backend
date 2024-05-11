@@ -33,7 +33,6 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         ScanResult scanResult = repository.getBySecondaryField("accountId", id);
         List<AccountBrokerRest> accountBrokerRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            Double currentUnit = 0.0;
             AccountBrokerRest accountRestResponse = new AccountBrokerRest(attributeValueMap.get("id").getS(), attributeValueMap.get("accountId").getS(), attributeValueMap.get("symbol").getS(), attributeValueMap.get("name").getS(), Double.parseDouble(attributeValueMap.get("currentUnit").getN()), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
             accountBrokerRestList.add(accountRestResponse);
         }
