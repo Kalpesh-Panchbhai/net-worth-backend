@@ -21,4 +21,6 @@ public class AccountTransactionRest {
 
     private String operation;
 
+    private Boolean isAccountTransaction;
+
 }
