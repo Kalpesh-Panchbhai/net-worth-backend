@@ -102,8 +102,6 @@ public class AccountBalanceService {
     public void generateChartData() throws IOException, URISyntaxException, InterruptedException {
         extractDataFromDB();
         generateAccountChartData();
-        generateAccountTypeData();
-        generateWatchData();
         updateAccountBalance();
     }
 
@@ -113,31 +111,6 @@ public class AccountBalanceService {
             accountBalanceEntity.setId(entry.getKey());
             accountBalanceEntity.setBalance(entry.getValue());
             accountBalanceRepository.save(accountBalanceEntity);
-        }
-    }
-
-    private void generateWatchData() {
-        for (WatchEntity watchEntity : watchList) {
-            double currentDayValue = 0.0;
-            double previousDayValue = 0.0;
-            for (String accountId : watchEntity.getAccountList()) {
-                currentDayValue += accountBalanceMap.get(accountId).get("currentDayValue");
-                previousDayValue += accountBalanceMap.get(accountId).get("previousDayValue");
-            }
-            accountBalanceMap.put(watchEntity.getName(), Map.of("currentDayValue", currentDayValue, "previousDayValue", previousDayValue));
-        }
-    }
-
-    private void generateAccountTypeData() {
-        Map<String, List<AccountEntity>> accountTypeMap = accountEntityList.stream().filter(AccountEntity::getActive).collect(Collectors.groupingBy(AccountEntity::getAccountType));
-        for (Map.Entry<String, List<AccountEntity>> entry : accountTypeMap.entrySet()) {
-            double currentDayValue = 0.0;
-            double previousDayValue = 0.0;
-            for (AccountEntity accountEntity : entry.getValue()) {
-                currentDayValue += accountBalanceMap.get(accountEntity.getId()).get("currentDayValue");
-                previousDayValue += accountBalanceMap.get(accountEntity.getId()).get("previousDayValue");
-            }
-            accountBalanceMap.put(entry.getKey(), Map.of("currentDayValue", currentDayValue, "previousDayValue", previousDayValue));
         }
     }
 
