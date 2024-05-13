@@ -7,9 +7,14 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.*;
 import com.networth.networthbackend.service.*;
+import lombok.SneakyThrows;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
+    @SneakyThrows
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         if (apiGatewayRequest.getPath().startsWith("/user")) {
@@ -45,7 +50,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountService accountService = new AccountService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -61,7 +66,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -75,7 +80,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -85,7 +90,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeService incomeService = new IncomeService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -101,7 +106,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTypeService incomeTypeService = new IncomeTypeService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -115,7 +120,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTagService incomeTagService = new IncomeTagService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":
@@ -129,7 +134,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         WatchService watchService = new WatchService();
         switch (apiGatewayRequest.getHttpMethod()) {
             case "POST":

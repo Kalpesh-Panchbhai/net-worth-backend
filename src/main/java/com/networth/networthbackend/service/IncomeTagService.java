@@ -10,6 +10,8 @@ import com.networth.networthbackend.entity.IncomeTagEntity;
 import com.networth.networthbackend.model.TypeRest;
 import com.networth.networthbackend.utility.Utility;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,7 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException {
         TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         if (requestData.getIsDefault()) {
             makeOtherRecordNonDefault(requestData.getUserId());
@@ -49,7 +51,7 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) {
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException {
         TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         makeOtherRecordNonDefault(requestData.getUserId());
         return super.post(apiGatewayRequest, context, type);

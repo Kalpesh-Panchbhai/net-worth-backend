@@ -148,7 +148,7 @@ public class AccountBalanceService {
         accountBalanceMap.put(brokerId, accountBalance);
     }
 
-    private Map<String, Double> getAccountBalance(AccountBrokerEntity accountBrokerEntity, List<ChartData> chartDataList) {
+    public Map<String, Double> getAccountBalance(AccountBrokerEntity accountBrokerEntity, List<ChartData> chartDataList) {
         Map<String, Double> accountBalance = new HashMap<>();
         if (chartDataList.size() >= 2) {
             accountBalance.put("currentDayValue", chartDataList.get(chartDataList.size() - 1).getValue() * accountBrokerEntity.getCurrentUnit());
@@ -163,7 +163,7 @@ public class AccountBalanceService {
         return accountBalance;
     }
 
-    private List<ChartData> generateData(String symbol) throws IOException, URISyntaxException, InterruptedException {
+    public List<ChartData> generateData(String symbol) throws IOException, URISyntaxException, InterruptedException {
         String url = generateURL(symbol);
         String response = restAPIService.executeAPI(url);
 
@@ -218,7 +218,8 @@ public class AccountBalanceService {
                 chartData.setValue(dataList.get(i).getValue());
             } else {
                 List<ChartData> data1 = currencyDataList.stream().filter(data -> (data.getLocalDate().isBefore(chartData.getLocalDate()) || data.getLocalDate().isEqual(chartData.getLocalDate()))).collect(Collectors.toList());
-                chartData.setValue(dataList.get(i).getValue() * data1.get(data1.size() - 1).getValue());
+                if (!data1.isEmpty())
+                    chartData.setValue(dataList.get(i).getValue() * data1.get(data1.size() - 1).getValue());
             }
             result.add(chartData);
         }
