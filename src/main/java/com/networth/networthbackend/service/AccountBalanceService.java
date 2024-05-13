@@ -1,13 +1,11 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.yahooapimodel.ChartData;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
 import com.networth.networthbackend.utility.Utility;
@@ -37,13 +35,11 @@ public class AccountBalanceService {
     private final UserService userService = new UserService();
     private final AccountService accountService = new AccountService();
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
-    private final WatchService watchService = new WatchService();
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final List<AccountEntity> accountEntityList = new ArrayList<>();
     private final List<AccountBrokerEntity> accountBrokerEntityList = new ArrayList<>();
-    private final List<WatchEntity> watchList = new ArrayList<>();
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
-    Map<String, Map<String, Double>> accountBalanceMap = new HashMap<>();
+    private final Map<String, Map<String, Double>> accountBalanceMap = new HashMap<>();
     private String userId;
 
     private Context context;
@@ -51,7 +47,6 @@ public class AccountBalanceService {
     private void extractDataFromDB() {
         getUserId();
         getAccountList();
-        getWatchList();
     }
 
     private void getUserId() {
@@ -83,19 +78,6 @@ public class AccountBalanceService {
             accountBrokerEntity.setSymbol(scanResult.getItems().get(i).get("symbol").getS());
             accountBrokerEntity.setCurrentUnit(Double.parseDouble(scanResult.getItems().get(i).get("currentUnit").getN()));
             accountBrokerEntityList.add(accountBrokerEntity);
-        }
-    }
-
-    private void getWatchList() {
-        ScanResult scanResult = watchService.repository.getBySecondaryField("userId", userId);
-        for (int i = 0; i < scanResult.getItems().size(); i++) {
-            WatchEntity watchEntity = new WatchEntity();
-            watchEntity.setId(scanResult.getItems().get(i).get("id").getS());
-            watchEntity.setUserId(scanResult.getItems().get(i).get("userId").getS());
-            watchEntity.setName(scanResult.getItems().get(i).get("name").getS());
-            List<String> accountList = scanResult.getItems().get(i).get("accountList").getL().stream().map(AttributeValue::getS).collect(Collectors.toList());
-            watchEntity.setAccountList(accountList);
-            watchList.add(watchEntity);
         }
     }
 
