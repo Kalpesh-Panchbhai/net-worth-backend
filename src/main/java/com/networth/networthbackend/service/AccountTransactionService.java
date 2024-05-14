@@ -89,7 +89,6 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
         accountBalanceEntity.setId(accountBrokerEntity.getAccountId());
         accountBalanceEntity.setBalance(accountBrokerBalanceList);
         accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
-        System.out.println();
     }
 
     @Override

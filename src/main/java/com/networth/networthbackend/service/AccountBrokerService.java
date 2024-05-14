@@ -13,10 +13,7 @@ import com.networth.networthbackend.model.AccountBrokerRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.utility.Utility;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrokerEntity> {
 
@@ -39,6 +36,32 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         String jsonBody = utilityRest.convertListOfObjToString(accountBrokerRestList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountBrokerEntity> entityType) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        AccountBrokerEntity accountBrokerEntity = repository.getByPrimaryField(id, AccountBrokerEntity.class);
+        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.delete(apiGatewayRequest, context, entityType);
+        deleteAccountBalance(id, accountBrokerEntity, AccountBalanceEntity.class);
+        return apiGatewayProxyResponseEvent;
+    }
+
+    public void deleteAccountBalance(String id, AccountBrokerEntity accountBrokerEntity, Class<AccountBalanceEntity> entityType) {
+        AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(id, entityType);
+        accountBalanceRepository.delete(accountBalanceEntity);
+        ScanResult scanResult = repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
+        Map<String, Double> accountBalance = new HashMap<>();
+        accountBalance.put("currentDayValue", 0.0);
+        accountBalance.put("previousDayValue", 0.0);
+        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
+            AccountBalanceEntity accountBalanceEntity1 = accountBalanceRepository.getByPrimaryField(attributeValueMap.get("id").getS(), AccountBalanceEntity.class);
+            if (Objects.nonNull(accountBalanceEntity1)) {
+                accountBalance.put("currentDayValue", accountBalance.getOrDefault("currentDayValue", 0.0) + accountBalanceEntity1.getBalance().get("currentDayValue"));
+                accountBalance.put("previousDayValue", accountBalance.getOrDefault("previousDayValue", 0.0) + accountBalanceEntity1.getBalance().get("previousDayValue"));
+            }
+        }
+        accountBalanceRepository.save(new AccountBalanceEntity(accountBrokerEntity.getAccountId(), accountBalance));
     }
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
