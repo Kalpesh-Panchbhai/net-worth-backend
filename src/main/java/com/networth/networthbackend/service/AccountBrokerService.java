@@ -30,7 +30,13 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         ScanResult scanResult = repository.getBySecondaryField("accountId", id);
         List<AccountBrokerRest> accountBrokerRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountBrokerRest accountRestResponse = new AccountBrokerRest(attributeValueMap.get("id").getS(), attributeValueMap.get("accountId").getS(), attributeValueMap.get("symbol").getS(), attributeValueMap.get("name").getS(), Double.parseDouble(attributeValueMap.get("currentUnit").getN()), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
+            AccountBrokerRest accountRestResponse = new AccountBrokerRest(
+                    attributeValueMap.get("id").getS(),
+                    attributeValueMap.get("accountId").getS(),
+                    attributeValueMap.get("symbol").getS(),
+                    attributeValueMap.get("name").getS(),
+                    Double.parseDouble(attributeValueMap.get("currentUnit").getN()),
+                    getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
             accountBrokerRestList.add(accountRestResponse);
         }
         String jsonBody = utilityRest.convertListOfObjToString(accountBrokerRestList, context);
@@ -49,7 +55,9 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
 
     public void deleteAccountBalance(String id, AccountBrokerEntity accountBrokerEntity, Class<AccountBalanceEntity> entityType) {
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(id, entityType);
-        accountBalanceRepository.delete(accountBalanceEntity);
+        if (Objects.nonNull(accountBalanceEntity)) {
+            accountBalanceRepository.delete(accountBalanceEntity);
+        }
         ScanResult scanResult = repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
         Map<String, Double> accountBalance = new HashMap<>();
         accountBalance.put("currentDayValue", 0.0);

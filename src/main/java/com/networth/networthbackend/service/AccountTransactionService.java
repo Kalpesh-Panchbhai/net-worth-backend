@@ -82,8 +82,10 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
         Map<String, Double> accountBrokerBalanceList = new HashMap<>();
         for (String accountId : accountIdList) {
             AccountBalanceEntity accountBalanceEntity1 = accountBalanceService.getAccountBalanceRepository().getByPrimaryField(accountId, AccountBalanceEntity.class);
-            accountBrokerBalanceList.put("currentDayValue", accountBrokerBalanceList.getOrDefault("currentDayValue", 0.0) + accountBalanceEntity1.getBalance().get("currentDayValue"));
-            accountBrokerBalanceList.put("previousDayValue", accountBrokerBalanceList.getOrDefault("previousDayValue", 0.0) + accountBalanceEntity1.getBalance().get("previousDayValue"));
+            if (Objects.nonNull(accountBalanceEntity1)) {
+                accountBrokerBalanceList.put("currentDayValue", accountBrokerBalanceList.getOrDefault("currentDayValue", 0.0) + accountBalanceEntity1.getBalance().get("currentDayValue"));
+                accountBrokerBalanceList.put("previousDayValue", accountBrokerBalanceList.getOrDefault("previousDayValue", 0.0) + accountBalanceEntity1.getBalance().get("previousDayValue"));
+            }
         }
         accountBalanceEntity = new AccountBalanceEntity();
         accountBalanceEntity.setId(accountBrokerEntity.getAccountId());
