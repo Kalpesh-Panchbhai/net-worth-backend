@@ -18,7 +18,6 @@ import java.util.*;
 public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrokerEntity> {
 
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
-    private final BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
 
     public AccountBrokerService() {
         super(new AccountBrokerRepository());
