@@ -6,6 +6,8 @@ import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.model.BalanceDetailRest;
+import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.yahooapimodel.ChartData;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
 import com.networth.networthbackend.utility.Utility;
@@ -39,7 +41,7 @@ public class AccountBalanceService {
     private final List<AccountEntity> accountEntityList = new ArrayList<>();
     private final List<AccountBrokerEntity> accountBrokerEntityList = new ArrayList<>();
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
-    private final Map<String, Map<String, Double>> accountBalanceMap = new HashMap<>();
+    private final Map<String, BalanceRest> accountBalanceMap = new HashMap<>();
     private String userId;
 
     private Context context;
@@ -88,7 +90,7 @@ public class AccountBalanceService {
     }
 
     private void updateAccountBalance() {
-        for (Map.Entry<String, Map<String, Double>> entry : accountBalanceMap.entrySet()) {
+        for (Map.Entry<String, BalanceRest> entry : accountBalanceMap.entrySet()) {
             AccountBalanceEntity accountBalanceEntity = new AccountBalanceEntity();
             accountBalanceEntity.setId(entry.getKey());
             accountBalanceEntity.setBalance(entry.getValue());
@@ -103,46 +105,48 @@ public class AccountBalanceService {
                 for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
                     if (accountBrokerEntity.getCurrentUnit() != 0.0) {
                         List<ChartData> chartDataList = generateData(accountBrokerEntity.getSymbol());
-                        Map<String, Double> accountBalance = getAccountBalance(accountBrokerEntity, chartDataList);
+                        BalanceRest accountBalance = getAccountBalance(accountBrokerEntity, chartDataList);
                         accountBalanceMap.put(accountBrokerEntity.getId(), accountBalance);
                     } else {
-                        accountBalanceMap.put(accountBrokerEntity.getId(), Map.of("currentDayValue", 0.0, "previousDayValue", 0.0));
+                        accountBalanceMap.put(accountBrokerEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
                     }
                 }
                 generateAccountBalanceForOneBroker(accountEntity.getId(), accountBrokerEntityList);
             } else {
                 AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountEntity.getId(), AccountBalanceEntity.class);
                 if (accountBalanceEntity != null) {
-                    accountBalanceMap.put(accountEntity.getId(), Map.of("currentDayValue", accountBalanceEntity.getBalance().get("currentDayValue"), "previousDayValue", accountBalanceEntity.getBalance().get("previousDayValue")));
+                    accountBalanceMap.put(accountEntity.getId(), accountBalanceEntity.getBalance());
                 } else {
-                    accountBalanceMap.put(accountEntity.getId(), Map.of("currentDayValue", 0.0, "previousDayValue", 0.0));
+                    accountBalanceMap.put(accountEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
                 }
             }
         }
     }
 
     private void generateAccountBalanceForOneBroker(String brokerId, List<AccountBrokerEntity> accountBrokerEntityList) {
-        Map<String, Double> accountBalance = new HashMap<>();
+        BalanceRest balance = new BalanceRest(new BalanceDetailRest(), new BalanceDetailRest());
         for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
-            accountBalance.put("currentDayValue", accountBalanceMap.get(accountBrokerEntity.getId()).get("currentDayValue") + (accountBalance.getOrDefault("currentDayValue", 0.0)));
-            accountBalance.put("previousDayValue", accountBalanceMap.get(accountBrokerEntity.getId()).get("previousDayValue") + accountBalance.getOrDefault("previousDayValue", 0.0));
+            balance.getCurrentDayValue().setDateTime(Utility.convertLocalToUTC());
+            balance.getCurrentDayValue().setValue(accountBalanceMap.get(accountBrokerEntity.getId()).getCurrentDayValue().getValue() + balance.getCurrentDayValue().getValue());
+            balance.getPreviousDayValue().setDateTime(Utility.convertLocalToUTC());
+            balance.getPreviousDayValue().setValue(accountBalanceMap.get(accountBrokerEntity.getId()).getPreviousDayValue().getValue() + balance.getPreviousDayValue().getValue());
         }
-        accountBalanceMap.put(brokerId, accountBalance);
+        accountBalanceMap.put(brokerId, balance);
     }
 
-    public Map<String, Double> getAccountBalance(AccountBrokerEntity accountBrokerEntity, List<ChartData> chartDataList) {
-        Map<String, Double> accountBalance = new HashMap<>();
+    public BalanceRest getAccountBalance(AccountBrokerEntity accountBrokerEntity, List<ChartData> chartDataList) {
+        BalanceRest balance = new BalanceRest();
         if (chartDataList.size() >= 2) {
-            accountBalance.put("currentDayValue", chartDataList.get(chartDataList.size() - 1).getValue() * accountBrokerEntity.getCurrentUnit());
-            accountBalance.put("previousDayValue", chartDataList.get(chartDataList.size() - 2).getValue() * accountBrokerEntity.getCurrentUnit());
+            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 1).getValue() * accountBrokerEntity.getCurrentUnit()));
+            balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 2).getValue() * accountBrokerEntity.getCurrentUnit()));
         } else if (chartDataList.size() == 1) {
-            accountBalance.put("currentDayValue", chartDataList.get(0).getValue() * accountBrokerEntity.getCurrentUnit());
-            accountBalance.put("previousDayValue", 0.0);
+            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(0).getValue() * accountBrokerEntity.getCurrentUnit()));
+            balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         } else {
-            accountBalance.put("currentDayValue", 0.0);
-            accountBalance.put("previousDayValue", 0.0);
+            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
+            balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         }
-        return accountBalance;
+        return balance;
     }
 
     public List<ChartData> generateData(String symbol) throws IOException, URISyntaxException, InterruptedException {

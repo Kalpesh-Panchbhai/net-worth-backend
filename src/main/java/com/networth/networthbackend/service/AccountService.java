@@ -12,6 +12,7 @@ import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.AccountRest;
+import com.networth.networthbackend.model.BalanceDetailRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
@@ -75,11 +76,13 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
     }
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
-        BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
+        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(), new BalanceDetailRest());
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);
         if (Objects.nonNull(accountBalanceEntity)) {
-            balanceRest.setCurrentDayValue(accountBalanceEntity.getBalance().get("currentDayValue"));
-            balanceRest.setPreviousDayValue(accountBalanceEntity.getBalance().get("previousDayValue"));
+            balanceRest.getCurrentDayValue().setDateTime(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime());
+            balanceRest.getCurrentDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
+            balanceRest.getPreviousDayValue().setDateTime(accountBalanceEntity.getBalance().getPreviousDayValue().getDateTime());
+            balanceRest.getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getPreviousDayValue().getValue());
         }
         return balanceRest;
     }

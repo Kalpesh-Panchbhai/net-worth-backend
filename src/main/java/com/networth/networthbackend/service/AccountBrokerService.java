@@ -10,10 +10,14 @@ import com.networth.networthbackend.Repository.AccountBrokerRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.model.AccountBrokerRest;
+import com.networth.networthbackend.model.BalanceDetailRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.utility.Utility;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrokerEntity> {
 
@@ -29,13 +33,7 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         ScanResult scanResult = repository.getBySecondaryField("accountId", id);
         List<AccountBrokerRest> accountBrokerRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountBrokerRest accountRestResponse = new AccountBrokerRest(
-                    attributeValueMap.get("id").getS(),
-                    attributeValueMap.get("accountId").getS(),
-                    attributeValueMap.get("symbol").getS(),
-                    attributeValueMap.get("name").getS(),
-                    Double.parseDouble(attributeValueMap.get("currentUnit").getN()),
-                    getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
+            AccountBrokerRest accountRestResponse = new AccountBrokerRest(attributeValueMap.get("id").getS(), attributeValueMap.get("accountId").getS(), attributeValueMap.get("symbol").getS(), attributeValueMap.get("name").getS(), Double.parseDouble(attributeValueMap.get("currentUnit").getN()), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
             accountBrokerRestList.add(accountRestResponse);
         }
         String jsonBody = utilityRest.convertListOfObjToString(accountBrokerRestList, context);
@@ -58,25 +56,23 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
             accountBalanceRepository.delete(accountBalanceEntity);
         }
         ScanResult scanResult = repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
-        Map<String, Double> accountBalance = new HashMap<>();
-        accountBalance.put("currentDayValue", 0.0);
-        accountBalance.put("previousDayValue", 0.0);
+        BalanceRest balance = new BalanceRest();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             AccountBalanceEntity accountBalanceEntity1 = accountBalanceRepository.getByPrimaryField(attributeValueMap.get("id").getS(), AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity1)) {
-                accountBalance.put("currentDayValue", accountBalance.getOrDefault("currentDayValue", 0.0) + accountBalanceEntity1.getBalance().get("currentDayValue"));
-                accountBalance.put("previousDayValue", accountBalance.getOrDefault("previousDayValue", 0.0) + accountBalanceEntity1.getBalance().get("previousDayValue"));
+                balance.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getCurrentDayValue().getDateTime(), balance.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
+                balance.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getPreviousDayValue().getDateTime(), balance.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
             }
         }
-        accountBalanceRepository.save(new AccountBalanceEntity(accountBrokerEntity.getAccountId(), accountBalance));
+        accountBalanceRepository.save(new AccountBalanceEntity(accountBrokerEntity.getAccountId(), balance));
     }
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
-        BalanceRest balanceRest = new BalanceRest(0.0, 0.0);
+        BalanceRest balanceRest = new BalanceRest();
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);
         if (Objects.nonNull(accountBalanceEntity)) {
-            balanceRest.setCurrentDayValue(accountBalanceEntity.getBalance().get("currentDayValue"));
-            balanceRest.setPreviousDayValue(accountBalanceEntity.getBalance().get("previousDayValue"));
+            balanceRest.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime(), accountBalanceEntity.getBalance().getCurrentDayValue().getValue()));
+            balanceRest.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity.getBalance().getPreviousDayValue().getDateTime(), accountBalanceEntity.getBalance().getPreviousDayValue().getValue()));
         }
         return balanceRest;
     }

@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networth.networthbackend.model.RestResponse;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +26,11 @@ public class Utility<T> {
         RestResponse restResponse = new RestResponse();
         restResponse.setResult(result);
         return restResponse;
+    }
+
+    public static String convertLocalToUTC() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return formatter.format(LocalDateTime.now(ZoneId.of("UTC"))) + " +0000";
     }
 
     public String convertObjToString(T data, Context context) {

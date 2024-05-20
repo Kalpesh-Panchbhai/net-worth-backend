@@ -10,13 +10,18 @@ import com.networth.networthbackend.Repository.Repository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.model.AccountTransactionRest;
+import com.networth.networthbackend.model.BalanceDetailRest;
+import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.model.yahooapimodel.ChartData;
 import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class AccountTransactionService extends Service<AccountTransactionRest, Void> {
 
@@ -43,16 +48,16 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
             AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(requestData.getAccountId(), AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity)) {
                 if (requestData.getOperation().equals("UPDATE")) {
-                    accountBalanceEntity.getBalance().put("previousDayValue", accountBalanceEntity.getBalance().get("currentDayValue"));
-                    accountBalanceEntity.getBalance().put("currentDayValue", requestData.getAmount());
+                    accountBalanceEntity.getBalance().getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
+                    accountBalanceEntity.getBalance().getCurrentDayValue().setValue(requestData.getAmount());
                 } else {
-                    accountBalanceEntity.getBalance().put("previousDayValue", accountBalanceEntity.getBalance().get("currentDayValue"));
-                    accountBalanceEntity.getBalance().put("currentDayValue", accountBalanceEntity.getBalance().get("currentDayValue") + requestData.getAmount());
+                    accountBalanceEntity.getBalance().getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
+                    accountBalanceEntity.getBalance().getCurrentDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue() + requestData.getAmount());
                 }
             } else {
                 accountBalanceEntity = new AccountBalanceEntity();
                 accountBalanceEntity.setId(requestData.getAccountId());
-                accountBalanceEntity.setBalance(Map.of("currentDayValue", requestData.getAmount(), "previousDayValue", 0.0));
+                accountBalanceEntity.setBalance(new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), requestData.getAmount()), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
             }
             accountBalanceRepository.save(accountBalanceEntity);
         } else {
@@ -69,9 +74,9 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
 
     private void updateAccountBrokerBalance(AccountBrokerEntity accountBrokerEntity) throws IOException, URISyntaxException, InterruptedException {
         List<ChartData> chartDataList = accountBalanceService.generateData(accountBrokerEntity.getSymbol());
-        Map<String, Double> accountBalance = accountBalanceService.getAccountBalance(accountBrokerEntity, chartDataList);
+        BalanceRest balance = accountBalanceService.getAccountBalance(accountBrokerEntity, chartDataList);
         AccountBalanceEntity accountBalanceEntity = new AccountBalanceEntity();
-        accountBalanceEntity.setBalance(accountBalance);
+        accountBalanceEntity.setBalance(balance);
         accountBalanceEntity.setId(accountBrokerEntity.getId());
         accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
         ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
@@ -79,17 +84,17 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
         for (Map<String, AttributeValue> data : scanResult.getItems()) {
             accountIdList.add(data.get("id").getS());
         }
-        Map<String, Double> accountBrokerBalanceList = new HashMap<>();
+        BalanceRest balanceRest = new BalanceRest();
         for (String accountId : accountIdList) {
             AccountBalanceEntity accountBalanceEntity1 = accountBalanceService.getAccountBalanceRepository().getByPrimaryField(accountId, AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity1)) {
-                accountBrokerBalanceList.put("currentDayValue", accountBrokerBalanceList.getOrDefault("currentDayValue", 0.0) + accountBalanceEntity1.getBalance().get("currentDayValue"));
-                accountBrokerBalanceList.put("previousDayValue", accountBrokerBalanceList.getOrDefault("previousDayValue", 0.0) + accountBalanceEntity1.getBalance().get("previousDayValue"));
+                balanceRest.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getCurrentDayValue().getDateTime(), balanceRest.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
+                balanceRest.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getPreviousDayValue().getDateTime(), balanceRest.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
             }
         }
         accountBalanceEntity = new AccountBalanceEntity();
         accountBalanceEntity.setId(accountBrokerEntity.getAccountId());
-        accountBalanceEntity.setBalance(accountBrokerBalanceList);
+        accountBalanceEntity.setBalance(balanceRest);
         accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
     }
 
