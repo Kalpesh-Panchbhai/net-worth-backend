@@ -124,7 +124,7 @@ public class AccountBalanceService {
     }
 
     private void generateAccountBalanceForOneBroker(String brokerId, List<AccountBrokerEntity> accountBrokerEntityList) {
-        BalanceRest balance = new BalanceRest(new BalanceDetailRest(), new BalanceDetailRest());
+        BalanceRest balance = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
             balance.getCurrentDayValue().setDateTime(Utility.convertLocalToUTC());
             balance.getCurrentDayValue().setValue(accountBalanceMap.get(accountBrokerEntity.getId()).getCurrentDayValue().getValue() + balance.getCurrentDayValue().getValue());

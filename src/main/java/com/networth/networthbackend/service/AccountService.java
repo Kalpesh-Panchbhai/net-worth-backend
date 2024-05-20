@@ -76,7 +76,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
     }
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
-        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(), new BalanceDetailRest());
+        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);
         if (Objects.nonNull(accountBalanceEntity)) {
             balanceRest.getCurrentDayValue().setDateTime(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime());

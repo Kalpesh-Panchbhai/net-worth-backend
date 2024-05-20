@@ -56,7 +56,7 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
             accountBalanceRepository.delete(accountBalanceEntity);
         }
         ScanResult scanResult = repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
-        BalanceRest balance = new BalanceRest();
+        BalanceRest balance = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
             AccountBalanceEntity accountBalanceEntity1 = accountBalanceRepository.getByPrimaryField(attributeValueMap.get("id").getS(), AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity1)) {
@@ -73,6 +73,9 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         if (Objects.nonNull(accountBalanceEntity)) {
             balanceRest.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime(), accountBalanceEntity.getBalance().getCurrentDayValue().getValue()));
             balanceRest.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity.getBalance().getPreviousDayValue().getDateTime(), accountBalanceEntity.getBalance().getPreviousDayValue().getValue()));
+        } else {
+            balanceRest.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
+            balanceRest.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         }
         return balanceRest;
     }

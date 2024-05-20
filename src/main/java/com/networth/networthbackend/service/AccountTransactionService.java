@@ -48,10 +48,14 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
             AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(requestData.getAccountId(), AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity)) {
                 if (requestData.getOperation().equals("UPDATE")) {
+                    accountBalanceEntity.getBalance().getPreviousDayValue().setDateTime(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime());
                     accountBalanceEntity.getBalance().getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
+                    accountBalanceEntity.getBalance().getCurrentDayValue().setDateTime(Utility.convertLocalToUTC());
                     accountBalanceEntity.getBalance().getCurrentDayValue().setValue(requestData.getAmount());
                 } else {
+                    accountBalanceEntity.getBalance().getPreviousDayValue().setDateTime(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime());
                     accountBalanceEntity.getBalance().getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
+                    accountBalanceEntity.getBalance().getCurrentDayValue().setDateTime(Utility.convertLocalToUTC());
                     accountBalanceEntity.getBalance().getCurrentDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue() + requestData.getAmount());
                 }
             } else {
@@ -84,12 +88,12 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
         for (Map<String, AttributeValue> data : scanResult.getItems()) {
             accountIdList.add(data.get("id").getS());
         }
-        BalanceRest balanceRest = new BalanceRest();
+        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         for (String accountId : accountIdList) {
             AccountBalanceEntity accountBalanceEntity1 = accountBalanceService.getAccountBalanceRepository().getByPrimaryField(accountId, AccountBalanceEntity.class);
             if (Objects.nonNull(accountBalanceEntity1)) {
-                balanceRest.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getCurrentDayValue().getDateTime(), balanceRest.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
-                balanceRest.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getPreviousDayValue().getDateTime(), balanceRest.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
+                balanceRest.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
+                balanceRest.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
             }
         }
         accountBalanceEntity = new AccountBalanceEntity();
