@@ -41,23 +41,6 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
-    public void deleteAccountBalance(String id, AccountBrokerEntity accountBrokerEntity, Class<AccountBalanceEntity> entityType) {
-        AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(id, entityType);
-        if (Objects.nonNull(accountBalanceEntity)) {
-            accountBalanceRepository.delete(accountBalanceEntity);
-        }
-        ScanResult scanResult = repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
-        BalanceRest balance = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountBalanceEntity accountBalanceEntity1 = accountBalanceRepository.getByPrimaryField(attributeValueMap.get("id").getS(), AccountBalanceEntity.class);
-            if (Objects.nonNull(accountBalanceEntity1)) {
-                balance.setCurrentDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getCurrentDayValue().getDateTime(), balance.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
-                balance.setPreviousDayValue(new BalanceDetailRest(accountBalanceEntity1.getBalance().getPreviousDayValue().getDateTime(), balance.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
-            }
-        }
-        accountBalanceRepository.save(new AccountBalanceEntity(accountBrokerEntity.getAccountId(), balance));
-    }
-
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
         BalanceRest balanceRest = new BalanceRest();
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);

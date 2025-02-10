@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
-import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.AccountRest;
@@ -85,27 +84,6 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
             balanceRest.getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getPreviousDayValue().getValue());
         }
         return balanceRest;
-    }
-
-    public void deleteOneAccount(String id, Class<AccountEntity> entityType) {
-        AccountEntity accountEntity = repository.getByPrimaryField(id, entityType);
-        accountBalanceRepository.delete(new AccountBalanceEntity(id, null));
-        if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getAccountType()) && accountEntity.getAccountType().equals("Broker")) {
-            ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
-            for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-                accountBrokerService.repository.delete(new AccountBrokerEntity(attributeValueMap.get("id").getS(), "", "", "", 0.0));
-                accountBalanceRepository.delete(new AccountBalanceEntity(attributeValueMap.get("id").getS(), null));
-            }
-        }
-        if (Objects.nonNull(accountEntity) && Objects.nonNull(accountEntity.getUserId())) {
-            watchService.repository.getBySecondaryField("userId", accountEntity.getUserId()).getItems().forEach((data) -> {
-                WatchEntity watchEntity = watchService.repository.getByPrimaryField(data.get("id").getS(), WatchEntity.class);
-                if (watchEntity.getAccountList().contains(accountEntity.getId())) {
-                    watchEntity.getAccountList().remove(accountEntity.getId());
-                    watchService.repository.update(watchEntity);
-                }
-            });
-        }
     }
 
     @Override

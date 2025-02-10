@@ -13,7 +13,7 @@ public interface RepositoryImpl<T> {
 
     void update(T data);
 
-    void delete(T data);
+    void delete(String id);
 
     T getByPrimaryField(String id, Class<T> type);
 

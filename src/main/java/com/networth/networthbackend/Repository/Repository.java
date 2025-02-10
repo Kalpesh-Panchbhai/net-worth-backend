@@ -47,8 +47,17 @@ public class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public void delete(T data) {
-        dynamoDBMapper.delete(data);
+    public void delete(String id) {
+        try {
+            String query = "delete from " + tableName + " where id = ?";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setString(1, id);
+            pstmt.execute();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            databaseService.disconnect();
+        }
     }
 
     @Override
