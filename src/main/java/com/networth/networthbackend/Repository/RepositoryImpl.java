@@ -1,15 +1,11 @@
 package com.networth.networthbackend.Repository;
 
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
-
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
 public interface RepositoryImpl<T> {
-
-    void save(T data);
 
     void delete(String id);
 

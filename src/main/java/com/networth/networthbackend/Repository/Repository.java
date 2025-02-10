@@ -31,11 +31,6 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public void save(T data) {
-        dynamoDBMapper.save(data);
-    }
-
-    @Override
     public void delete(String id) {
         try {
             String query = "delete from " + tableName + " where id = ?";

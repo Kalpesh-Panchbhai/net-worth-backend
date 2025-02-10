@@ -1,6 +1,5 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
@@ -92,7 +91,7 @@ public class AccountBalanceService {
             AccountBalanceEntity accountBalanceEntity = new AccountBalanceEntity();
             accountBalanceEntity.setId(entry.getKey());
             accountBalanceEntity.setBalance(entry.getValue());
-            accountBalanceRepository.save(accountBalanceEntity);
+//            accountBalanceRepository.save(accountBalanceEntity);
         }
     }
 
