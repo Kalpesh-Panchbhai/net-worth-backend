@@ -28,13 +28,6 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException {
-        TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        makeOtherRecordNonDefault(requestData.getUserId());
-        return super.post(apiGatewayRequest, context, type);
-    }
-
-    @Override
     public IncomeTagEntity convertRequestToEntity(TypeRest data) {
         return new IncomeTagEntity(data.getId(), data.getUserId(), data.getName(), data.getIsDefault());
     }

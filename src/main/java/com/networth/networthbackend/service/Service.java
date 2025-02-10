@@ -35,17 +35,6 @@ public abstract class Service<T, V> implements ServiceImpl<T, V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException {
-        T requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        V savedData = convertRequestToEntity(requestData);
-        repository.save(savedData);
-        RestResponse restResponse = Utility.generateRestResponse("success");
-        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-        context.getLogger().log("data updated successfully to dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
-    }
-
-    @Override
     public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         String id = apiGatewayRequest.getPathParameters().get("id");
         repository.delete(id);

@@ -59,8 +59,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return accountService.getBySecondaryField(apiGatewayRequest, context, AccountEntity.class);
             case "DELETE":
                 return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
-            case "PATCH":
-                return accountService.patch(apiGatewayRequest, context, AccountRest.class);
+//            case "PATCH":
+//                return accountService.patch(apiGatewayRequest, context, AccountRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -97,8 +97,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeService.post(apiGatewayRequest, context, IncomeRest.class);
             case "GET":
                 return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeEntity.class);
-            case "PATCH":
-                return incomeService.patch(apiGatewayRequest, context, IncomeRest.class);
+//            case "PATCH":
+//                return incomeService.patch(apiGatewayRequest, context, IncomeRest.class);
             case "DELETE":
                 return incomeService.delete(apiGatewayRequest, context, IncomeEntity.class);
             default:
@@ -113,8 +113,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeTypeService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
                 return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, IncomeTypeEntity.class);
-            case "PATCH":
-                return incomeTypeService.patch(apiGatewayRequest, context, TypeRest.class);
+//            case "PATCH":
+//                return incomeTypeService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -127,8 +127,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return incomeTagService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
                 return incomeTagService.getBySecondaryField(apiGatewayRequest, context, IncomeTagEntity.class);
-            case "PATCH":
-                return incomeTagService.patch(apiGatewayRequest, context, TypeRest.class);
+//            case "PATCH":
+//                return incomeTagService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -141,8 +141,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                 return watchService.post(apiGatewayRequest, context, WatchRest.class);
             case "GET":
                 return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
-            case "PATCH":
-                return watchService.patch(apiGatewayRequest, context, WatchRest.class);
+//            case "PATCH":
+//                return watchService.patch(apiGatewayRequest, context, WatchRest.class);
             case "DELETE":
                 return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
             default:
