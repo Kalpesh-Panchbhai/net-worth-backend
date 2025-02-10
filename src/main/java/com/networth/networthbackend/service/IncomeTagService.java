@@ -15,6 +15,7 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
 
     public IncomeTagService() {
         super(new IncomeTagRepository());
+        secondaryFieldName = "user_id";
     }
 
     @Override

@@ -8,6 +8,7 @@ public class IncomeService extends Service<IncomeRest, IncomeEntity> {
 
     public IncomeService() {
         super(new IncomeRepository());
+        secondaryFieldName = "user_id";
     }
 
     @Override

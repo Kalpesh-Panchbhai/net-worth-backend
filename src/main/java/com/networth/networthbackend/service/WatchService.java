@@ -10,6 +10,7 @@ public class WatchService extends Service<WatchRest, WatchEntity> {
 
     public WatchService() {
         super(new WatchRepository());
+        secondaryFieldName = "user_id";
     }
 
     @Override
