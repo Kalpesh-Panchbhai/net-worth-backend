@@ -15,8 +15,6 @@ public interface RepositoryImpl<T> {
 
     void delete(String id);
 
-    T getByPrimaryField(String id, Class<T> type);
-
     Optional<T> getByPrimaryField(String id) throws SQLException;
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;

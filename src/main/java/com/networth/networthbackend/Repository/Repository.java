@@ -55,11 +55,6 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public T getByPrimaryField(String id, Class<T> type) {
-        return dynamoDBMapper.load(type, id);
-    }
-
-    @Override
     public Optional<T> getByPrimaryField(String id) {
         try {
             String query = "select * from " + tableName + " where id = ?";
