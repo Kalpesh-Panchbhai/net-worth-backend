@@ -15,12 +15,8 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class UserService extends Service<UserRest, UserEntity> {
-
-    private final AccountService accountService = new AccountService();
+    
     private final WatchService watchService = new WatchService();
-    private final IncomeService incomeService = new IncomeService();
-    private final IncomeTagService incomeTagService = new IncomeTagService();
-    private final IncomeTypeService incomeTypeService = new IncomeTypeService();
     private Boolean isUserAvailable = false;
 
     public UserService() {
