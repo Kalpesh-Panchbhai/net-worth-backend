@@ -2,6 +2,7 @@ package com.networth.networthbackend.Repository;
 
 import com.networth.networthbackend.entity.ChartDataEntity;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -10,6 +11,11 @@ public class ChartDataRepository extends Repository<ChartDataEntity> {
 
     public ChartDataRepository() {
         tableName = "chart";
+    }
+
+    @Override
+    public PreparedStatement generateInsertQuery(ChartDataEntity data) throws SQLException {
+        return null;
     }
 
     @Override
