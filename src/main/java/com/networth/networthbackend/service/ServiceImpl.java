@@ -9,6 +9,4 @@ public interface ServiceImpl<T, V> {
     APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType);
 
     APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> type);
-
-    V convertRequestToEntity(T data);
 }

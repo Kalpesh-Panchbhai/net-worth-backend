@@ -10,9 +10,4 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
         super(new IncomeTagRepository());
         secondaryFieldName = "user_id";
     }
-
-    @Override
-    public IncomeTagEntity convertRequestToEntity(TypeRest data) {
-        return new IncomeTagEntity(data.getId(), data.getUserId(), data.getName(), data.getIsDefault());
-    }
 }

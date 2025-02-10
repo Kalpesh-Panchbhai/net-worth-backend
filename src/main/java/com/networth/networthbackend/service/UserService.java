@@ -9,11 +9,4 @@ public class UserService extends Service<UserRest, UserEntity> {
     public UserService() {
         super(new UserRepository());
     }
-
-    @Override
-    public UserEntity convertRequestToEntity(UserRest userRest) {
-        UserEntity userEntity = new UserEntity();
-        userEntity.setId(userRest.getId());
-        return userEntity;
-    }
 }

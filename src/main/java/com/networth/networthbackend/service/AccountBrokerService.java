@@ -10,9 +10,4 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         super(new AccountBrokerRepository());
         secondaryFieldName = "account_id";
     }
-
-    @Override
-    public AccountBrokerEntity convertRequestToEntity(AccountBrokerRest data) {
-        return new AccountBrokerEntity(data.getId(), data.getAccountId(), data.getSymbol(), data.getName());
-    }
 }
