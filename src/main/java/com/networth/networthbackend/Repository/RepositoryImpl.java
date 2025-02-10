@@ -11,8 +11,6 @@ public interface RepositoryImpl<T> {
 
     void save(T data);
 
-    void update(T data);
-
     void delete(String id);
 
     Optional<T> getByPrimaryField(String id) throws SQLException;
