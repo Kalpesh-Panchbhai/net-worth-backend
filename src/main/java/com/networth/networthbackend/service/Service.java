@@ -10,10 +10,9 @@ import com.networth.networthbackend.utility.Utility;
 import java.util.List;
 import java.util.Map;
 
-public abstract class Service<T, V> implements ServiceImpl<T, V> {
+public abstract class Service<V> implements ServiceImpl<V> {
 
-    public final Utility<T> utilityRest = new Utility<>();
-    public final Utility<V> utilityRest1 = new Utility<>();
+    public final Utility<V> utilityRest = new Utility<>();
     public final Repository<V> repository;
     public String secondaryFieldName;
 
@@ -35,7 +34,7 @@ public abstract class Service<T, V> implements ServiceImpl<T, V> {
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
         List<V> dataList = repository.getBySecondaryField(secondaryFieldName, id);
-        String jsonBody = utilityRest1.convertListOfObjToString(dataList, context);
+        String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }

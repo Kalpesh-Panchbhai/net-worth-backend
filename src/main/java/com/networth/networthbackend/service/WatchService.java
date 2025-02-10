@@ -2,9 +2,8 @@ package com.networth.networthbackend.service;
 
 import com.networth.networthbackend.Repository.WatchRepository;
 import com.networth.networthbackend.entity.WatchEntity;
-import com.networth.networthbackend.model.WatchRest;
 
-public class WatchService extends Service<WatchRest, WatchEntity> {
+public class WatchService extends Service<WatchEntity> {
 
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
 
