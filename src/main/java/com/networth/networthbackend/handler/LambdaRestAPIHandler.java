@@ -5,7 +5,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.entity.*;
-import com.networth.networthbackend.model.*;
 import com.networth.networthbackend.service.*;
 import lombok.SneakyThrows;
 
@@ -41,8 +40,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleUserRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         UserService userService = new UserService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return userService.post(apiGatewayRequest, context, UserRest.class);
+//            case "POST":
+//                return userService.post(apiGatewayRequest, context, UserRest.class);
             case "DELETE":
                 return userService.delete(apiGatewayRequest, context, UserEntity.class);
             default:
@@ -53,8 +52,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountService accountService = new AccountService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountService.post(apiGatewayRequest, context, AccountRest.class);
+//            case "POST":
+//                return accountService.post(apiGatewayRequest, context, AccountRest.class);
             case "GET":
                 return accountService.getBySecondaryField(apiGatewayRequest, context, AccountEntity.class);
             case "DELETE":
@@ -69,8 +68,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerRest.class);
+//            case "POST":
+//                return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerRest.class);
             case "GET":
                 return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerEntity.class);
             case "DELETE":
@@ -83,8 +82,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionRest.class);
+//            case "POST":
+//                return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionRest.class);
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
@@ -93,8 +92,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeService incomeService = new IncomeService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeService.post(apiGatewayRequest, context, IncomeRest.class);
+//            case "POST":
+//                return incomeService.post(apiGatewayRequest, context, IncomeRest.class);
             case "GET":
                 return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeEntity.class);
 //            case "PATCH":
@@ -109,8 +108,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTypeService incomeTypeService = new IncomeTypeService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeTypeService.post(apiGatewayRequest, context, TypeRest.class);
+//            case "POST":
+//                return incomeTypeService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
                 return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, IncomeTypeEntity.class);
 //            case "PATCH":
@@ -123,8 +122,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTagService incomeTagService = new IncomeTagService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeTagService.post(apiGatewayRequest, context, TypeRest.class);
+//            case "POST":
+//                return incomeTagService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
                 return incomeTagService.getBySecondaryField(apiGatewayRequest, context, IncomeTagEntity.class);
 //            case "PATCH":
@@ -137,8 +136,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         WatchService watchService = new WatchService();
         switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return watchService.post(apiGatewayRequest, context, WatchRest.class);
+//            case "POST":
+//                return watchService.post(apiGatewayRequest, context, WatchRest.class);
             case "GET":
                 return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
 //            case "PATCH":

@@ -7,8 +7,6 @@ import com.networth.networthbackend.Repository.Repository;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,17 +19,6 @@ public abstract class Service<T, V> implements ServiceImpl<T, V> {
 
     public Service(Repository<V> repository) {
         this.repository = repository;
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException {
-        T requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        V savedData = convertRequestToEntity(requestData);
-        repository.save(savedData);
-        RestResponse restResponse = Utility.generateRestResponse("success");
-        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-        context.getLogger().log("data saved successfully to dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 201, Utility.createHeaders());
     }
 
     @Override
