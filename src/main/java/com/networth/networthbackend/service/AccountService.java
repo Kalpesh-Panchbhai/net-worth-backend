@@ -20,6 +20,7 @@ import com.networth.networthbackend.utility.Utility;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +125,11 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
+        return null;
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) throws SQLException {
         return null;
     }
 

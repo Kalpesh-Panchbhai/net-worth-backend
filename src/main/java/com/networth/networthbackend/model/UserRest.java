@@ -11,6 +11,4 @@ public class UserRest {
 
     private String id;
 
-    private String userId;
-
 }

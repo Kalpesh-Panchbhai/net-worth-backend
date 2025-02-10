@@ -10,6 +10,7 @@ import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.WatchRest;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,11 @@ public class WatchService extends Service<WatchRest, WatchEntity> {
         String jsonBody = utilityRest.convertListOfObjToString(watchRestList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<WatchRest> type) throws SQLException {
+        return null;
     }
 
     public List<WatchRest> getWatchList(String userId) {

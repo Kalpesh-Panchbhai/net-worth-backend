@@ -9,6 +9,7 @@ import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.Map;
 
 public abstract class Service<T, V> implements ServiceImpl<T, V> {
@@ -21,7 +22,7 @@ public abstract class Service<T, V> implements ServiceImpl<T, V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException, SQLException {
         T requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         V savedData = convertRequestToEntity(requestData);
         repository.save(savedData);
@@ -32,7 +33,7 @@ public abstract class Service<T, V> implements ServiceImpl<T, V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<T> type) throws IOException, URISyntaxException, InterruptedException, SQLException {
         T requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         V savedData = convertRequestToEntity(requestData);
         repository.save(savedData);

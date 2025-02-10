@@ -12,6 +12,7 @@ import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws SQLException {
+        return null;
+    }
+
     public List<TypeRest> getIncomeTagList(String userId) {
         ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<TypeRest> typeRestList = new ArrayList<>();
@@ -42,7 +48,7 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException, SQLException {
         TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         if (requestData.getIsDefault()) {
             makeOtherRecordNonDefault(requestData.getUserId());
@@ -51,7 +57,7 @@ public class IncomeTagService extends Service<TypeRest, IncomeTagEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<TypeRest> type) throws IOException, URISyntaxException, InterruptedException, SQLException {
         TypeRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
         makeOtherRecordNonDefault(requestData.getUserId());
         return super.post(apiGatewayRequest, context, type);

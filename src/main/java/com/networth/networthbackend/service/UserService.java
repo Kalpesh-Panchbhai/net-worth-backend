@@ -1,20 +1,15 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.UserRepository;
-import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.UserEntity;
-import com.networth.networthbackend.entity.WatchEntity;
-import com.networth.networthbackend.model.*;
+import com.networth.networthbackend.model.UserRest;
 import com.networth.networthbackend.utility.Utility;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class UserService extends Service<UserRest, UserEntity> {
 
@@ -61,17 +56,18 @@ public class UserService extends Service<UserRest, UserEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) {
-        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = getBySecondaryField(apiGatewayRequest, context, type);
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) throws SQLException {
+        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = getByPrimaryField(apiGatewayRequest, context, type);
         if (isUserAvailable) {
             return apiGatewayProxyResponseEvent;
         }
-        UserRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        UserEntity savedData = convertRequestToEntity(requestData);
-        repository.save(savedData);
-        watchService.repository.save(new WatchEntity(null, savedData.getId(), "All", new ArrayList<>()));
-        requestData.setId(savedData.getId());
-        String jsonBody = utilityRest.convertObjToString(requestData, context);
+//        UserRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
+//        UserEntity savedData = convertRequestToEntity(requestData);
+//        repository.save(savedData);
+//        watchService.repository.save(new WatchEntity(null, savedData.getId(), "All", new ArrayList<>()));
+//        requestData.setId(savedData.getId());
+//        String jsonBody = utilityRest.convertObjToString(requestData, context);
+        String jsonBody = "";
         context.getLogger().log("data saved successfully to dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 201, Utility.createHeaders());
     }
@@ -79,14 +75,29 @@ public class UserService extends Service<UserRest, UserEntity> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) {
         UserRest userEntity = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        ScanResult scanResult = repository.getBySecondaryField("userId", userEntity.getUserId());
-        if (scanResult.getCount() > 0) {
-            isUserAvailable = true;
-        }
+//        ScanResult scanResult = repository.getBySecondaryField("userId", userEntity.getUserId());
+//        if (scanResult.getCount() > 0) {
+//            isUserAvailable = true;
+//        }
         UserRest userRest = new UserRest();
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            userRest.setId(attributeValueMap.get("id").getS());
-            userRest.setUserId(attributeValueMap.get("userId").getS());
+        String jsonBody = new Utility<UserRest>().convertObjToString(userRest, context);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) throws SQLException {
+        UserRest userEntity = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
+        ResultSet resultSet = repository.getByPrimaryField(userEntity.getId());
+        UserRest userRest = new UserRest();
+        try {
+            if (resultSet.next()) {
+                isUserAvailable = true;
+                userRest.setId(resultSet.getString("id"));
+            }
+        } catch (Exception e) {
+
+        } finally {
+            repository.databaseService.disconnect();
         }
         String jsonBody = new Utility<UserRest>().convertObjToString(userRest, context);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
@@ -96,7 +107,6 @@ public class UserService extends Service<UserRest, UserEntity> {
     public UserEntity convertRequestToEntity(UserRest userRest) {
         UserEntity userEntity = new UserEntity();
         userEntity.setId(userRest.getId());
-        userEntity.setUserId(userRest.getUserId());
         return userEntity;
     }
 }

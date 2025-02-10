@@ -14,6 +14,7 @@ import com.networth.networthbackend.model.BalanceDetailRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,11 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         String jsonBody = utilityRest.convertListOfObjToString(accountBrokerRestList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountBrokerRest> type) throws SQLException {
+        return null;
     }
 
     @Override

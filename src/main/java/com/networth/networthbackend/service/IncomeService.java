@@ -11,6 +11,7 @@ import com.networth.networthbackend.model.IncomeRest;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,11 @@ public class IncomeService extends Service<IncomeRest, IncomeEntity> {
         String jsonBody = utilityRest.convertListOfObjToString(incomeRestList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeRest> type) throws SQLException {
+        return null;
     }
 
     public List<IncomeRest> getIncomeList(String userId) {
