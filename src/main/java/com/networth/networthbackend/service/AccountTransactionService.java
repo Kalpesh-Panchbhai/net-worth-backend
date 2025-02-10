@@ -1,7 +1,5 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
@@ -18,9 +16,7 @@ import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class AccountTransactionService extends Service<AccountTransactionRest, Void> {
@@ -66,11 +62,6 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
             accountBalanceRepository.save(accountBalanceEntity);
         } else {
             AccountBrokerEntity accountBrokerEntity = accountBrokerService.repository.getByPrimaryField(requestData.getAccountId(), AccountBrokerEntity.class);
-            if (requestData.getOperation().equals("UPDATE")) {
-                accountBrokerEntity.setCurrentUnit(requestData.getAmount());
-            } else {
-                accountBrokerEntity.setCurrentUnit(accountBrokerEntity.getCurrentUnit() + requestData.getAmount());
-            }
             updateAccountBrokerBalance(accountBrokerEntity);
             accountBrokerService.repository.save(accountBrokerEntity);
         }
@@ -83,29 +74,23 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
         accountBalanceEntity.setBalance(balance);
         accountBalanceEntity.setId(accountBrokerEntity.getId());
         accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
-        ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
-        List<String> accountIdList = new ArrayList<>();
-        for (Map<String, AttributeValue> data : scanResult.getItems()) {
-            accountIdList.add(data.get("id").getS());
-        }
-        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
-        for (String accountId : accountIdList) {
-            AccountBalanceEntity accountBalanceEntity1 = accountBalanceService.getAccountBalanceRepository().getByPrimaryField(accountId, AccountBalanceEntity.class);
-            if (Objects.nonNull(accountBalanceEntity1)) {
-                balanceRest.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
-                balanceRest.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
-            }
-        }
-        accountBalanceEntity = new AccountBalanceEntity();
-        accountBalanceEntity.setId(accountBrokerEntity.getAccountId());
-        accountBalanceEntity.setBalance(balanceRest);
-        accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionRest> type) {
-        // NOT SUPPORTED
-        return null;
+//        ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", accountBrokerEntity.getAccountId());
+//        List<String> accountIdList = new ArrayList<>();
+//        for (Map<String, AttributeValue> data : scanResult.getItems()) {
+//            accountIdList.add(data.get("id").getS());
+//        }
+//        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
+//        for (String accountId : accountIdList) {
+//            AccountBalanceEntity accountBalanceEntity1 = accountBalanceService.getAccountBalanceRepository().getByPrimaryField(accountId, AccountBalanceEntity.class);
+//            if (Objects.nonNull(accountBalanceEntity1)) {
+//                balanceRest.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getCurrentDayValue().getValue() + accountBalanceEntity1.getBalance().getCurrentDayValue().getValue()));
+//                balanceRest.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), balanceRest.getPreviousDayValue().getValue() + accountBalanceEntity1.getBalance().getPreviousDayValue().getValue()));
+//            }
+//        }
+//        accountBalanceEntity = new AccountBalanceEntity();
+//        accountBalanceEntity.setId(accountBrokerEntity.getAccountId());
+//        accountBalanceEntity.setBalance(balanceRest);
+//        accountBalanceService.getAccountBalanceRepository().save(accountBalanceEntity);
     }
 
     @Override

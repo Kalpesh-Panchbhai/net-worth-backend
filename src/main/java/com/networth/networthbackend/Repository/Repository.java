@@ -6,18 +6,13 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.networth.networthbackend.service.DatabaseService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class Repository<T> implements RepositoryImpl<T> {
@@ -88,11 +83,18 @@ public class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public ScanResult getBySecondaryField(String fieldName, String fieldValue) {
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":val", new AttributeValue().withS(fieldValue));
-
-        ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withFilterExpression(fieldName + " = :val").withExpressionAttributeValues(expressionAttributeValues);
-        return client.scan(scanRequest);
+    public List<T> getBySecondaryField(String fieldName, String fieldValue) {
+        try {
+            String query = "select * from " + tableName + " where " + fieldName + " = ?";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setString(1, fieldValue);
+            ResultSet rs = pstmt.executeQuery();
+            return generateEntityData(rs);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            databaseService.disconnect();
+        }
+        return null;
     }
 }

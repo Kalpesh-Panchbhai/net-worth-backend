@@ -6,6 +6,7 @@ import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.entity.UserEntity;
 import com.networth.networthbackend.model.BalanceDetailRest;
 import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.yahooapimodel.ChartData;
@@ -21,10 +22,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -52,35 +50,35 @@ public class AccountBalanceService {
     }
 
     private void getUserId() {
-        ScanResult scanResult = userService.repository.getBySecondaryField("userId", "Ve43CSFGNFgps5eGk3avtSOClgA3");
-        userId = scanResult.getItems().get(0).get("id").getS();
+        Optional<UserEntity> userEntity = userService.repository.getByPrimaryField("Ve43CSFGNFgps5eGk3avtSOClgA3");
+        userId = userEntity.map(UserEntity::getId).orElse("");
     }
 
     private void getAccountList() {
-        ScanResult scanResult = accountService.repository.getBySecondaryField("userId", userId);
-        for (int i = 0; i < scanResult.getItems().size(); i++) {
-            AccountEntity accountEntity = new AccountEntity();
-            accountEntity.setId(scanResult.getItems().get(i).get("id").getS());
-            accountEntity.setActive(scanResult.getItems().get(i).get("active").getBOOL());
-            accountEntity.setAccountType(scanResult.getItems().get(i).get("accountType").getS());
-            if (accountEntity.getAccountType().equals("Broker")) {
-                getAccountBrokerList(accountEntity.getId());
-            }
-            accountEntityList.add(accountEntity);
-        }
+//        ScanResult scanResult = accountService.repository.getBySecondaryField("userId", userId);
+//        for (int i = 0; i < scanResult.getItems().size(); i++) {
+//            AccountEntity accountEntity = new AccountEntity();
+//            accountEntity.setId(scanResult.getItems().get(i).get("id").getS());
+//            accountEntity.setActive(scanResult.getItems().get(i).get("active").getBOOL());
+//            accountEntity.setAccountType(scanResult.getItems().get(i).get("accountType").getS());
+//            if (accountEntity.getAccountType().equals("Broker")) {
+//                getAccountBrokerList(accountEntity.getId());
+//            }
+//            accountEntityList.add(accountEntity);
+//        }
     }
 
     private void getAccountBrokerList(String id) {
-        ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
-        for (int i = 0; i < scanResult.getItems().size(); i++) {
-            AccountBrokerEntity accountBrokerEntity = new AccountBrokerEntity();
-            accountBrokerEntity.setId(scanResult.getItems().get(i).get("id").getS());
-            accountBrokerEntity.setAccountId(scanResult.getItems().get(i).get("accountId").getS());
-            accountBrokerEntity.setName(scanResult.getItems().get(i).get("name").getS());
-            accountBrokerEntity.setSymbol(scanResult.getItems().get(i).get("symbol").getS());
-            accountBrokerEntity.setCurrentUnit(Double.parseDouble(scanResult.getItems().get(i).get("currentUnit").getN()));
-            accountBrokerEntityList.add(accountBrokerEntity);
-        }
+//        ScanResult scanResult = accountBrokerService.repository.getBySecondaryField("accountId", id);
+//        for (int i = 0; i < scanResult.getItems().size(); i++) {
+//            AccountBrokerEntity accountBrokerEntity = new AccountBrokerEntity();
+//            accountBrokerEntity.setId(scanResult.getItems().get(i).get("id").getS());
+//            accountBrokerEntity.setAccountId(scanResult.getItems().get(i).get("accountId").getS());
+//            accountBrokerEntity.setName(scanResult.getItems().get(i).get("name").getS());
+//            accountBrokerEntity.setSymbol(scanResult.getItems().get(i).get("symbol").getS());
+//            accountBrokerEntity.setCurrentUnit(Double.parseDouble(scanResult.getItems().get(i).get("currentUnit").getN()));
+//            accountBrokerEntityList.add(accountBrokerEntity);
+//        }
     }
 
     public void generateChartData() throws IOException, URISyntaxException, InterruptedException {
@@ -99,28 +97,28 @@ public class AccountBalanceService {
     }
 
     private void generateAccountChartData() throws IOException, URISyntaxException, InterruptedException {
-        for (AccountEntity accountEntity : accountEntityList) {
-            if (accountEntity.getAccountType().equals("Broker")) {
-                List<AccountBrokerEntity> accountBrokerEntityList = extractAccountBrokerList(accountEntity.getId());
-                for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
-                    if (accountBrokerEntity.getCurrentUnit() != 0.0) {
-                        List<ChartData> chartDataList = generateData(accountBrokerEntity.getSymbol());
-                        BalanceRest accountBalance = getAccountBalance(accountBrokerEntity, chartDataList);
-                        accountBalanceMap.put(accountBrokerEntity.getId(), accountBalance);
-                    } else {
-                        accountBalanceMap.put(accountBrokerEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
-                    }
-                }
-                generateAccountBalanceForOneBroker(accountEntity.getId(), accountBrokerEntityList);
-            } else {
-                AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountEntity.getId(), AccountBalanceEntity.class);
-                if (accountBalanceEntity != null) {
-                    accountBalanceMap.put(accountEntity.getId(), accountBalanceEntity.getBalance());
-                } else {
-                    accountBalanceMap.put(accountEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
-                }
-            }
-        }
+//        for (AccountEntity accountEntity : accountEntityList) {
+//            if (accountEntity.getType().equals("Broker")) {
+//                List<AccountBrokerEntity> accountBrokerEntityList = extractAccountBrokerList(accountEntity.getId());
+//                for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
+//                    if (accountBrokerEntity.getCurrentUnit() != 0.0) {
+//                        List<ChartData> chartDataList = generateData(accountBrokerEntity.getSymbol());
+//                        BalanceRest accountBalance = getAccountBalance(accountBrokerEntity, chartDataList);
+//                        accountBalanceMap.put(accountBrokerEntity.getId(), accountBalance);
+//                    } else {
+//                        accountBalanceMap.put(accountBrokerEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
+//                    }
+//                }
+//                generateAccountBalanceForOneBroker(accountEntity.getId(), accountBrokerEntityList);
+//            } else {
+//                AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountEntity.getId(), AccountBalanceEntity.class);
+//                if (accountBalanceEntity != null) {
+//                    accountBalanceMap.put(accountEntity.getId(), accountBalanceEntity.getBalance());
+//                } else {
+//                    accountBalanceMap.put(accountEntity.getId(), new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0)));
+//                }
+//            }
+//        }
     }
 
     private void generateAccountBalanceForOneBroker(String brokerId, List<AccountBrokerEntity> accountBrokerEntityList) {
@@ -137,10 +135,10 @@ public class AccountBalanceService {
     public BalanceRest getAccountBalance(AccountBrokerEntity accountBrokerEntity, List<ChartData> chartDataList) {
         BalanceRest balance = new BalanceRest();
         if (chartDataList.size() >= 2) {
-            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 1).getValue() * accountBrokerEntity.getCurrentUnit()));
-            balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 2).getValue() * accountBrokerEntity.getCurrentUnit()));
+//            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 1).getValue() * accountBrokerEntity.getCurrentUnit()));
+//            balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(chartDataList.size() - 2).getValue() * accountBrokerEntity.getCurrentUnit()));
         } else if (chartDataList.size() == 1) {
-            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(0).getValue() * accountBrokerEntity.getCurrentUnit()));
+//            balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), chartDataList.get(0).getValue() * accountBrokerEntity.getCurrentUnit()));
             balance.setPreviousDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
         } else {
             balance.setCurrentDayValue(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));

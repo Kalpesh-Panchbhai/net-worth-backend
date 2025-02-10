@@ -1,25 +1,17 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountRepository;
-import com.networth.networthbackend.entity.AccountBalanceEntity;
 import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.AccountRest;
-import com.networth.networthbackend.model.BalanceDetailRest;
-import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class AccountService extends Service<AccountRest, AccountEntity> {
@@ -30,6 +22,7 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
 
     public AccountService() {
         super(new AccountRepository());
+        secondaryFieldName = "user_id";
     }
 
     @Override
@@ -47,8 +40,8 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
     }
 
     private void addAccountInDefaultWatch(String userId, String accountId) {
-        ScanResult scanResult = watchService.repository.getBySecondaryField("userId", userId);
-        String watchAllId = scanResult.getItems().stream().filter((data) -> data.get("name").getS().equals("All")).collect(Collectors.toList()).get(0).get("id").getS();
+        List<WatchEntity> watchEntityList = watchService.repository.getBySecondaryField("user_id", userId);
+        String watchAllId = watchEntityList.stream().filter((data) -> data.getName().equals("All")).collect(Collectors.toList()).get(0).getId();
 
         WatchEntity watchEntity = watchService.repository.getByPrimaryField(watchAllId, WatchEntity.class);
         watchEntity.getAccountList().add(accountId);
@@ -56,44 +49,10 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        List<AccountRest> accountRestList = getAllAccount(id);
-        String jsonBody = utilityRest.convertListOfObjToString(accountRestList, context);
-        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
-    }
-
-    public List<AccountRest> getAllAccount(String userId) {
-        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
-        List<AccountRest> accountRestList = new ArrayList<>();
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountRest accountRestResponse = new AccountRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("accountName").getS(), attributeValueMap.get("accountType").getS(), attributeValueMap.containsKey("loanType") ? attributeValueMap.get("loanType").getS() : "", attributeValueMap.get("currency").getS(), attributeValueMap.get("active").getBOOL(), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
-            accountRestList.add(accountRestResponse);
-        }
-        return accountRestList;
-    }
-
-    private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
-        BalanceRest balanceRest = new BalanceRest(new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0), new BalanceDetailRest(Utility.convertLocalToUTC(), 0.0));
-        AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(accountId, AccountBalanceEntity.class);
-        if (Objects.nonNull(accountBalanceEntity)) {
-            balanceRest.getCurrentDayValue().setDateTime(accountBalanceEntity.getBalance().getCurrentDayValue().getDateTime());
-            balanceRest.getCurrentDayValue().setValue(accountBalanceEntity.getBalance().getCurrentDayValue().getValue());
-            balanceRest.getPreviousDayValue().setDateTime(accountBalanceEntity.getBalance().getPreviousDayValue().getDateTime());
-            balanceRest.getPreviousDayValue().setValue(accountBalanceEntity.getBalance().getPreviousDayValue().getValue());
-        }
-        return balanceRest;
-    }
-
-    @Override
     public AccountEntity convertRequestToEntity(AccountRest accountRestRequest) {
         AccountEntity accountEntity = new AccountEntity();
         accountEntity.setId(accountRestRequest.getId());
         accountEntity.setUserId(accountRestRequest.getUserId());
-        accountEntity.setAccountName(accountRestRequest.getAccountName());
-        accountEntity.setAccountType(accountRestRequest.getAccountType());
-        accountEntity.setLoanType(accountRestRequest.getLoanType());
         accountEntity.setCurrency(accountRestRequest.getCurrency());
         accountEntity.setActive(accountRestRequest.getActive());
         return accountEntity;

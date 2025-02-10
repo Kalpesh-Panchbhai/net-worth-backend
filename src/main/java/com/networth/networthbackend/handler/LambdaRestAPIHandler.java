@@ -56,7 +56,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return accountService.post(apiGatewayRequest, context, AccountRest.class);
             case "GET":
-                return accountService.getBySecondaryField(apiGatewayRequest, context, AccountRest.class);
+                return accountService.getBySecondaryField(apiGatewayRequest, context, AccountEntity.class);
             case "DELETE":
                 return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
             case "PATCH":
@@ -72,7 +72,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerRest.class);
             case "GET":
-                return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerRest.class);
+                return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerEntity.class);
             case "DELETE":
                 return accountBrokerService.delete(apiGatewayRequest, context, AccountBrokerEntity.class);
             default:
@@ -96,7 +96,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return incomeService.post(apiGatewayRequest, context, IncomeRest.class);
             case "GET":
-                return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeRest.class);
+                return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeEntity.class);
             case "PATCH":
                 return incomeService.patch(apiGatewayRequest, context, IncomeRest.class);
             case "DELETE":
@@ -112,7 +112,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return incomeTypeService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
-                return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, TypeRest.class);
+                return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, IncomeTypeEntity.class);
             case "PATCH":
                 return incomeTypeService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
@@ -126,7 +126,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return incomeTagService.post(apiGatewayRequest, context, TypeRest.class);
             case "GET":
-                return incomeTagService.getBySecondaryField(apiGatewayRequest, context, TypeRest.class);
+                return incomeTagService.getBySecondaryField(apiGatewayRequest, context, IncomeTagEntity.class);
             case "PATCH":
                 return incomeTagService.patch(apiGatewayRequest, context, TypeRest.class);
             default:
@@ -140,7 +140,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return watchService.post(apiGatewayRequest, context, WatchRest.class);
             case "GET":
-                return watchService.getBySecondaryField(apiGatewayRequest, context, WatchRest.class);
+                return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
             case "PATCH":
                 return watchService.patch(apiGatewayRequest, context, WatchRest.class);
             case "DELETE":

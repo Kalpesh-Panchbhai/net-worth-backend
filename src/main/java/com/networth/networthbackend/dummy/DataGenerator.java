@@ -24,31 +24,31 @@ public class DataGenerator {
     }
 
     private void generateAccountData() {
-        AccountEntity account1 = new AccountEntity("account1", "user1", "Saving1", "Saving", "", "INR", true);
-        AccountEntity account2 = new AccountEntity("account2", "user1", "Saving2", "Saving", "", "INR", true);
-        AccountEntity account3 = new AccountEntity("account3", "user1", "Credit Card1", "Credit Card", "", "INR", true);
-        AccountEntity account4 = new AccountEntity("account4", "user1", "Credit Card2", "Credit Card", "", "INR", true);
-        AccountEntity account5 = new AccountEntity("account5", "user1", "Broker1", "Broker", "", "INR", true);
-        AccountEntity account6 = new AccountEntity("account6", "user1", "Broker2", "Broker", "", "INR", true);
-        accountList.add(account1);
-        accountList.add(account2);
-        accountList.add(account3);
-        accountList.add(account4);
-        accountList.add(account5);
-        accountList.add(account6);
+//        AccountEntity account1 = new AccountEntity("account1", "user1", "Saving1", "Saving", "", "INR", true);
+//        AccountEntity account2 = new AccountEntity("account2", "user1", "Saving2", "Saving", "", "INR", true);
+//        AccountEntity account3 = new AccountEntity("account3", "user1", "Credit Card1", "Credit Card", "", "INR", true);
+//        AccountEntity account4 = new AccountEntity("account4", "user1", "Credit Card2", "Credit Card", "", "INR", true);
+//        AccountEntity account5 = new AccountEntity("account5", "user1", "Broker1", "Broker", "", "INR", true);
+//        AccountEntity account6 = new AccountEntity("account6", "user1", "Broker2", "Broker", "", "INR", true);
+//        accountList.add(account1);
+//        accountList.add(account2);
+//        accountList.add(account3);
+//        accountList.add(account4);
+//        accountList.add(account5);
+//        accountList.add(account6);
     }
 
     private void generateAccountBrokerData() {
-        AccountBrokerEntity accountBroker1 = new AccountBrokerEntity("accountBroker1", "account5", "NOW", "", 0.0);
-        AccountBrokerEntity accountBroker2 = new AccountBrokerEntity("accountBroker2", "account5", "AAPL", "", 0.0);
-        accountBrokerEntityList.add(accountBroker1);
-        accountBrokerEntityList.add(accountBroker2);
-
-
-        AccountBrokerEntity accountBroker3 = new AccountBrokerEntity("accountBroker3", "account6", "0P00011MAX.BO", "", 0.0);
-        AccountBrokerEntity accountBroker4 = new AccountBrokerEntity("accountBroker4", "account6", "AMZN", "", 0.0);
-        accountBrokerEntityList.add(accountBroker3);
-        accountBrokerEntityList.add(accountBroker4);
+//        AccountBrokerEntity accountBroker1 = new AccountBrokerEntity("accountBroker1", "account5", "NOW", "", 0.0);
+//        AccountBrokerEntity accountBroker2 = new AccountBrokerEntity("accountBroker2", "account5", "AAPL", "", 0.0);
+//        accountBrokerEntityList.add(accountBroker1);
+//        accountBrokerEntityList.add(accountBroker2);
+//
+//
+//        AccountBrokerEntity accountBroker3 = new AccountBrokerEntity("accountBroker3", "account6", "0P00011MAX.BO", "", 0.0);
+//        AccountBrokerEntity accountBroker4 = new AccountBrokerEntity("accountBroker4", "account6", "AMZN", "", 0.0);
+//        accountBrokerEntityList.add(accountBroker3);
+//        accountBrokerEntityList.add(accountBroker4);
     }
 
     private void generateWatchData() {

@@ -4,6 +4,7 @@ package com.networth.networthbackend;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class NetWorthApplication {
 
@@ -19,10 +20,14 @@ public class NetWorthApplication {
             conn = DriverManager.getConnection(url);
             System.out.println("Database connection established");
             String userId = "AA";
-            String query = "delete from user where id = ?";
+            String fieldName = "user_id";
+            String query = "select * from account where " + fieldName + " = ?";
             PreparedStatement pstmt = conn.prepareStatement(query);
             pstmt.setString(1, userId);
-            pstmt.execute();
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                System.out.println(rs.getString("name"));
+            }
         } catch (Exception e) {
             System.err.println("Cannot connect to database server");
             System.err.println(e.getMessage());
