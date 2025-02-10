@@ -3,7 +3,6 @@ package com.networth.networthbackend.service;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.Repository.AccountBalanceRepository;
 import com.networth.networthbackend.Repository.AccountRepository;
 import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.WatchEntity;
@@ -16,8 +15,6 @@ import java.util.stream.Collectors;
 
 public class AccountService extends Service<AccountRest, AccountEntity> {
 
-    private final AccountBrokerService accountBrokerService = new AccountBrokerService();
-    private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final WatchService watchService = new WatchService();
 
     public AccountService() {
