@@ -1,11 +1,5 @@
 package com.networth.networthbackend.Repository;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.networth.networthbackend.service.DatabaseService;
 
 import java.sql.Connection;
@@ -17,15 +11,10 @@ import java.util.Optional;
 public abstract class Repository<T> implements RepositoryImpl<T> {
 
     public final DatabaseService databaseService;
-    private final AmazonDynamoDB client;
-    private final DynamoDBMapper dynamoDBMapper;
     private final Connection connection;
     public String tableName;
 
     public Repository() {
-        client = AmazonDynamoDBClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("dynamodb.ap-south-1.amazonaws.com", "ap-south-1")).withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("AKIAUF72G2OIBNECZK4F", "EXCUuNK4xD14hqxkrpB04l7XI9TR+JvuthBv9+tZ"))).build();
-        dynamoDBMapper = new DynamoDBMapper(client);
-
         databaseService = new DatabaseService();
         connection = databaseService.getConnection();
     }
