@@ -23,7 +23,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        repository.save(requestData);
+        Integer id = repository.save(requestData);
         RestResponse restResponse = Utility.generateRestResponse("success");
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data deleted successfully to dynamodb:::" + jsonBody);
