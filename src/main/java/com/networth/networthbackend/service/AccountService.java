@@ -87,13 +87,6 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         return balanceRest;
     }
 
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        deleteOneAccount(id, entityType);
-        return super.delete(apiGatewayRequest, context, entityType);
-    }
-
     public void deleteOneAccount(String id, Class<AccountEntity> entityType) {
         AccountEntity accountEntity = repository.getByPrimaryField(id, entityType);
         accountBalanceRepository.delete(new AccountBalanceEntity(id, null));

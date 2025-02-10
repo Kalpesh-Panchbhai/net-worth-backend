@@ -15,19 +15,12 @@ import java.util.ArrayList;
 import java.util.Map;
 
 public class UserService extends Service<UserRest, UserEntity> {
-    
+
     private final WatchService watchService = new WatchService();
     private Boolean isUserAvailable = false;
 
     public UserService() {
         super(new UserRepository());
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-//        deleteUser(id);
-        return super.delete(apiGatewayRequest, context, entityType);
     }
 
     @Override

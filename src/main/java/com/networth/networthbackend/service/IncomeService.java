@@ -8,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.Repository.IncomeRepository;
 import com.networth.networthbackend.entity.IncomeEntity;
 import com.networth.networthbackend.model.IncomeRest;
-import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
 import java.util.ArrayList;
@@ -34,28 +33,10 @@ public class IncomeService extends Service<IncomeRest, IncomeEntity> {
         ScanResult scanResult = repository.getBySecondaryField("userId", userId);
         List<IncomeRest> incomeRestList = new ArrayList<>();
         for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(),
-                    attributeValueMap.get("userId").getS(),
-                    Double.parseDouble(attributeValueMap.get("amount").getN()),
-                    Double.parseDouble(attributeValueMap.get("taxPaid").getN()),
-                    attributeValueMap.get("creditedOn").getS(),
-                    attributeValueMap.get("currency").getS(),
-                    attributeValueMap.get("incomeType").getS(),
-                    attributeValueMap.get("incomeTag").getS());
+            IncomeRest incomeRest = new IncomeRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), Double.parseDouble(attributeValueMap.get("amount").getN()), Double.parseDouble(attributeValueMap.get("taxPaid").getN()), attributeValueMap.get("creditedOn").getS(), attributeValueMap.get("currency").getS(), attributeValueMap.get("incomeType").getS(), attributeValueMap.get("incomeTag").getS());
             incomeRestList.add(incomeRest);
         }
         return incomeRestList;
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        IncomeEntity incomeEntity = repository.getByPrimaryField(id, entityType);
-        repository.delete(incomeEntity);
-        RestResponse restResponse = Utility.generateRestResponse("success");
-        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-        context.getLogger().log("data deleted successfully to dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
     @Override

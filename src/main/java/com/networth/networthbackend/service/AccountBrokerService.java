@@ -41,15 +41,6 @@ public class AccountBrokerService extends Service<AccountBrokerRest, AccountBrok
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
-    @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountBrokerEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        AccountBrokerEntity accountBrokerEntity = repository.getByPrimaryField(id, AccountBrokerEntity.class);
-        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.delete(apiGatewayRequest, context, entityType);
-        deleteAccountBalance(id, accountBrokerEntity, AccountBalanceEntity.class);
-        return apiGatewayProxyResponseEvent;
-    }
-
     public void deleteAccountBalance(String id, AccountBrokerEntity accountBrokerEntity, Class<AccountBalanceEntity> entityType) {
         AccountBalanceEntity accountBalanceEntity = accountBalanceRepository.getByPrimaryField(id, entityType);
         if (Objects.nonNull(accountBalanceEntity)) {
