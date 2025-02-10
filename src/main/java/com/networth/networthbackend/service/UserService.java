@@ -37,27 +37,27 @@ public class UserService extends Service<UserRest, UserEntity> {
     }
 
     private void deleteUser(String userId) {
-        List<AccountRest> accountRestList = accountService.getAllAccount(userId);
-        for (AccountRest accountRest : accountRestList) {
-            accountService.deleteOneAccount(accountRest.getId(), AccountEntity.class);
-            accountService.repository.delete(accountService.convertRequestToEntity(accountRest));
-        }
-        List<WatchRest> watchRestList = watchService.getWatchList(userId);
-        for (WatchRest watchRest : watchRestList) {
-            watchService.repository.delete(watchService.convertRequestToEntity(watchRest));
-        }
-        List<IncomeRest> incomeRestList = incomeService.getIncomeList(userId);
-        for (IncomeRest incomeRest : incomeRestList) {
-            incomeService.repository.delete(incomeService.convertRequestToEntity(incomeRest));
-        }
-        List<TypeRest> incomeTagList = incomeTagService.getIncomeTagList(userId);
-        for (TypeRest typeRest : incomeTagList) {
-            incomeTagService.repository.delete(incomeTagService.convertRequestToEntity(typeRest));
-        }
-        List<TypeRest> incomeTypeList = incomeTypeService.getIncomeTypeList(userId);
-        for (TypeRest typeRest : incomeTypeList) {
-            incomeTypeService.repository.delete(incomeTypeService.convertRequestToEntity(typeRest));
-        }
+//        List<AccountRest> accountRestList = accountService.getAllAccount(userId);
+//        for (AccountRest accountRest : accountRestList) {
+//            accountService.deleteOneAccount(accountRest.getId(), AccountEntity.class);
+//            accountService.repository.delete(accountService.convertRequestToEntity(accountRest));
+//        }
+//        List<WatchRest> watchRestList = watchService.getWatchList(userId);
+//        for (WatchRest watchRest : watchRestList) {
+//            watchService.repository.delete(watchService.convertRequestToEntity(watchRest));
+//        }
+//        List<IncomeRest> incomeRestList = incomeService.getIncomeList(userId);
+//        for (IncomeRest incomeRest : incomeRestList) {
+//            incomeService.repository.delete(incomeService.convertRequestToEntity(incomeRest));
+//        }
+//        List<TypeRest> incomeTagList = incomeTagService.getIncomeTagList(userId);
+//        for (TypeRest typeRest : incomeTagList) {
+//            incomeTagService.repository.delete(incomeTagService.convertRequestToEntity(typeRest));
+//        }
+//        List<TypeRest> incomeTypeList = incomeTypeService.getIncomeTypeList(userId);
+//        for (TypeRest typeRest : incomeTypeList) {
+//            incomeTypeService.repository.delete(incomeTypeService.convertRequestToEntity(typeRest));
+//        }
     }
 
     @Override

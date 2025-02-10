@@ -9,19 +9,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AccountRest {
 
-    private String id;
+    private Integer id;
 
     private String userId;
 
-    private String accountName;
+    private String name;
 
-    private String accountType;
-
-    private String loanType;
+    private String type;
 
     private String currency;
 
     private Boolean active;
-
-    private BalanceRest balance;
 }

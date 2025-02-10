@@ -11,6 +11,11 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.util.Calendar;
 
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
@@ -33,6 +38,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             return handleIncomeTagRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/watch")) {
             return handleWatchRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/dummy")) {
+            return handleDummyRequest();
         } else {
             throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
         }
@@ -56,7 +63,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             case "POST":
                 return accountService.post(apiGatewayRequest, context, AccountRest.class);
             case "GET":
-                return accountService.getBySecondaryField(apiGatewayRequest, context, AccountRest.class);
+                return accountService.getByPrimaryField(apiGatewayRequest, context);
             case "DELETE":
                 return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
             case "PATCH":
@@ -148,5 +155,45 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             default:
                 throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
         }
+    }
+
+    public APIGatewayProxyResponseEvent handleDummyRequest() {
+        Connection conn = null;
+        try {
+            String userName = "avnadmin";
+            String password = "AVNS_rUprsHw62c14G_fc0fx";
+
+            String url = "jdbc:mysql://net-worth-net-worth.i.aivencloud.com:18558/net_worth?user=" + userName + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            conn = DriverManager.getConnection(url);
+            System.out.println("Database connection established");
+
+            String insertQuery = "INSERT INTO users1 (account, value, created_at) VALUES (?, ?, ?)";
+
+            PreparedStatement pstmt = conn.prepareStatement(insertQuery);
+            pstmt.setString(1, String.valueOf(1));
+            pstmt.setDouble(2, 1);
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new java.util.Date());
+
+            Date newDate = new Date(calendar.getTimeInMillis());
+            pstmt.setDate(3, newDate);
+
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("Cannot connect to database server");
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                    System.out.println("Database Connection Terminated");
+                } catch (Exception e) {
+                }
+            }
+        }
+
+        return new APIGatewayProxyResponseEvent();
     }
 }

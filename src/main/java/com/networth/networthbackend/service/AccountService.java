@@ -17,6 +17,9 @@ import com.networth.networthbackend.model.BalanceRest;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,19 +31,34 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
     private final AccountBrokerService accountBrokerService = new AccountBrokerService();
     private final AccountBalanceRepository accountBalanceRepository = new AccountBalanceRepository();
     private final WatchService watchService = new WatchService();
+    private final DatabaseService databaseService = new DatabaseService();
+    private final Connection connection;
 
     public AccountService() {
         super(new AccountRepository());
+        connection = databaseService.getConnection();
     }
 
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
         AccountRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        AccountEntity savedData = convertRequestToEntity(requestData);
-        repository.save(savedData);
-        String accountId = savedData.getId();
-        String userId = savedData.getUserId();
-        addAccountInDefaultWatch(userId, accountId);
+        try {
+            String insertQuery = "INSERT into accounts (name, type, active, currency, user_id) values(?, ? , ? , ?, ?)";
+            PreparedStatement pstmt = connection.prepareStatement(insertQuery);
+            pstmt.setString(1, requestData.getName());
+            pstmt.setString(2, requestData.getType());
+            pstmt.setBoolean(3, requestData.getActive());
+            pstmt.setString(4, requestData.getCurrency());
+            pstmt.setString(5, requestData.getUserId());
+
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("Database error");
+            System.err.println(e.getMessage());
+        } finally {
+            databaseService.disconnect();
+        }
+//        addAccountInDefaultWatch(userId, accountId);
         RestResponse restResponse = Utility.generateRestResponse("success");
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data saved successfully to dynamodb:::" + jsonBody);
@@ -56,23 +74,33 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         watchService.repository.update(watchEntity);
     }
 
-    @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        List<AccountRest> accountRestList = getAllAccount(id);
-        String jsonBody = utilityRest.convertListOfObjToString(accountRestList, context);
+
+    public APIGatewayProxyResponseEvent getByPrimaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        String userId = apiGatewayRequest.getPathParameters().get("id");
+        List<AccountRest> accountList = new ArrayList<>();
+        try {
+            String query = "select * from accounts where user_id = ?";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setString(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String type = rs.getString("type");
+                Boolean active = rs.getBoolean("active");
+                String currency = rs.getString("currency");
+                accountList.add(new AccountRest(id, userId, name, type, currency, active));
+            }
+        } catch (Exception e) {
+            System.err.println("Database error");
+            System.err.println(e.getMessage());
+        } finally {
+            databaseService.disconnect();
+        }
+        String jsonBody = utilityRest.convertListOfObjToString(accountList, context);
         context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
-    }
-
-    public List<AccountRest> getAllAccount(String userId) {
-        ScanResult scanResult = repository.getBySecondaryField("userId", userId);
-        List<AccountRest> accountRestList = new ArrayList<>();
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            AccountRest accountRestResponse = new AccountRest(attributeValueMap.get("id").getS(), attributeValueMap.get("userId").getS(), attributeValueMap.get("accountName").getS(), attributeValueMap.get("accountType").getS(), attributeValueMap.containsKey("loanType") ? attributeValueMap.get("loanType").getS() : "", attributeValueMap.get("currency").getS(), attributeValueMap.get("active").getBOOL(), getAccountCurrentAndPreviousDayBalance(attributeValueMap.get("id").getS()));
-            accountRestList.add(accountRestResponse);
-        }
-        return accountRestList;
     }
 
     private BalanceRest getAccountCurrentAndPreviousDayBalance(String accountId) {
@@ -92,6 +120,16 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         String id = apiGatewayRequest.getPathParameters().get("id");
         deleteOneAccount(id, entityType);
         return super.delete(apiGatewayRequest, context, entityType);
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountRest> type) {
+        return null;
+    }
+
+    @Override
+    public AccountEntity convertRequestToEntity(AccountRest data) {
+        return null;
     }
 
     public void deleteOneAccount(String id, Class<AccountEntity> entityType) {
@@ -115,16 +153,4 @@ public class AccountService extends Service<AccountRest, AccountEntity> {
         }
     }
 
-    @Override
-    public AccountEntity convertRequestToEntity(AccountRest accountRestRequest) {
-        AccountEntity accountEntity = new AccountEntity();
-        accountEntity.setId(accountRestRequest.getId());
-        accountEntity.setUserId(accountRestRequest.getUserId());
-        accountEntity.setAccountName(accountRestRequest.getAccountName());
-        accountEntity.setAccountType(accountRestRequest.getAccountType());
-        accountEntity.setLoanType(accountRestRequest.getLoanType());
-        accountEntity.setCurrency(accountRestRequest.getCurrency());
-        accountEntity.setActive(accountRestRequest.getActive());
-        return accountEntity;
-    }
 }
