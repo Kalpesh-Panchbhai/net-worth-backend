@@ -16,6 +16,8 @@ import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,7 +28,12 @@ public class AccountTransactionService extends Service<AccountTransactionRest, V
     private final AccountBalanceService accountBalanceService = new AccountBalanceService();
 
     public AccountTransactionService() {
-        super(new Repository<>());
+        super(new Repository<>() {
+            @Override
+            public List<Void> generateEntityData(ResultSet rs) throws SQLException {
+                return List.of();
+            }
+        });
     }
 
     @Override

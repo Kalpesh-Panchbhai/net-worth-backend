@@ -11,11 +11,10 @@ import com.networth.networthbackend.service.DatabaseService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-public class Repository<T> implements RepositoryImpl<T> {
+public abstract class Repository<T> implements RepositoryImpl<T> {
 
     public final DatabaseService databaseService;
     private final AmazonDynamoDB client;
@@ -74,11 +73,6 @@ public class Repository<T> implements RepositoryImpl<T> {
         } finally {
             databaseService.disconnect();
         }
-        return null;
-    }
-
-    @Override
-    public List<T> generateEntityData(ResultSet rs) throws SQLException {
         return null;
     }
 
