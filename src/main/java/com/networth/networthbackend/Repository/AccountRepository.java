@@ -16,7 +16,7 @@ public class AccountRepository extends Repository<AccountEntity> {
 
     @Override
     public PreparedStatement generateInsertQuery(AccountEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(name, type, is_active, currency, user_id) VALUES (?, ?. ?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(name, type, is_active, currency, user_id) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setString(1, data.getName());
         preparedStatement.setString(2, data.getType());
