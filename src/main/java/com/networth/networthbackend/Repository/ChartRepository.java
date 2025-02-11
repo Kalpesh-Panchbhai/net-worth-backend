@@ -15,13 +15,25 @@ public class ChartRepository extends Repository<ChartEntity> {
     }
 
     @Override
-    public PreparedStatement generateInsertQuery(ChartEntity data) throws SQLException {
+    public PreparedStatement prepareInsertQuery(ChartEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, date, value) VALUES (?, ?. ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setInt(2, data.getAccountBrokerId());
         preparedStatement.setDate(3, data.getDate());
         preparedStatement.setDouble(4, data.getValue());
+        return preparedStatement;
+    }
+
+    @Override
+    public PreparedStatement prepareUpdateQuery(ChartEntity data) throws SQLException {
+        String updateQuery = "UPDATE " + tableName + " SET account_id = ?, account_broker_id = ?, date = ?, value = ? WHERE id = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+        preparedStatement.setInt(1, data.getAccountId());
+        preparedStatement.setInt(2, data.getAccountBrokerId());
+        preparedStatement.setDate(3, data.getDate());
+        preparedStatement.setDouble(4, data.getValue());
+        preparedStatement.setInt(5, data.getId());
         return preparedStatement;
     }
 

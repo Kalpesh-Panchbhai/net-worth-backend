@@ -22,7 +22,7 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     @Override
     public int save(T data) {
         try {
-            PreparedStatement preparedStatement = generateInsertQuery(data);
+            PreparedStatement preparedStatement = prepareInsertQuery(data);
             int affectedRows = preparedStatement.executeUpdate();
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {

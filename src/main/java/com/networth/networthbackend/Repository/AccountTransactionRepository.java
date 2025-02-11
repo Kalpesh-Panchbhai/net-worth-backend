@@ -15,13 +15,25 @@ public class AccountTransactionRepository extends Repository<AccountTransactionE
     }
 
     @Override
-    public PreparedStatement generateInsertQuery(AccountTransactionEntity data) throws SQLException {
+    public PreparedStatement prepareInsertQuery(AccountTransactionEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, transaction_date, value) VALUES (?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setInt(2, data.getAccountBrokerId());
         preparedStatement.setDate(3, data.getTransactionDate());
         preparedStatement.setDouble(4, data.getValue());
+        return preparedStatement;
+    }
+
+    @Override
+    public PreparedStatement prepareUpdateQuery(AccountTransactionEntity data) throws SQLException {
+        String updateQuery = "UPDATE " + tableName + " SET account_id = ?, account_broker_id = ?, transaction_date = ?, value = ? WHERE id = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+        preparedStatement.setInt(1, data.getAccountId());
+        preparedStatement.setInt(2, data.getAccountBrokerId());
+        preparedStatement.setDate(3, data.getTransactionDate());
+        preparedStatement.setDouble(4, data.getValue());
+        preparedStatement.setInt(5, data.getId());
         return preparedStatement;
     }
 

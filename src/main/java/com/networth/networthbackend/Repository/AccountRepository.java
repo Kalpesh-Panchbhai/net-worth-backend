@@ -15,7 +15,7 @@ public class AccountRepository extends Repository<AccountEntity> {
     }
 
     @Override
-    public PreparedStatement generateInsertQuery(AccountEntity data) throws SQLException {
+    public PreparedStatement prepareInsertQuery(AccountEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(name, type, is_active, currency, user_id) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setString(1, data.getName());
@@ -23,6 +23,19 @@ public class AccountRepository extends Repository<AccountEntity> {
         preparedStatement.setBoolean(3, data.getActive());
         preparedStatement.setString(4, data.getCurrency());
         preparedStatement.setString(5, data.getUserId());
+        return preparedStatement;
+    }
+
+    @Override
+    public PreparedStatement prepareUpdateQuery(AccountEntity data) throws SQLException {
+        String updateQuery = "UPDATE " + tableName + " SET name = ?, type = ?, is_active = ?, currency = ?, user_id = ? WHERE id = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+        preparedStatement.setString(1, data.getName());
+        preparedStatement.setString(2, data.getType());
+        preparedStatement.setBoolean(3, data.getActive());
+        preparedStatement.setString(4, data.getCurrency());
+        preparedStatement.setString(5, data.getUserId());
+        preparedStatement.setInt(6, data.getId());
         return preparedStatement;
     }
 

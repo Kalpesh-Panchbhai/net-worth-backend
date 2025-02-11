@@ -15,12 +15,23 @@ public class IncomeTypeRepository extends Repository<IncomeTypeEntity> {
     }
 
     @Override
-    public PreparedStatement generateInsertQuery(IncomeTypeEntity data) throws SQLException {
+    public PreparedStatement prepareInsertQuery(IncomeTypeEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(user_id, is_default, name) VALUES (?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setString(1, data.getUserId());
         preparedStatement.setBoolean(2, data.getIsDefault());
         preparedStatement.setString(3, data.getName());
+        return preparedStatement;
+    }
+
+    @Override
+    public PreparedStatement prepareUpdateQuery(IncomeTypeEntity data) throws SQLException {
+        String updateQuery = "UPDATE " + tableName + " SET user_id = ?, is_default = ?, name = ? WHERE id = ?";
+        PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setBoolean(2, data.getIsDefault());
+        preparedStatement.setString(3, data.getName());
+        preparedStatement.setInt(4, data.getId());
         return preparedStatement;
     }
 
