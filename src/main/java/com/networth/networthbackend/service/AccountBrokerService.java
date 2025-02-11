@@ -9,6 +9,6 @@ public class AccountBrokerService extends Service<AccountBrokerEntity> {
 
     public AccountBrokerService() {
         super(new AccountBrokerRepository());
-        secondaryFieldName = List.of("account_id");
+        secondaryFieldNameList = List.of("account_id");
     }
 }

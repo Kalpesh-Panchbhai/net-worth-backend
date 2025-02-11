@@ -9,6 +9,6 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
 
     public AccountTransactionService() {
         super(new AccountTransactionRepository());
-        secondaryFieldName = List.of("account_id", "account_broker_id");
+        secondaryFieldNameList = List.of("account_id", "account_broker_id");
     }
 }

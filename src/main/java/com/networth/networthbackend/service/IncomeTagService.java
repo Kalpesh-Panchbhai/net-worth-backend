@@ -9,6 +9,6 @@ public class IncomeTagService extends Service<IncomeTagEntity> {
 
     public IncomeTagService() {
         super(new IncomeTagRepository());
-        secondaryFieldName = List.of("user_id");
+        secondaryFieldNameList = List.of("user_id");
     }
 }

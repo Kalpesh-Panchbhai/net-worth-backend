@@ -14,7 +14,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
 
     public final Utility<V> utilityRest = new Utility<>();
     public final Repository<V> repository;
-    public List<String> secondaryFieldName;
+    public List<String> secondaryFieldNameList;
 
     public Service(Repository<V> repository) {
         this.repository = repository;
@@ -53,7 +53,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        List<V> dataList = repository.getBySecondaryField(secondaryFieldName, id);
+        List<V> dataList = repository.getBySecondaryField(secondaryFieldNameList, id);
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
         context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());

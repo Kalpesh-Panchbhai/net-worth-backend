@@ -9,6 +9,6 @@ public class ChartService extends Service<ChartEntity> {
 
     public ChartService() {
         super(new ChartRepository());
-        secondaryFieldName = List.of("account_id", "account_broker_id");
+        secondaryFieldNameList = List.of("account_id", "account_broker_id");
     }
 }

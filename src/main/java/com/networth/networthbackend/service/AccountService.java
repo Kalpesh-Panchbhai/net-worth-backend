@@ -9,6 +9,6 @@ public class AccountService extends Service<AccountEntity> {
 
     public AccountService() {
         super(new AccountRepository());
-        secondaryFieldName = List.of("user_id");
+        secondaryFieldNameList = List.of("user_id");
     }
 }
