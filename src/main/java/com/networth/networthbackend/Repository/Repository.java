@@ -40,6 +40,26 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
+    public int update(T data) {
+        try {
+            PreparedStatement preparedStatement = prepareUpdateQuery(data);
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            databaseService.disconnect();
+        }
+        return 0;
+    }
+
+    @Override
     public void delete(String id) {
         try {
             String query = "delete from " + tableName + " where id = ?";

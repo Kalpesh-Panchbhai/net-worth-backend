@@ -31,6 +31,16 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
+        V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
+        Integer id = repository.update(requestData);
+        RestResponse restResponse = new RestResponse(String.valueOf(id));
+        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
+        context.getLogger().log("data added successfully to database:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
+
+    @Override
     public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         String id = apiGatewayRequest.getPathParameters().get("id");
         repository.delete(id);

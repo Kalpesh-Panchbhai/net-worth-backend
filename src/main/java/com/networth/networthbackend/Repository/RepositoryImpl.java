@@ -10,6 +10,8 @@ public interface RepositoryImpl<T> {
 
     int save(T data);
 
+    int update(T data);
+
     PreparedStatement prepareInsertQuery(T data) throws SQLException;
 
     PreparedStatement prepareUpdateQuery(T data) throws SQLException;
