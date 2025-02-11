@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class IncomeTagEntity {
 
-    private String id;
+    private Integer id;
 
     private String userId;
 

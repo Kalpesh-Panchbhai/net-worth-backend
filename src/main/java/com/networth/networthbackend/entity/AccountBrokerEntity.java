@@ -11,9 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AccountBrokerEntity {
 
-    private String id;
+    private Integer id;
 
-    private String accountId;
+    private Integer accountId;
 
     private String symbol;
 

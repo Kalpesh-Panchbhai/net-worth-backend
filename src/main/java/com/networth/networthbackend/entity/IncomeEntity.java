@@ -5,13 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Date;
+
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 public class IncomeEntity {
 
-    private String id;
+    private Integer id;
 
     private String userId;
 
@@ -19,7 +21,7 @@ public class IncomeEntity {
 
     private Double taxPaid;
 
-    private String creditedOn;
+    private Date creditedOn;
 
     private String currency;
 

@@ -18,7 +18,7 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
     public PreparedStatement generateInsertQuery(AccountBrokerEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(account_id, name, symbol) VALUES (?, ?. ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getAccountId());
+        preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setString(2, data.getName());
         preparedStatement.setString(3, data.getSymbol());
         return preparedStatement;
@@ -26,15 +26,15 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
 
     @Override
     public List<AccountBrokerEntity> generateEntityData(ResultSet rs) throws SQLException {
-        List<AccountBrokerEntity> list = new ArrayList<>();
+        List<AccountBrokerEntity> accountBrokerEntityList = new ArrayList<>();
         while (rs.next()) {
             AccountBrokerEntity accountBrokerEntity = new AccountBrokerEntity();
-            accountBrokerEntity.setId(rs.getString("id"));
-            accountBrokerEntity.setAccountId(rs.getString("account_id"));
+            accountBrokerEntity.setId(rs.getInt("id"));
+            accountBrokerEntity.setAccountId(rs.getInt("account_id"));
             accountBrokerEntity.setName(rs.getString("name"));
             accountBrokerEntity.setSymbol(rs.getString("symbol"));
-            list.add(accountBrokerEntity);
+            accountBrokerEntityList.add(accountBrokerEntity);
         }
-        return list;
+        return accountBrokerEntityList;
     }
 }

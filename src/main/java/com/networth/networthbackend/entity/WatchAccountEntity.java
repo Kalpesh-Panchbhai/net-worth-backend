@@ -1,4 +1,4 @@
-package com.networth.networthbackend.model;
+package com.networth.networthbackend.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,9 +9,11 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BalanceDetailRest {
+public class WatchAccountEntity {
 
-    private String dateTime;
+    private Integer id;
 
-    private Double value = 0.0;
+    private Integer accountId;
+
+    private Integer watchId;
 }

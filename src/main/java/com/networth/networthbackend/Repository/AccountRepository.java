@@ -28,17 +28,17 @@ public class AccountRepository extends Repository<AccountEntity> {
 
     @Override
     public List<AccountEntity> generateEntityData(ResultSet rs) throws SQLException {
-        List<AccountEntity> list = new ArrayList<>();
+        List<AccountEntity> accountEntityList = new ArrayList<>();
         while (rs.next()) {
             AccountEntity accountEntity = new AccountEntity();
-            accountEntity.setId(rs.getString("id"));
+            accountEntity.setId(rs.getInt("id"));
             accountEntity.setUserId(rs.getString("user_id"));
             accountEntity.setName(rs.getString("name"));
             accountEntity.setType(rs.getString("type"));
             accountEntity.setActive(rs.getBoolean("is_active"));
             accountEntity.setCurrency(rs.getString("currency"));
-            list.add(accountEntity);
+            accountEntityList.add(accountEntity);
         }
-        return list;
+        return accountEntityList;
     }
 }

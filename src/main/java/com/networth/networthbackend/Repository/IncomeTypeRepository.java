@@ -5,6 +5,7 @@ import com.networth.networthbackend.entity.IncomeTypeEntity;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class IncomeTypeRepository extends Repository<IncomeTypeEntity> {
@@ -15,11 +16,25 @@ public class IncomeTypeRepository extends Repository<IncomeTypeEntity> {
 
     @Override
     public PreparedStatement generateInsertQuery(IncomeTypeEntity data) throws SQLException {
-        return null;
+        String insertQuery = "INSERT INTO " + tableName + "(user_id, is_default, name) VALUES (?, ?, ?)";
+        PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setBoolean(2, data.getIsDefault());
+        preparedStatement.setString(3, data.getName());
+        return preparedStatement;
     }
 
     @Override
     public List<IncomeTypeEntity> generateEntityData(ResultSet rs) throws SQLException {
-        return List.of();
+        List<IncomeTypeEntity> incomeTypeEntityList = new ArrayList<>();
+        while (rs.next()) {
+            IncomeTypeEntity incomeTypeEntity = new IncomeTypeEntity();
+            incomeTypeEntity.setId(rs.getInt("id"));
+            incomeTypeEntity.setUserId(rs.getString("user_id"));
+            incomeTypeEntity.setIsDefault(rs.getBoolean("is_default"));
+            incomeTypeEntity.setName(rs.getString("name"));
+            incomeTypeEntityList.add(incomeTypeEntity);
+        }
+        return incomeTypeEntityList;
     }
 }

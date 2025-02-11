@@ -5,19 +5,21 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Date;
+
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ChartDataEntity {
+public class AccountTransactionEntity {
 
-    private String id;
+    private Integer id;
 
-    private String userId;
+    private Integer accountId;
 
-    private String accountId;
+    private Integer accountBrokerId;
 
-    private String date;
+    private Date transactionDate;
 
     private Double value;
 }

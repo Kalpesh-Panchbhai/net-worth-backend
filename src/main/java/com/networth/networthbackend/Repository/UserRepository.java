@@ -24,12 +24,12 @@ public class UserRepository extends Repository<UserEntity> {
 
     @Override
     public List<UserEntity> generateEntityData(ResultSet rs) throws SQLException {
-        List<UserEntity> list = new ArrayList<>();
+        List<UserEntity> userEntityList = new ArrayList<>();
         while (rs.next()) {
             UserEntity userEntity = new UserEntity();
             userEntity.setId(rs.getString("id"));
-            list.add(userEntity);
+            userEntityList.add(userEntity);
         }
-        return list;
+        return userEntityList;
     }
 }

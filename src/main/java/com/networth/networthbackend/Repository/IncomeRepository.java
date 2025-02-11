@@ -5,6 +5,7 @@ import com.networth.networthbackend.entity.IncomeEntity;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class IncomeRepository extends Repository<IncomeEntity> {
@@ -15,18 +16,33 @@ public class IncomeRepository extends Repository<IncomeEntity> {
 
     @Override
     public PreparedStatement generateInsertQuery(IncomeEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(name, type, is_active, currency, user_id) VALUES (?, ?. ?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(user_id, amount, tax_paid, credited_on, currency, income_type, income_tag) VALUES (?, ?. ?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-//        preparedStatement.setString(1, data.getName());
-//        preparedStatement.setString(2, data.getType());
-//        preparedStatement.setBoolean(3, data.getActive());
-//        preparedStatement.setString(4, data.getCurrency());
-//        preparedStatement.setString(5, data.getUserId());
+        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setDouble(2, data.getAmount());
+        preparedStatement.setDouble(3, data.getTaxPaid());
+        preparedStatement.setDate(4, data.getCreditedOn());
+        preparedStatement.setString(5, data.getCurrency());
+        preparedStatement.setString(6, data.getIncomeType());
+        preparedStatement.setString(7, data.getIncomeTag());
         return preparedStatement;
     }
 
     @Override
     public List<IncomeEntity> generateEntityData(ResultSet rs) throws SQLException {
-        return List.of();
+        List<IncomeEntity> incomeEntityList = new ArrayList<>();
+        while (rs.next()) {
+            IncomeEntity incomeEntity = new IncomeEntity();
+            incomeEntity.setId(rs.getInt("id"));
+            incomeEntity.setUserId(rs.getString("user_id"));
+            incomeEntity.setAmount(rs.getDouble("amount"));
+            incomeEntity.setTaxPaid(rs.getDouble("tax_paid"));
+            incomeEntity.setCreditedOn(rs.getDate("credited_on"));
+            incomeEntity.setCurrency(rs.getString("currency"));
+            incomeEntity.setIncomeType(rs.getString("income_type"));
+            incomeEntity.setIncomeTag(rs.getString("income_tag"));
+            incomeEntityList.add(incomeEntity);
+        }
+        return incomeEntityList;
     }
 }

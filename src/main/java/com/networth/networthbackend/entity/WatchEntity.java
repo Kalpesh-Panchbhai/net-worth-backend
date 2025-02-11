@@ -5,20 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
 public class WatchEntity {
 
-    private String id;
+    private Integer id;
 
     private String userId;
 
     private String name;
-
-    private List<String> accountList;
-
 }
