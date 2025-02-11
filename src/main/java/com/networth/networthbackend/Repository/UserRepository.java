@@ -16,18 +16,19 @@ public class UserRepository extends Repository<UserEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(UserEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(id) VALUES (?)";
+        String insertQuery = "INSERT INTO " + tableName + "(id, user_id) VALUES (?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getId());
+        preparedStatement.setInt(1, data.getId());
+        preparedStatement.setString(2, data.getUserId());
         return preparedStatement;
     }
 
     @Override
     public PreparedStatement prepareUpdateQuery(UserEntity data) throws SQLException {
-        String updateQuery = "UPDATE " + tableName + " SET id = ? WHERE id = ?";
+        String updateQuery = "UPDATE " + tableName + " SET id = ?, user_id = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getId());
-        preparedStatement.setString(2, data.getId());
+        preparedStatement.setInt(1, data.getId());
+        preparedStatement.setString(2, data.getUserId());
         return preparedStatement;
     }
 
@@ -36,7 +37,8 @@ public class UserRepository extends Repository<UserEntity> {
         List<UserEntity> userEntityList = new ArrayList<>();
         while (rs.next()) {
             UserEntity userEntity = new UserEntity();
-            userEntity.setId(rs.getString("id"));
+            userEntity.setId(rs.getInt("id"));
+            userEntity.setUserId(rs.getString("user_id"));
             userEntityList.add(userEntity);
         }
         return userEntityList;

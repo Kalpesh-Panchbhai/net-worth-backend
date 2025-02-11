@@ -9,5 +9,7 @@ import lombok.*;
 @ToString
 public class UserEntity {
 
-    private String id;
+    private Integer id;
+
+    private String userId;
 }
