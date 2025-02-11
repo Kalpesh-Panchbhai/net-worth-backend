@@ -18,7 +18,7 @@ public class WatchRepository extends Repository<WatchEntity> {
     public PreparedStatement prepareInsertQuery(WatchEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(user_id, name) VALUES (?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setString(2, data.getName());
         return preparedStatement;
     }
@@ -27,7 +27,7 @@ public class WatchRepository extends Repository<WatchEntity> {
     public PreparedStatement prepareUpdateQuery(WatchEntity data) throws SQLException {
         String updateQuery = "UPDATE " + tableName + " SET user_id = ?, name = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setString(2, data.getName());
         preparedStatement.setInt(3, data.getId());
         return preparedStatement;
@@ -39,7 +39,7 @@ public class WatchRepository extends Repository<WatchEntity> {
         while (rs.next()) {
             WatchEntity watchEntity = new WatchEntity();
             watchEntity.setId(rs.getInt("id"));
-            watchEntity.setUserId(rs.getString("user_id"));
+            watchEntity.setUserId(rs.getInt("user_id"));
             watchEntity.setName(rs.getString("name"));
             watchEntityList.add(watchEntity);
         }

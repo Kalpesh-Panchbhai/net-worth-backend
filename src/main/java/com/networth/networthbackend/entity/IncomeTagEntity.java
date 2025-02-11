@@ -13,7 +13,7 @@ public class IncomeTagEntity {
 
     private Integer id;
 
-    private String userId;
+    private Integer userId;
 
     private String name;
 

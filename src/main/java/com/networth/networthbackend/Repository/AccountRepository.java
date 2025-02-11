@@ -22,7 +22,7 @@ public class AccountRepository extends Repository<AccountEntity> {
         preparedStatement.setString(2, data.getType());
         preparedStatement.setBoolean(3, data.getActive());
         preparedStatement.setString(4, data.getCurrency());
-        preparedStatement.setString(5, data.getUserId());
+        preparedStatement.setInt(5, data.getUserId());
         return preparedStatement;
     }
 
@@ -34,7 +34,7 @@ public class AccountRepository extends Repository<AccountEntity> {
         preparedStatement.setString(2, data.getType());
         preparedStatement.setBoolean(3, data.getActive());
         preparedStatement.setString(4, data.getCurrency());
-        preparedStatement.setString(5, data.getUserId());
+        preparedStatement.setInt(5, data.getUserId());
         preparedStatement.setInt(6, data.getId());
         return preparedStatement;
     }
@@ -45,7 +45,7 @@ public class AccountRepository extends Repository<AccountEntity> {
         while (rs.next()) {
             AccountEntity accountEntity = new AccountEntity();
             accountEntity.setId(rs.getInt("id"));
-            accountEntity.setUserId(rs.getString("user_id"));
+            accountEntity.setUserId(rs.getInt("user_id"));
             accountEntity.setName(rs.getString("name"));
             accountEntity.setType(rs.getString("type"));
             accountEntity.setActive(rs.getBoolean("is_active"));

@@ -18,7 +18,7 @@ public class IncomeTagRepository extends Repository<IncomeTagEntity> {
     public PreparedStatement prepareInsertQuery(IncomeTagEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(user_id, is_default, name) VALUES (?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setBoolean(2, data.getIsDefault());
         preparedStatement.setString(3, data.getName());
         return preparedStatement;
@@ -28,7 +28,7 @@ public class IncomeTagRepository extends Repository<IncomeTagEntity> {
     public PreparedStatement prepareUpdateQuery(IncomeTagEntity data) throws SQLException {
         String updateQuery = "UPDATE " + tableName + " SET user_id = ?, is_default = ?, name = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setString(1, data.getUserId());
+        preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setBoolean(2, data.getIsDefault());
         preparedStatement.setString(3, data.getName());
         preparedStatement.setInt(4, data.getId());
@@ -41,7 +41,7 @@ public class IncomeTagRepository extends Repository<IncomeTagEntity> {
         while (rs.next()) {
             IncomeTagEntity incomeTagEntity = new IncomeTagEntity();
             incomeTagEntity.setId(rs.getInt("id"));
-            incomeTagEntity.setUserId(rs.getString("user_id"));
+            incomeTagEntity.setUserId(rs.getInt("user_id"));
             incomeTagEntity.setIsDefault(rs.getBoolean("is_default"));
             incomeTagEntity.setName(rs.getString("name"));
             incomeTagEntityList.add(incomeTagEntity);

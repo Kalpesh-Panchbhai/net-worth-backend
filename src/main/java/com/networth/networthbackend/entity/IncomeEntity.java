@@ -15,7 +15,7 @@ public class IncomeEntity {
 
     private Integer id;
 
-    private String userId;
+    private Integer userId;
 
     private Double amount;
 
@@ -25,7 +25,7 @@ public class IncomeEntity {
 
     private String currency;
 
-    private String incomeType;
+    private Integer incomeType;
 
-    private String incomeTag;
+    private Integer incomeTag;
 }

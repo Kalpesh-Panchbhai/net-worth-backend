@@ -13,7 +13,7 @@ public class AccountEntity {
 
     private Integer id;
 
-    private String userId;
+    private Integer userId;
 
     private String name;
 
