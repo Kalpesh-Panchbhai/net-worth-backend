@@ -18,5 +18,5 @@ public interface RepositoryImpl<T> {
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;
 
-    List<T> getBySecondaryField(String fieldName, String fieldValue);
+    List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue);
 }

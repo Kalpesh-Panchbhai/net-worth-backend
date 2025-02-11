@@ -14,7 +14,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
 
     public final Utility<V> utilityRest = new Utility<>();
     public final Repository<V> repository;
-    public String secondaryFieldName;
+    public List<String> secondaryFieldName;
 
     public Service(Repository<V> repository) {
         this.repository = repository;
@@ -26,7 +26,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
         Integer id = repository.save(requestData);
         RestResponse restResponse = new RestResponse(String.valueOf(id));
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-        context.getLogger().log("data deleted successfully to dynamodb:::" + jsonBody);
+        context.getLogger().log("data added successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 201, Utility.createHeaders());
     }
 
@@ -36,7 +36,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
         repository.delete(id);
         RestResponse restResponse = Utility.generateRestResponse("success");
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-        context.getLogger().log("data deleted successfully to dynamodb:::" + jsonBody);
+        context.getLogger().log("data deleted successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
@@ -45,7 +45,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
         String id = apiGatewayRequest.getPathParameters().get("id");
         List<V> dataList = repository.getBySecondaryField(secondaryFieldName, id);
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
-        context.getLogger().log("data fetched successfully from dynamodb:::" + jsonBody);
+        context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 

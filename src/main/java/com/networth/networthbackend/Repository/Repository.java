@@ -71,11 +71,13 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public List<T> getBySecondaryField(String fieldName, String fieldValue) {
+    public List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue) {
         try {
-            String query = "select * from " + tableName + " where " + fieldName + " = ?";
+            String query = "select * from " + tableName + " where (" + String.join(" = ? OR ", fieldNameList) + " = ?)";
             PreparedStatement pstmt = connection.prepareStatement(query);
-            pstmt.setString(1, fieldValue);
+            for (int i = 1; i <= fieldNameList.size(); i++) {
+                pstmt.setString(i, fieldValue);
+            }
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);
         } catch (Exception e) {

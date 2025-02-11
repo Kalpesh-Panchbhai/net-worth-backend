@@ -1,20 +1,20 @@
 package com.networth.networthbackend;
 
 
-import com.networth.networthbackend.Repository.AccountRepository;
-import com.networth.networthbackend.entity.AccountEntity;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
 
+        String tableName = "networth";
+        List<String> fieldName = Arrays.asList("account_id");
+        String query = "select * from " + tableName + " where (" + String.join(" = ? OR ", fieldName) + " = ?)";
+        System.out.println(query);
 //        Connection connection = null;
-        try {
+//        try {
 //            String userName = "avnadmin";
 //            String password = "AVNS_rUprsHw62c14G_fc0fx";
 //
@@ -34,19 +34,19 @@ public class NetWorthApplication {
 //                }
 //            }
 
-            AccountRepository accountRepository = new AccountRepository();
-            AccountEntity accountEntity = new AccountEntity();
-            accountEntity.setName("test");
-            accountEntity.setActive(true);
-            accountEntity.setType("Broker");
-            accountEntity.setCurrency("INR");
-            accountEntity.setUserId("U1");
-            accountRepository.save(accountEntity);
-        } catch (Exception e) {
-            System.err.println("Cannot connect to database server");
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        } finally {
+//            AccountRepository accountRepository = new AccountRepository();
+//            AccountEntity accountEntity = new AccountEntity();
+//            accountEntity.setName("test");
+//            accountEntity.setActive(true);
+//            accountEntity.setType("Broker");
+//            accountEntity.setCurrency("INR");
+//            accountEntity.setUserId("U1");
+//            accountRepository.save(accountEntity);
+//        } catch (Exception e) {
+//            System.err.println("Cannot connect to database server");
+//            System.err.println(e.getMessage());
+//            e.printStackTrace();
+//        } finally {
 //            if (connection != null) {
 //                try {
 //                    connection.close();
@@ -54,6 +54,5 @@ public class NetWorthApplication {
 //                } catch (Exception e) {
 //                }
 //            }
-        }
     }
 }
