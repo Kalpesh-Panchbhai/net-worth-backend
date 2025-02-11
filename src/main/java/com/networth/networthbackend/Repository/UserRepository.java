@@ -16,10 +16,9 @@ public class UserRepository extends Repository<UserEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(UserEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(id, user_id) VALUES (?)";
+        String insertQuery = "INSERT INTO " + tableName + "(user_id) VALUES (?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setInt(1, data.getId());
-        preparedStatement.setString(2, data.getUserId());
+        preparedStatement.setString(1, data.getUserId());
         return preparedStatement;
     }
 
