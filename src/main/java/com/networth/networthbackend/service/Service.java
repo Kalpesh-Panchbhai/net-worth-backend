@@ -23,8 +23,8 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        Integer id = repository.save(requestData);
-        RestResponse restResponse = new RestResponse(String.valueOf(id));
+        Integer id = repository.save(requestData, true);
+        RestResponse restResponse = Utility.generateRestResponse("success", id);
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data added successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 201, Utility.createHeaders());
@@ -33,8 +33,8 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        Integer id = repository.update(requestData);
-        RestResponse restResponse = new RestResponse(String.valueOf(id));
+        Integer id = repository.update(requestData, true);
+        RestResponse restResponse = Utility.generateRestResponse("success", id);
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data added successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
@@ -42,9 +42,9 @@ public abstract class Service<V> implements ServiceImpl<V> {
 
     @Override
     public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        repository.delete(id);
-        RestResponse restResponse = Utility.generateRestResponse("success");
+        Integer id = Integer.valueOf(apiGatewayRequest.getPathParameters().get("id"));
+        repository.delete(id, true);
+        RestResponse restResponse = Utility.generateRestResponse("success", id);
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data deleted successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
@@ -53,7 +53,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> type) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        List<V> dataList = repository.getBySecondaryField(secondaryFieldNameList, id);
+        List<V> dataList = repository.getBySecondaryField(secondaryFieldNameList, id, true);
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
         context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());

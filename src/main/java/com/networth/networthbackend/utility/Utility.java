@@ -22,10 +22,8 @@ public class Utility<T> {
         return headers;
     }
 
-    public static RestResponse generateRestResponse(String result) {
-        RestResponse restResponse = new RestResponse();
-        restResponse.setResult(result);
-        return restResponse;
+    public static RestResponse generateRestResponse(String result, Integer id) {
+        return new RestResponse(result, id);
     }
 
     public static String convertLocalToUTC() {

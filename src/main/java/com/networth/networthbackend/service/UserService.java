@@ -20,11 +20,11 @@ public class UserService extends Service<UserEntity> {
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
         UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId());
+        List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId(), false);
         if (userEntityList.isEmpty()) {
             return super.post(apiGatewayRequest, context, entityType);
         }
-        RestResponse restResponse = new RestResponse(String.valueOf(userEntityList.get(0).getId()));
+        RestResponse restResponse = Utility.generateRestResponse("success", userEntityList.get(0).getId());
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
