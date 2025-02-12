@@ -26,7 +26,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
         Integer id = repository.save(requestData, true);
         RestResponse restResponse = Utility.generateRestResponse("success", id);
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
-//        context.getLogger().log("data added successfully to database:::" + jsonBody);
+        context.getLogger().log("data added successfully to database:::" + jsonBody);
         return createAPIResponse(jsonBody, 201, Utility.createHeaders());
     }
 
