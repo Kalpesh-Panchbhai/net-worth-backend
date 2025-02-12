@@ -16,7 +16,7 @@ public class WatchRepository extends Repository<WatchEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(WatchEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(user_id, name) VALUES (?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(user_id, name) VALUES (?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setString(2, data.getName());

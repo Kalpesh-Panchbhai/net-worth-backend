@@ -6,20 +6,16 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
-import com.networth.networthbackend.service.AccountTransactionService;
+import com.networth.networthbackend.entity.UserEntity;
+import com.networth.networthbackend.service.UserService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        UserService userService = new UserService();
         APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-        apiGatewayProxyRequestEvent.setBody("{\n" +
-                "    \"accountId\": 10,\n" +
-                "    \"transactionDate\": \"2024-01-01\",\n" +
-                "    \"value\": 10\n" +
-                "}");
-        accountTransactionService.post(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
+        apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": \"U1\"\n" + "}");
+        userService.post(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
     }
 
     private static Context getContext() {

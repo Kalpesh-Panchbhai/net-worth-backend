@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.UserRepository;
 import com.networth.networthbackend.entity.UserEntity;
+import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
@@ -22,7 +23,16 @@ public class UserService extends Service<UserEntity> {
         UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId(), false);
         if (userEntityList.isEmpty()) {
-            return super.post(apiGatewayRequest, context, entityType);
+            APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.post(apiGatewayRequest, context, entityType);
+            WatchService watchService = new WatchService();
+            RestResponse restResponse = new Utility<RestResponse>().convertStringToObj(apiGatewayProxyResponseEvent.getBody(), context, RestResponse.class);
+            WatchEntity watchEntity = new WatchEntity();
+            watchEntity.setUserId(restResponse.getId());
+            watchEntity.setName("All");
+            watchService.repository.save(watchEntity, true);
+            return apiGatewayProxyResponseEvent;
+        } else {
+            repository.databaseService.disconnect();
         }
         RestResponse restResponse = Utility.generateRestResponse("success", userEntityList.get(0).getId());
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
