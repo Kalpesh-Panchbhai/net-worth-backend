@@ -52,7 +52,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
             incomeEntity.setUserId(rs.getInt("user_id"));
             incomeEntity.setAmount(rs.getDouble("amount"));
             incomeEntity.setTaxPaid(rs.getDouble("tax_paid"));
-            incomeEntity.setCreditedDate(rs.getDate("credited_on"));
+            incomeEntity.setCreditedDate(rs.getDate("credited_date"));
             incomeEntity.setCurrency(rs.getString("currency"));
             incomeEntity.setIncomeType(rs.getInt("income_type"));
             incomeEntity.setIncomeTag(rs.getInt("income_tag"));

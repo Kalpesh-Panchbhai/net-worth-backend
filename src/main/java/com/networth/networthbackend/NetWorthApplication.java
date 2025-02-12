@@ -6,19 +6,24 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.service.AccountService;
+import com.networth.networthbackend.entity.IncomeEntity;
+import com.networth.networthbackend.service.IncomeService;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        AccountService accountService = new AccountService();
+        IncomeService incomeService = new IncomeService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": 1,\n" + "    \"name\": \"A\",\n" + "    \"type\": \"AA\",\n" + "    \"currency\": \"INR\",\n" + "    \"active\": true\n" + "}");
-            accountService.post(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("id", "2");
+            apiGatewayProxyRequestEvent.setPathParameters(headers);
+            incomeService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
         } finally {
-            accountService.repository.databaseService.disconnect();
+            incomeService.repository.databaseService.disconnect();
         }
     }
 
