@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.sql.Types.INTEGER;
+
 public class ChartRepository extends Repository<ChartEntity> {
 
     public ChartRepository() {
@@ -18,8 +20,16 @@ public class ChartRepository extends Repository<ChartEntity> {
     public PreparedStatement prepareInsertQuery(ChartEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, date, value) VALUES (?, ?. ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setInt(1, data.getAccountId());
-        preparedStatement.setInt(2, data.getAccountBrokerId());
+        if (data.getAccountId() != null) {
+            preparedStatement.setInt(1, data.getAccountId());
+        } else {
+            preparedStatement.setNull(1, INTEGER);
+        }
+        if (data.getAccountBrokerId() != null) {
+            preparedStatement.setInt(2, data.getAccountBrokerId());
+        } else {
+            preparedStatement.setNull(2, INTEGER);
+        }
         preparedStatement.setDate(3, data.getDate());
         preparedStatement.setDouble(4, data.getValue());
         return preparedStatement;
@@ -29,8 +39,16 @@ public class ChartRepository extends Repository<ChartEntity> {
     public PreparedStatement prepareUpdateQuery(ChartEntity data) throws SQLException {
         String updateQuery = "UPDATE " + tableName + " SET account_id = ?, account_broker_id = ?, date = ?, value = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setInt(1, data.getAccountId());
-        preparedStatement.setInt(2, data.getAccountBrokerId());
+        if (data.getAccountId() != null) {
+            preparedStatement.setInt(1, data.getAccountId());
+        } else {
+            preparedStatement.setNull(1, INTEGER);
+        }
+        if (data.getAccountBrokerId() != null) {
+            preparedStatement.setInt(2, data.getAccountBrokerId());
+        } else {
+            preparedStatement.setNull(2, INTEGER);
+        }
         preparedStatement.setDate(3, data.getDate());
         preparedStatement.setDouble(4, data.getValue());
         preparedStatement.setInt(5, data.getId());
