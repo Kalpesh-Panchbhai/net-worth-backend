@@ -83,12 +83,12 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue) {
+    public List<T> getBySecondaryField(List<String> fieldNameList, Object fieldValue) {
         try {
             String query = "select * from " + tableName + " where (" + String.join(" = ? OR ", fieldNameList) + " = ?)";
             PreparedStatement pstmt = connection.prepareStatement(query);
             for (int i = 1; i <= fieldNameList.size(); i++) {
-                pstmt.setString(i, fieldValue);
+                pstmt.setObject(i, fieldValue);
             }
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);

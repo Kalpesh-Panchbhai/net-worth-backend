@@ -22,4 +22,6 @@ public class AccountEntity {
     private String currency;
 
     private Boolean active;
+
+    private AccountValueEntity value;
 }

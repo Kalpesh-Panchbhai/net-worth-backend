@@ -1,11 +1,15 @@
 package com.networth.networthbackend.Repository;
 
 import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.entity.AccountValueEntity;
+import com.networth.networthbackend.entity.ChartEntity;
+import com.networth.networthbackend.service.ChartService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
@@ -44,8 +48,17 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
             accountBrokerEntity.setAccountId(rs.getInt("account_id"));
             accountBrokerEntity.setName(rs.getString("name"));
             accountBrokerEntity.setSymbol(rs.getString("symbol"));
+            accountBrokerEntity.setValue(fetchAccountValueEntity(accountBrokerEntity.getId()));
             accountBrokerEntityList.add(accountBrokerEntity);
         }
         return accountBrokerEntityList;
+    }
+
+    private AccountValueEntity fetchAccountValueEntity(Integer id) {
+        ChartService chartService = new ChartService();
+        List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_broker_id"), id);
+        chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
+        chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
+        return new AccountValueEntity(!chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0, (!chartEntityList.isEmpty() && chartEntityList.size() >= 2) ? chartEntityList.get(1).getValue() : 0.0);
     }
 }

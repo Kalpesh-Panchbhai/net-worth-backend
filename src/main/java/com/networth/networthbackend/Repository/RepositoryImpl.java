@@ -16,7 +16,7 @@ public interface RepositoryImpl<T> {
 
     Optional<T> getByPrimaryField(String id) throws SQLException;
 
-    List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue);
+    List<T> getBySecondaryField(List<String> fieldNameList, Object fieldValue);
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;
 

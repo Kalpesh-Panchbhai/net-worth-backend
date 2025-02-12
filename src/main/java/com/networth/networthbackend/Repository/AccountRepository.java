@@ -1,11 +1,17 @@
 package com.networth.networthbackend.Repository;
 
+import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.entity.AccountValueEntity;
+import com.networth.networthbackend.entity.ChartEntity;
+import com.networth.networthbackend.service.AccountBrokerService;
+import com.networth.networthbackend.service.ChartService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class AccountRepository extends Repository<AccountEntity> {
@@ -50,8 +56,39 @@ public class AccountRepository extends Repository<AccountEntity> {
             accountEntity.setType(rs.getString("type"));
             accountEntity.setActive(rs.getBoolean("is_active"));
             accountEntity.setCurrency(rs.getString("currency"));
+            accountEntity.setValue(fetchAccountValueEntity(accountEntity.getId(), accountEntity.getType()));
             accountEntityList.add(accountEntity);
         }
         return accountEntityList;
+    }
+
+    private AccountValueEntity fetchAccountValueEntity(Integer id, String type) {
+        ChartService chartService = new ChartService();
+        if (type.equals("Broker")) {
+            AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);
+            AccountBrokerService accountBrokerService = new AccountBrokerService();
+            List<AccountBrokerEntity> accountBrokerEntityList = accountBrokerService.repository.getBySecondaryField(List.of("account_id"), id);
+            if (!accountBrokerEntityList.isEmpty()) {
+                Double currentBalance = 0.0;
+                Double previousBalance = 0.0;
+                for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
+                    List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_broker_id"), accountBrokerEntity.getId());
+                    chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
+                    chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
+                    currentBalance += !chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0;
+                    previousBalance += (!chartEntityList.isEmpty() && chartEntityList.size() >= 2) ? chartEntityList.get(1).getValue() : 0.0;
+                }
+                accountValueEntity.setCurrentBalance(currentBalance);
+                accountValueEntity.setPreviousBalance(previousBalance);
+                return accountValueEntity;
+            } else {
+                return accountValueEntity;
+            }
+        } else {
+            List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_id"), id);
+            chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
+            chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
+            return new AccountValueEntity(!chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0, (!chartEntityList.isEmpty() && chartEntityList.size() >= 2) ? chartEntityList.get(1).getValue() : 0.0);
+        }
     }
 }

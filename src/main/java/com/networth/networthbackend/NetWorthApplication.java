@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.IncomeEntity;
-import com.networth.networthbackend.service.IncomeService;
+import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.service.AccountService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,15 +15,15 @@ import java.util.Map;
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        IncomeService incomeService = new IncomeService();
+        AccountService accountService = new AccountService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
             Map<String, String> headers = new HashMap<>();
-            headers.put("id", "2");
+            headers.put("id", "1");
             apiGatewayProxyRequestEvent.setPathParameters(headers);
-            incomeService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
+            accountService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
         } finally {
-            incomeService.repository.databaseService.disconnect();
+            accountService.repository.databaseService.disconnect();
         }
     }
 

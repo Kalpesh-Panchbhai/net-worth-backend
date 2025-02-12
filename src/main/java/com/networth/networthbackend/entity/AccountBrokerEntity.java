@@ -18,4 +18,6 @@ public class AccountBrokerEntity {
     private String symbol;
 
     private String name;
+
+    private AccountValueEntity value;
 }
