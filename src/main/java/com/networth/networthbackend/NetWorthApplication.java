@@ -6,19 +6,19 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.ChartEntity;
-import com.networth.networthbackend.service.ChartService;
+import com.networth.networthbackend.entity.AccountEntity;
+import com.networth.networthbackend.service.AccountService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        ChartService chartService = new ChartService();
+        AccountService accountService = new AccountService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountBrokerId\": 3,\n" + "    \"date\": \"2024-02-02\",\n" + "    \"value\": 10\n" + "}");
-            chartService.post(apiGatewayProxyRequestEvent, getContext(), ChartEntity.class);
+            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": 1,\n" + "    \"name\": \"A\",\n" + "    \"type\": \"AA\",\n" + "    \"currency\": \"INR\",\n" + "    \"active\": true\n" + "}");
+            accountService.post(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
         } finally {
-            chartService.repository.databaseService.disconnect();
+            accountService.repository.databaseService.disconnect();
         }
     }
 
