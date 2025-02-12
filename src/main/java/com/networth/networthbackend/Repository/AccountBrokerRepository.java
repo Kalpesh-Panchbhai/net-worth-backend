@@ -16,7 +16,7 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(AccountBrokerEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(account_id, name, symbol) VALUES (?, ?. ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(account_id, name, symbol) VALUES (?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setString(2, data.getName());

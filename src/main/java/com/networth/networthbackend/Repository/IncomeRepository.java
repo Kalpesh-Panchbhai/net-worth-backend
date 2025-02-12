@@ -16,12 +16,12 @@ public class IncomeRepository extends Repository<IncomeEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(IncomeEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(user_id, amount, tax_paid, credited_on, currency, income_type, income_tag) VALUES (?, ?. ?, ?, ?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(user_id, amount, tax_paid, credited_date, currency, income_type, income_tag) VALUES (?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setDouble(2, data.getAmount());
         preparedStatement.setDouble(3, data.getTaxPaid());
-        preparedStatement.setDate(4, data.getCreditedOn());
+        preparedStatement.setDate(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
         preparedStatement.setInt(6, data.getIncomeType());
         preparedStatement.setInt(7, data.getIncomeTag());
@@ -35,7 +35,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setDouble(2, data.getAmount());
         preparedStatement.setDouble(3, data.getTaxPaid());
-        preparedStatement.setDate(4, data.getCreditedOn());
+        preparedStatement.setDate(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
         preparedStatement.setInt(6, data.getIncomeType());
         preparedStatement.setInt(7, data.getIncomeTag());
@@ -52,7 +52,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
             incomeEntity.setUserId(rs.getInt("user_id"));
             incomeEntity.setAmount(rs.getDouble("amount"));
             incomeEntity.setTaxPaid(rs.getDouble("tax_paid"));
-            incomeEntity.setCreditedOn(rs.getDate("credited_on"));
+            incomeEntity.setCreditedDate(rs.getDate("credited_on"));
             incomeEntity.setCurrency(rs.getString("currency"));
             incomeEntity.setIncomeType(rs.getInt("income_type"));
             incomeEntity.setIncomeTag(rs.getInt("income_tag"));

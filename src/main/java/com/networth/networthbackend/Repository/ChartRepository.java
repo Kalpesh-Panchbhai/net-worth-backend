@@ -13,12 +13,12 @@ import static java.sql.Types.INTEGER;
 public class ChartRepository extends Repository<ChartEntity> {
 
     public ChartRepository() {
-        tableName = "account_broker";
+        tableName = "chart";
     }
 
     @Override
     public PreparedStatement prepareInsertQuery(ChartEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, date, value) VALUES (?, ?. ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, date, value) VALUES (?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         if (data.getAccountId() != null) {
             preparedStatement.setInt(1, data.getAccountId());

@@ -11,7 +11,7 @@ import java.util.List;
 public class WatchAccountRepository extends Repository<WatchAccountEntity> {
 
     public WatchAccountRepository() {
-        tableName = "account_transaction";
+        tableName = "watch_account";
     }
 
     @Override

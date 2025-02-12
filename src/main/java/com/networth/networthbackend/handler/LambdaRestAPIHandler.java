@@ -8,9 +8,6 @@ import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.service.*;
 import lombok.SneakyThrows;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     @SneakyThrows
@@ -30,8 +27,10 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             return handleIncomeTypeRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/income_tag")) {
             return handleIncomeTagRequest(apiGatewayRequest, context);
-        } else if (apiGatewayRequest.getPath().startsWith("/watch")) {
+        } else if (apiGatewayRequest.getPath().startsWith("/watch") && !apiGatewayRequest.getPath().contains("_")) {
             return handleWatchRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/watch_account")) {
+            return handleWatchAccountRequest(apiGatewayRequest, context);
         } else {
             throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
         }
@@ -53,7 +52,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         AccountService accountService = new AccountService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -73,7 +72,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -91,7 +90,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -105,7 +104,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         IncomeService incomeService = new IncomeService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -125,7 +124,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         IncomeTypeService incomeTypeService = new IncomeTypeService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -143,7 +142,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         IncomeTagService incomeTagService = new IncomeTagService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -161,7 +160,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
+    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         WatchService watchService = new WatchService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -171,6 +170,22 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
                     return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
                 case "PATCH":
                     return watchService.patch(apiGatewayRequest, context, WatchEntity.class);
+                case "DELETE":
+                    return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            watchService.repository.databaseService.disconnect();
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleWatchAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+        WatchService watchService = new WatchService();
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return watchService.post(apiGatewayRequest, context, WatchEntity.class);
                 case "DELETE":
                     return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
                 default:

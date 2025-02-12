@@ -21,7 +21,7 @@ public class IncomeEntity {
 
     private Double taxPaid;
 
-    private Date creditedOn;
+    private Date creditedDate;
 
     private String currency;
 

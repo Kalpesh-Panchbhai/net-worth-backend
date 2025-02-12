@@ -6,19 +6,19 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.UserEntity;
-import com.networth.networthbackend.service.UserService;
+import com.networth.networthbackend.entity.ChartEntity;
+import com.networth.networthbackend.service.ChartService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        UserService userService = new UserService();
+        ChartService chartService = new ChartService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": \"U3\"\n" + "}");
-            userService.post(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
+            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountBrokerId\": 3,\n" + "    \"date\": \"2024-02-02\",\n" + "    \"value\": 10\n" + "}");
+            chartService.post(apiGatewayProxyRequestEvent, getContext(), ChartEntity.class);
         } finally {
-            userService.repository.databaseService.disconnect();
+            chartService.repository.databaseService.disconnect();
         }
     }
 
