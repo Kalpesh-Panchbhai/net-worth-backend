@@ -20,7 +20,7 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public int save(T data, Boolean disconnect) {
+    public int save(T data) {
         try {
             PreparedStatement preparedStatement = prepareInsertQuery(data);
             int affectedRows = preparedStatement.executeUpdate();
@@ -33,16 +33,12 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (disconnect) {
-                databaseService.disconnect();
-            }
         }
         return 0;
     }
 
     @Override
-    public int update(T data, Boolean disconnect) {
+    public int update(T data) {
         try {
             PreparedStatement preparedStatement = prepareUpdateQuery(data);
             int affectedRows = preparedStatement.executeUpdate();
@@ -55,16 +51,12 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (disconnect) {
-                databaseService.disconnect();
-            }
         }
         return 0;
     }
 
     @Override
-    public void delete(Integer id, Boolean disconnect) {
+    public void delete(Integer id) {
         try {
             String query = "delete from " + tableName + " where id = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
@@ -72,15 +64,11 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             pstmt.execute();
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (disconnect) {
-                databaseService.disconnect();
-            }
         }
     }
 
     @Override
-    public Optional<T> getByPrimaryField(String id, Boolean disconnect) {
+    public Optional<T> getByPrimaryField(String id) {
         try {
             String query = "select * from " + tableName + " where id = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
@@ -90,16 +78,12 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             return !list.isEmpty() ? Optional.of(list.get(0)) : Optional.empty();
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (disconnect) {
-                databaseService.disconnect();
-            }
         }
         return null;
     }
 
     @Override
-    public List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue, Boolean disconnect) {
+    public List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue) {
         try {
             String query = "select * from " + tableName + " where (" + String.join(" = ? OR ", fieldNameList) + " = ?)";
             PreparedStatement pstmt = connection.prepareStatement(query);
@@ -110,10 +94,6 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             return generateEntityData(rs);
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        } finally {
-            if (disconnect) {
-                databaseService.disconnect();
-            }
         }
         return null;
     }

@@ -39,113 +39,145 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
 
     public APIGatewayProxyResponseEvent handleUserRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
         UserService userService = new UserService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return userService.post(apiGatewayRequest, context, UserEntity.class);
-            case "DELETE":
-                return userService.delete(apiGatewayRequest, context, UserEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return userService.post(apiGatewayRequest, context, UserEntity.class);
+                case "DELETE":
+                    return userService.delete(apiGatewayRequest, context, UserEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            userService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountService accountService = new AccountService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountService.post(apiGatewayRequest, context, AccountEntity.class);
-            case "GET":
-                return accountService.getBySecondaryField(apiGatewayRequest, context, AccountEntity.class);
-            case "DELETE":
-                return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
-            case "PATCH":
-                return accountService.patch(apiGatewayRequest, context, AccountEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return accountService.post(apiGatewayRequest, context, AccountEntity.class);
+                case "GET":
+                    return accountService.getBySecondaryField(apiGatewayRequest, context, AccountEntity.class);
+                case "DELETE":
+                    return accountService.delete(apiGatewayRequest, context, AccountEntity.class);
+                case "PATCH":
+                    return accountService.patch(apiGatewayRequest, context, AccountEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            accountService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountBrokerService accountBrokerService = new AccountBrokerService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerEntity.class);
-            case "GET":
-                return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerEntity.class);
-            case "DELETE":
-                return accountBrokerService.delete(apiGatewayRequest, context, AccountBrokerEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return accountBrokerService.post(apiGatewayRequest, context, AccountBrokerEntity.class);
+                case "GET":
+                    return accountBrokerService.getBySecondaryField(apiGatewayRequest, context, AccountBrokerEntity.class);
+                case "DELETE":
+                    return accountBrokerService.delete(apiGatewayRequest, context, AccountBrokerEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            accountBrokerService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            accountTransactionService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeService incomeService = new IncomeService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeService.post(apiGatewayRequest, context, IncomeEntity.class);
-            case "GET":
-                return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeEntity.class);
-            case "PATCH":
-                return incomeService.patch(apiGatewayRequest, context, IncomeEntity.class);
-            case "DELETE":
-                return incomeService.delete(apiGatewayRequest, context, IncomeEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return incomeService.post(apiGatewayRequest, context, IncomeEntity.class);
+                case "GET":
+                    return incomeService.getBySecondaryField(apiGatewayRequest, context, IncomeEntity.class);
+                case "PATCH":
+                    return incomeService.patch(apiGatewayRequest, context, IncomeEntity.class);
+                case "DELETE":
+                    return incomeService.delete(apiGatewayRequest, context, IncomeEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            incomeService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTypeService incomeTypeService = new IncomeTypeService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeTypeService.post(apiGatewayRequest, context, IncomeTypeEntity.class);
-            case "GET":
-                return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, IncomeTypeEntity.class);
-            case "PATCH":
-                return incomeTypeService.patch(apiGatewayRequest, context, IncomeTypeEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return incomeTypeService.post(apiGatewayRequest, context, IncomeTypeEntity.class);
+                case "GET":
+                    return incomeTypeService.getBySecondaryField(apiGatewayRequest, context, IncomeTypeEntity.class);
+                case "PATCH":
+                    return incomeTypeService.patch(apiGatewayRequest, context, IncomeTypeEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            incomeTypeService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         IncomeTagService incomeTagService = new IncomeTagService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return incomeTagService.post(apiGatewayRequest, context, IncomeTagEntity.class);
-            case "GET":
-                return incomeTagService.getBySecondaryField(apiGatewayRequest, context, IncomeTagEntity.class);
-            case "PATCH":
-                return incomeTagService.patch(apiGatewayRequest, context, IncomeTagEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return incomeTagService.post(apiGatewayRequest, context, IncomeTagEntity.class);
+                case "GET":
+                    return incomeTagService.getBySecondaryField(apiGatewayRequest, context, IncomeTagEntity.class);
+                case "PATCH":
+                    return incomeTagService.patch(apiGatewayRequest, context, IncomeTagEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            incomeTagService.repository.databaseService.disconnect();
         }
     }
 
     public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws IOException, URISyntaxException, InterruptedException {
         WatchService watchService = new WatchService();
-        switch (apiGatewayRequest.getHttpMethod()) {
-            case "POST":
-                return watchService.post(apiGatewayRequest, context, WatchEntity.class);
-            case "GET":
-                return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
-            case "PATCH":
-                return watchService.patch(apiGatewayRequest, context, WatchEntity.class);
-            case "DELETE":
-                return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
-            default:
-                throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return watchService.post(apiGatewayRequest, context, WatchEntity.class);
+                case "GET":
+                    return watchService.getBySecondaryField(apiGatewayRequest, context, WatchEntity.class);
+                case "PATCH":
+                    return watchService.patch(apiGatewayRequest, context, WatchEntity.class);
+                case "DELETE":
+                    return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            watchService.repository.databaseService.disconnect();
         }
     }
 }

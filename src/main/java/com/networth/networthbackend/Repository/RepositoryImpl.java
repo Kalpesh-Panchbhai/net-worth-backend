@@ -8,15 +8,15 @@ import java.util.Optional;
 
 public interface RepositoryImpl<T> {
 
-    int save(T data, Boolean disconnect);
+    int save(T data);
 
-    int update(T data, Boolean disconnect);
+    int update(T data);
 
-    void delete(Integer id, Boolean disconnect);
+    void delete(Integer id);
 
-    Optional<T> getByPrimaryField(String id, Boolean disconnect) throws SQLException;
+    Optional<T> getByPrimaryField(String id) throws SQLException;
 
-    List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue, Boolean disconnect);
+    List<T> getBySecondaryField(List<String> fieldNameList, String fieldValue);
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;
 

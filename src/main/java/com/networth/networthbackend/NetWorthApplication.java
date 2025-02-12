@@ -13,9 +13,13 @@ public class NetWorthApplication {
 
     public static void main(String[] args) {
         UserService userService = new UserService();
-        APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-        apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": \"U1\"\n" + "}");
-        userService.post(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
+        try {
+            APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
+            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": \"U3\"\n" + "}");
+            userService.post(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
+        } finally {
+            userService.repository.databaseService.disconnect();
+        }
     }
 
     private static Context getContext() {

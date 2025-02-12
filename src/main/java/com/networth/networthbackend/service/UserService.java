@@ -21,7 +21,7 @@ public class UserService extends Service<UserEntity> {
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
         UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId(), false);
+        List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId());
         if (userEntityList.isEmpty()) {
             APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.post(apiGatewayRequest, context, entityType);
             WatchService watchService = new WatchService();
@@ -29,10 +29,8 @@ public class UserService extends Service<UserEntity> {
             WatchEntity watchEntity = new WatchEntity();
             watchEntity.setUserId(restResponse.getId());
             watchEntity.setName("All");
-            watchService.repository.save(watchEntity, true);
+            watchService.repository.save(watchEntity);
             return apiGatewayProxyResponseEvent;
-        } else {
-            repository.databaseService.disconnect();
         }
         RestResponse restResponse = Utility.generateRestResponse("success", userEntityList.get(0).getId());
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
