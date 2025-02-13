@@ -6,29 +6,26 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.WatchAccountEntity;
-import com.networth.networthbackend.service.WatchAccountService;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.networth.networthbackend.entity.UserEntity;
+import com.networth.networthbackend.service.UserService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        WatchAccountService watchAccountService = new WatchAccountService();
+        UserService userService = new UserService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-//            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": 1,\n" + "    \"watchId\": 2\n" + "}");
-//            watchAccountService.post(apiGatewayProxyRequestEvent, getContext(), WatchAccountEntity.class);
+            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": \"U1\"\n" + "}");
+            userService.post(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
 
 
-            Map<String, String> headers = new HashMap<>();
-            headers.put("id", "1");
-            headers.put("type", "watch");
-            apiGatewayProxyRequestEvent.setPathParameters(headers);
-            watchAccountService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), WatchAccountEntity.class);
+//            Map<String, String> headers = new HashMap<>();
+//            headers.put("id", "1");
+//            headers.put("type", "account");
+//            apiGatewayProxyRequestEvent.setPathParameters(headers);
+//            userService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), WatchAccountEntity.class);
         } finally {
-            watchAccountService.repository.databaseService.disconnect();
+            userService.repository.databaseService.disconnect();
         }
     }
 
