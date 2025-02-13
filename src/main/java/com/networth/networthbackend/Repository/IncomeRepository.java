@@ -1,12 +1,16 @@
 package com.networth.networthbackend.Repository;
 
 import com.networth.networthbackend.entity.IncomeEntity;
+import com.networth.networthbackend.entity.IncomeTagEntity;
+import com.networth.networthbackend.entity.IncomeTypeEntity;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class IncomeRepository extends Repository<IncomeEntity> {
 
@@ -23,8 +27,8 @@ public class IncomeRepository extends Repository<IncomeEntity> {
         preparedStatement.setDouble(3, data.getTaxPaid());
         preparedStatement.setString(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
-        preparedStatement.setInt(6, data.getIncomeType());
-        preparedStatement.setInt(7, data.getIncomeTag());
+        preparedStatement.setInt(6, data.getIncomeType().getId());
+        preparedStatement.setInt(7, data.getIncomeTag().getId());
         return preparedStatement;
     }
 
@@ -37,8 +41,8 @@ public class IncomeRepository extends Repository<IncomeEntity> {
         preparedStatement.setDouble(3, data.getTaxPaid());
         preparedStatement.setString(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
-        preparedStatement.setInt(6, data.getIncomeType());
-        preparedStatement.setInt(7, data.getIncomeTag());
+        preparedStatement.setInt(6, data.getIncomeType().getId());
+        preparedStatement.setInt(7, data.getIncomeTag().getId());
         preparedStatement.setInt(8, data.getId());
         return preparedStatement;
     }
@@ -54,10 +58,34 @@ public class IncomeRepository extends Repository<IncomeEntity> {
             incomeEntity.setTaxPaid(rs.getDouble("tax_paid"));
             incomeEntity.setCreditedDate(rs.getString("credited_date"));
             incomeEntity.setCurrency(rs.getString("currency"));
-            incomeEntity.setIncomeType(rs.getInt("income_type"));
-            incomeEntity.setIncomeTag(rs.getInt("income_tag"));
+            incomeEntity.setIncomeType(new IncomeTypeEntity(rs.getInt("income_type_id"), rs.getInt("income_type_user_id"), rs.getString("income_type_name"), rs.getBoolean("income_type_is_default")));
+            incomeEntity.setIncomeTag(new IncomeTagEntity(rs.getInt("income_tag_id"), rs.getInt("income_tag_user_id"), rs.getString("income_tag_name"), rs.getBoolean("income_tag_is_default")));
             incomeEntityList.add(incomeEntity);
         }
         return incomeEntityList;
+    }
+
+    @Override
+    public List<IncomeEntity> getBySecondaryField(LinkedHashMap<String, Object> queryMap) {
+        try {
+            StringBuilder query = new StringBuilder("select i.*, type.id as income_type_id, type.user_id as income_type_user_id, type.name as income_type_name, type.is_default as income_type_is_default, tag.id as income_tag_id, tag.user_id as income_tag_user_id, tag.name as income_tag_name, tag.is_default as income_tag_is_default from income i join income_type type on type.id = i.income_type join income_tag tag on tag.id = i.income_tag where (i.");
+            boolean multipleFields = false;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                if (multipleFields) query.append(" AND ").append(entry.getKey()).append(" = ?");
+                else query.append(entry.getKey()).append(" = ?");
+                multipleFields = true;
+            }
+            query.append(")");
+            PreparedStatement pstmt = connection.prepareStatement(String.valueOf(query));
+            int queryId = 1;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                pstmt.setObject(queryId++, entry.getValue());
+            }
+            ResultSet rs = pstmt.executeQuery();
+            return generateEntityData(rs);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
     }
 }

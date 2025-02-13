@@ -21,7 +21,7 @@ public class IncomeEntity {
 
     private String currency;
 
-    private Integer incomeType;
+    private IncomeTypeEntity incomeType;
 
-    private Integer incomeTag;
+    private IncomeTagEntity incomeTag;
 }

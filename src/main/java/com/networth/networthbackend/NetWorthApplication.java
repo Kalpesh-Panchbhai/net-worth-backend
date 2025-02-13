@@ -7,9 +7,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.networth.networthbackend.entity.IncomeEntity;
-import com.networth.networthbackend.entity.IncomeTypeEntity;
 import com.networth.networthbackend.service.IncomeService;
-import com.networth.networthbackend.service.IncomeTypeService;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class NetWorthApplication {
 
@@ -17,24 +18,23 @@ public class NetWorthApplication {
         IncomeService incomeService = new IncomeService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" +
-                    "    \"id\": 1,\n" +
-                    "    \"userId\": 1,\n" +
-                    "    \"amount\": 1000,\n" +
-                    "    \"taxPaid\": 10111,\n" +
-                    "    \"creditedDate\": \"2020-01-01\",\n" +
-                    "    \"currency\": \"IN111R\",\n" +
-                    "    \"incomeType\": 6,\n" +
-                    "    \"incomeTag\": 1\n" +
-                    "}");
-            incomeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
+//            apiGatewayProxyRequestEvent.setBody("{\n" +
+//                    "    \"id\": 1,\n" +
+//                    "    \"userId\": 1,\n" +
+//                    "    \"amount\": 1000,\n" +
+//                    "    \"taxPaid\": 10111,\n" +
+//                    "    \"creditedDate\": \"2020-01-01\",\n" +
+//                    "    \"currency\": \"IN111R\",\n" +
+//                    "    \"incomeType\": 6,\n" +
+//                    "    \"incomeTag\": 1\n" +
+//                    "}");
+//            incomeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
 
 
-//            Map<String, String> headers = new HashMap<>();
-//            headers.put("id", "1");
-//            headers.put("type", "account");
-//            apiGatewayProxyRequestEvent.setPathParameters(headers);
-//            accountTransactionService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("id", "1");
+            apiGatewayProxyRequestEvent.setPathParameters(headers);
+            incomeService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
         } finally {
             incomeService.repository.databaseService.disconnect();
         }
