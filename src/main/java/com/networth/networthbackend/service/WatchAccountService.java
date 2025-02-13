@@ -9,6 +9,5 @@ public class WatchAccountService extends Service<WatchAccountEntity> {
 
     public WatchAccountService() {
         super(new WatchAccountRepository());
-        secondaryFieldNameList = List.of("account_id", "watch_id");
     }
 }

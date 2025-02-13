@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
@@ -56,7 +57,9 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
 
     private AccountValueEntity fetchAccountValueEntity(Integer id) {
         ChartService chartService = new ChartService();
-        List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_broker_id"), id);
+        List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("account_broker_id", id);
+        }});
         chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
         chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
         return new AccountValueEntity(!chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0, (!chartEntityList.isEmpty() && chartEntityList.size() >= 2) ? chartEntityList.get(1).getValue() : 0.0);

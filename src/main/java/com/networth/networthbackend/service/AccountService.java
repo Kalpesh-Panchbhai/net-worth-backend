@@ -10,6 +10,7 @@ import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AccountService extends Service<AccountEntity> {
@@ -18,7 +19,6 @@ public class AccountService extends Service<AccountEntity> {
 
     public AccountService() {
         super(new AccountRepository());
-        secondaryFieldNameList = List.of("user_id");
     }
 
     @Override
@@ -32,7 +32,9 @@ public class AccountService extends Service<AccountEntity> {
 
     private WatchEntity getDefaultWatchList() {
         WatchService watchService = new WatchService();
-        List<WatchEntity> watchEntityList = watchService.repository.getBySecondaryField(List.of("name"), ALL_WATCH_LIST_NAME);
+        List<WatchEntity> watchEntityList = watchService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("name", ALL_WATCH_LIST_NAME);
+        }});
         return watchEntityList.get(0);
     }
 

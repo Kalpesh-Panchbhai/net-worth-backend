@@ -3,7 +3,9 @@ package com.networth.networthbackend.Repository;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface RepositoryImpl<T> {
@@ -16,7 +18,7 @@ public interface RepositoryImpl<T> {
 
     Optional<T> getByPrimaryField(String id) throws SQLException;
 
-    List<T> getBySecondaryField(List<String> fieldNameList, Object fieldValue);
+    List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap);
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;
 

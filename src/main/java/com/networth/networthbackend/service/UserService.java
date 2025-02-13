@@ -9,19 +9,21 @@ import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class UserService extends Service<UserEntity> {
 
     public UserService() {
         super(new UserRepository());
-        secondaryFieldNameList = List.of("user_id");
     }
 
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
         UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
-        List<UserEntity> userEntityList = repository.getBySecondaryField(secondaryFieldNameList, requestData.getUserId());
+        List<UserEntity> userEntityList = repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("user_id", requestData.getUserId());
+        }});
         if (userEntityList.isEmpty()) {
             APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.post(apiGatewayRequest, context, entityType);
             WatchService watchService = new WatchService();

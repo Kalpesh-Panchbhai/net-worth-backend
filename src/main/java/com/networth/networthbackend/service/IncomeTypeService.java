@@ -9,6 +9,5 @@ public class IncomeTypeService extends Service<IncomeTypeEntity> {
 
     public IncomeTypeService() {
         super(new IncomeTypeRepository());
-        secondaryFieldNameList = List.of("user_id");
     }
 }

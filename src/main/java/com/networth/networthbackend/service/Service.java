@@ -7,6 +7,7 @@ import com.networth.networthbackend.Repository.Repository;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ public abstract class Service<V> implements ServiceImpl<V> {
 
     public final Utility<V> utilityRest = new Utility<>();
     public final Repository<V> repository;
-    public List<String> secondaryFieldNameList;
 
     public Service(Repository<V> repository) {
         this.repository = repository;
@@ -53,7 +53,9 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         String id = apiGatewayRequest.getPathParameters().get("id");
-        List<V> dataList = repository.getBySecondaryField(secondaryFieldNameList, id);
+        List<V> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("user_id", id);
+        }});
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
         context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());

@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AccountRepository extends Repository<AccountEntity> {
@@ -67,12 +68,16 @@ public class AccountRepository extends Repository<AccountEntity> {
         if (type.equals("Broker")) {
             AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);
             AccountBrokerService accountBrokerService = new AccountBrokerService();
-            List<AccountBrokerEntity> accountBrokerEntityList = accountBrokerService.repository.getBySecondaryField(List.of("account_id"), id);
+            List<AccountBrokerEntity> accountBrokerEntityList = accountBrokerService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+                put("account_id", id);
+            }});
             if (!accountBrokerEntityList.isEmpty()) {
                 Double currentBalance = 0.0;
                 Double previousBalance = 0.0;
                 for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
-                    List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_broker_id"), accountBrokerEntity.getId());
+                    List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+                        put("account_broker_id", accountBrokerEntity.getId());
+                    }});
                     chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
                     chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
                     currentBalance += !chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0;
@@ -85,7 +90,9 @@ public class AccountRepository extends Repository<AccountEntity> {
                 return accountValueEntity;
             }
         } else {
-            List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(List.of("account_id"), id);
+            List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+                put("account_id", id);
+            }});
             chartEntityList.sort(Comparator.comparing(ChartEntity::getDate).reversed());
             chartEntityList = chartEntityList.subList(0, Math.min(chartEntityList.size(), 2));
             return new AccountValueEntity(!chartEntityList.isEmpty() ? chartEntityList.get(0).getValue() : 0.0, (!chartEntityList.isEmpty() && chartEntityList.size() >= 2) ? chartEntityList.get(1).getValue() : 0.0);

@@ -5,7 +5,9 @@ import com.networth.networthbackend.service.DatabaseService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public abstract class Repository<T> implements RepositoryImpl<T> {
@@ -83,12 +85,20 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public List<T> getBySecondaryField(List<String> fieldNameList, Object fieldValue) {
+    public List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) {
         try {
-            String query = "select * from " + tableName + " where (" + String.join(" = ? OR ", fieldNameList) + " = ?)";
-            PreparedStatement pstmt = connection.prepareStatement(query);
-            for (int i = 1; i <= fieldNameList.size(); i++) {
-                pstmt.setObject(i, fieldValue);
+            StringBuilder query = new StringBuilder("select * from " + tableName + " where (");
+            Boolean multipleFields = false;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                if (multipleFields) query.append(entry.getKey()).append(" = ? OR ");
+                else query.append(entry.getKey()).append(" = ?");
+                multipleFields = true;
+            }
+            query.append(")");
+            PreparedStatement pstmt = connection.prepareStatement(String.valueOf(query));
+            Integer queryId = 1;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                pstmt.setObject(queryId++, entry.getValue());
             }
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);
