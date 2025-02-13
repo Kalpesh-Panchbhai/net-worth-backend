@@ -6,36 +6,31 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
-import com.networth.networthbackend.service.AccountTransactionService;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.networth.networthbackend.entity.IncomeTypeEntity;
+import com.networth.networthbackend.service.IncomeTypeService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        IncomeTypeService incomeTypeService = new IncomeTypeService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-//            apiGatewayProxyRequestEvent.setBody("{\n" +
-//                    "    \"accountId\": \"1\",\n" +
-//                    "    \"accountBrokerId\": 0,\n" +
-//                    "    \"transactionDate\": \"2025-02-04 00:00:00\",\n" +
-//                    "    \"value\": 600.00,\n" +
-//                    "    \"operation\": \"update\"\n" +
-//                    "}");
-//            accountTransactionService.post(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
-            Map<String, String> headers = new HashMap<>();
-            headers.put("id", "1");
-            headers.put("type", "account");
-            apiGatewayProxyRequestEvent.setPathParameters(headers);
-            accountTransactionService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
-//            System.out.println(accountTransactionEntityList);
-//            accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate).reversed());
-//            System.out.println(accountTransactionEntityList);
+            apiGatewayProxyRequestEvent.setBody("{\n" +
+                    "    \"id\": 4,\n" +
+                    "    \"userId\": 1,\n" +
+                    "    \"name\": \"A\",\n" +
+                    "    \"isDefault\": true\n" +
+                    "}");
+            incomeTypeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeTypeEntity.class);
+
+
+//            Map<String, String> headers = new HashMap<>();
+//            headers.put("id", "1");
+//            headers.put("type", "account");
+//            apiGatewayProxyRequestEvent.setPathParameters(headers);
+//            accountTransactionService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
         } finally {
-            accountTransactionService.repository.databaseService.disconnect();
+            incomeTypeService.repository.databaseService.disconnect();
         }
     }
 

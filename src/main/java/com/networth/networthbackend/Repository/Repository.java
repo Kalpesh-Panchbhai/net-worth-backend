@@ -88,15 +88,15 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     public List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) {
         try {
             StringBuilder query = new StringBuilder("select * from " + tableName + " where (");
-            Boolean multipleFields = false;
+            boolean multipleFields = false;
             for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
-                if (multipleFields) query.append(entry.getKey()).append(" = ? OR ");
+                if (multipleFields) query.append(" AND ").append(entry.getKey()).append(" = ?");
                 else query.append(entry.getKey()).append(" = ?");
                 multipleFields = true;
             }
             query.append(")");
             PreparedStatement pstmt = connection.prepareStatement(String.valueOf(query));
-            Integer queryId = 1;
+            int queryId = 1;
             for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
                 pstmt.setObject(queryId++, entry.getValue());
             }
