@@ -18,4 +18,6 @@ public class AccountTransactionEntity {
     private String transactionDate;
 
     private Double value;
+
+    private String operation;
 }

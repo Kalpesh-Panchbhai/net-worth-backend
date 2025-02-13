@@ -20,12 +20,12 @@ public class AccountTransactionRepository extends Repository<AccountTransactionE
     public PreparedStatement prepareInsertQuery(AccountTransactionEntity data) throws SQLException {
         String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, transaction_date, value) VALUES (?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        if (data.getAccountId() != null) {
+        if (data.getAccountId() != null && data.getAccountId() != 0) {
             preparedStatement.setInt(1, data.getAccountId());
         } else {
             preparedStatement.setNull(1, INTEGER);
         }
-        if (data.getAccountBrokerId() != null) {
+        if (data.getAccountBrokerId() != null && data.getAccountBrokerId() != 0) {
             preparedStatement.setInt(2, data.getAccountBrokerId());
         } else {
             preparedStatement.setNull(2, INTEGER);
