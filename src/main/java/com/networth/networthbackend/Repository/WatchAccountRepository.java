@@ -47,7 +47,7 @@ public class WatchAccountRepository extends Repository<WatchAccountEntity> {
         if (isListForSameAccount) {
             watchEntityList.forEach(watchAccountEntity -> {
                 WatchEntity watchEntity = new WatchEntity();
-                watchEntity.setId(watchAccountEntity.getId());
+                watchEntity.setId(watchAccountEntity.getWatchId());
                 try {
                     fetchAccountValueForWatchEntity(watchEntity);
                 } catch (SQLException e) {
@@ -58,7 +58,7 @@ public class WatchAccountRepository extends Repository<WatchAccountEntity> {
         } else {
             watchEntityList.forEach(watchAccountEntity -> {
                 AccountEntity accountEntity = new AccountEntity();
-                accountEntity.setId(watchAccountEntity.getId());
+                accountEntity.setId(watchAccountEntity.getAccountId());
                 try {
                     fetchAccountValueForAccountEntity(accountEntity);
                 } catch (SQLException e) {
