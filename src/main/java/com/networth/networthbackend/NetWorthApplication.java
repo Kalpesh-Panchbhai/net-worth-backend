@@ -6,22 +6,28 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.networth.networthbackend.entity.IncomeEntity;
 import com.networth.networthbackend.entity.IncomeTypeEntity;
+import com.networth.networthbackend.service.IncomeService;
 import com.networth.networthbackend.service.IncomeTypeService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        IncomeTypeService incomeTypeService = new IncomeTypeService();
+        IncomeService incomeService = new IncomeService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
             apiGatewayProxyRequestEvent.setBody("{\n" +
-                    "    \"id\": 4,\n" +
+                    "    \"id\": 1,\n" +
                     "    \"userId\": 1,\n" +
-                    "    \"name\": \"A\",\n" +
-                    "    \"isDefault\": true\n" +
+                    "    \"amount\": 1000,\n" +
+                    "    \"taxPaid\": 10111,\n" +
+                    "    \"creditedDate\": \"2020-01-01\",\n" +
+                    "    \"currency\": \"IN111R\",\n" +
+                    "    \"incomeType\": 6,\n" +
+                    "    \"incomeTag\": 1\n" +
                     "}");
-            incomeTypeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeTypeEntity.class);
+            incomeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
 
 
 //            Map<String, String> headers = new HashMap<>();
@@ -30,7 +36,7 @@ public class NetWorthApplication {
 //            apiGatewayProxyRequestEvent.setPathParameters(headers);
 //            accountTransactionService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
         } finally {
-            incomeTypeService.repository.databaseService.disconnect();
+            incomeService.repository.databaseService.disconnect();
         }
     }
 

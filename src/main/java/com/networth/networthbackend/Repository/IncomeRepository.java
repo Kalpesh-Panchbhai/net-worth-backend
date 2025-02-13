@@ -30,7 +30,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
 
     @Override
     public PreparedStatement prepareUpdateQuery(IncomeEntity data) throws SQLException {
-        String updateQuery = "UPDATE " + tableName + " SET user_id = ?, amount = ?, tax_paid = ?, credited_on = ?, currency = ?, income_type = ?, income_tag = ? WHERE id = ?";
+        String updateQuery = "UPDATE " + tableName + " SET user_id = ?, amount = ?, tax_paid = ?, credited_date = ?, currency = ?, income_type = ?, income_tag = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setDouble(2, data.getAmount());
