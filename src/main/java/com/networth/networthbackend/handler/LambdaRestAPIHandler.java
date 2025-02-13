@@ -96,6 +96,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             switch (apiGatewayRequest.getHttpMethod()) {
                 case "POST":
                     return accountTransactionService.post(apiGatewayRequest, context, AccountTransactionEntity.class);
+                case "GET":
+                    return accountTransactionService.getBySecondaryField(apiGatewayRequest, context, AccountTransactionEntity.class);
                 default:
                     throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
             }

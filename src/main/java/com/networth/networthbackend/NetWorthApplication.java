@@ -9,17 +9,25 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.networth.networthbackend.entity.AccountTransactionEntity;
 import com.networth.networthbackend.service.AccountTransactionService;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class NetWorthApplication {
 
     public static void main(String[] args) {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": \"1\",\n" + "    \"transactionDate\": \"2021-01-01 10:01:01\",\n" + "    \"value\": 10.00\n" + "}");
-//            Map<String, String> headers = new HashMap<>();
-//            headers.put("id", "1");
-//            apiGatewayProxyRequestEvent.setPathParameters(headers);
-            accountTransactionService.post(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
+//            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": \"1\",\n" + "    \"transactionDate\": \"2021-01-01 10:01:01\",\n" + "    \"value\": 10.00\n" + "}");
+            Map<String, String> headers = new HashMap<>();
+            headers.put("id", "1");
+            apiGatewayProxyRequestEvent.setPathParameters(headers);
+            List<AccountTransactionEntity> accountTransactionEntityList = accountTransactionService.repository.getBySecondaryField(List.of("account_id"), 1);
+            System.out.println(accountTransactionEntityList);
+            accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate).reversed());
+            System.out.println(accountTransactionEntityList);
         } finally {
             accountTransactionService.repository.databaseService.disconnect();
         }
