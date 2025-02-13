@@ -16,7 +16,7 @@ public interface RepositoryImpl<T> {
 
     void delete(Integer id);
 
-    Optional<T> getByPrimaryField(String id) throws SQLException;
+    Optional<T> getByPrimaryField(Integer id) throws SQLException;
 
     List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap);
 

@@ -70,11 +70,11 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public Optional<T> getByPrimaryField(String id) {
+    public Optional<T> getByPrimaryField(Integer id) {
         try {
             String query = "select * from " + tableName + " where id = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
-            pstmt.setString(1, id);
+            pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
             List<T> list = generateEntityData(rs);
             return !list.isEmpty() ? Optional.of(list.get(0)) : Optional.empty();

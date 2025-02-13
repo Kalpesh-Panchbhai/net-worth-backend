@@ -14,4 +14,8 @@ public class WatchEntity {
     private Integer userId;
 
     private String name;
+
+    private Integer totalAccount;
+
+    private AccountValueEntity value;
 }
