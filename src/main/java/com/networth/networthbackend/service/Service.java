@@ -51,7 +51,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> type) {
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
         String id = apiGatewayRequest.getPathParameters().get("id");
         List<V> dataList = repository.getBySecondaryField(secondaryFieldNameList, id);
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);

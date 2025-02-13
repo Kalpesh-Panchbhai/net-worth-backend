@@ -40,4 +40,14 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
             return createAPIResponse(jsonBody, 201, Utility.createHeaders());
         }
     }
+
+    @Override
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        String type = apiGatewayRequest.getPathParameters().get("type");
+        List<AccountTransactionEntity> dataList = repository.getBySecondaryField(secondaryFieldNameList, id);
+        String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
+        context.getLogger().log("data fetched successfully from database:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
+    }
 }
