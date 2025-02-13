@@ -6,8 +6,8 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.WatchEntity;
-import com.networth.networthbackend.service.WatchService;
+import com.networth.networthbackend.entity.WatchAccountEntity;
+import com.networth.networthbackend.service.WatchAccountService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,28 +15,20 @@ import java.util.Map;
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        WatchService watchService = new WatchService();
+        WatchAccountService watchAccountService = new WatchAccountService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-//            apiGatewayProxyRequestEvent.setBody("{\n" +
-//                    "    \"id\": 1,\n" +
-//                    "    \"userId\": 1,\n" +
-//                    "    \"amount\": 1000,\n" +
-//                    "    \"taxPaid\": 10111,\n" +
-//                    "    \"creditedDate\": \"2020-01-01\",\n" +
-//                    "    \"currency\": \"IN111R\",\n" +
-//                    "    \"incomeType\": 6,\n" +
-//                    "    \"incomeTag\": 1\n" +
-//                    "}");
-//            incomeService.patch(apiGatewayProxyRequestEvent, getContext(), IncomeEntity.class);
+//            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": 1,\n" + "    \"watchId\": 2\n" + "}");
+//            watchAccountService.post(apiGatewayProxyRequestEvent, getContext(), WatchAccountEntity.class);
 
 
             Map<String, String> headers = new HashMap<>();
             headers.put("id", "1");
+            headers.put("type", "watch");
             apiGatewayProxyRequestEvent.setPathParameters(headers);
-            watchService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), WatchEntity.class);
+            watchAccountService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), WatchAccountEntity.class);
         } finally {
-            watchService.repository.databaseService.disconnect();
+            watchAccountService.repository.databaseService.disconnect();
         }
     }
 

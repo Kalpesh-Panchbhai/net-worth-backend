@@ -17,7 +17,7 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     public String tableName;
 
     public Repository() {
-        databaseService = new DatabaseService();
+        databaseService = DatabaseService.getInstance();
         connection = databaseService.getConnection();
     }
 

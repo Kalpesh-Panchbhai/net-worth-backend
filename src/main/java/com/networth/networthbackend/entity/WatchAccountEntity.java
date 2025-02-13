@@ -14,4 +14,8 @@ public class WatchAccountEntity {
     private Integer accountId;
 
     private Integer watchId;
+
+    private WatchEntity watch;
+
+    private AccountEntity account;
 }

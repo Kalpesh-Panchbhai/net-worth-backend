@@ -5,10 +5,18 @@ import java.sql.DriverManager;
 
 public class DatabaseService {
 
+    private static final DatabaseService databaseService = new DatabaseService();
     String userName = "avnadmin";
     String password = "AVNS_rUprsHw62c14G_fc0fx";
     String url = "jdbc:mysql://net-worth-net-worth.i.aivencloud.com:18558/net_worth?user=" + userName + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
     private Connection conn = null;
+
+    private DatabaseService() {
+    }
+
+    public static DatabaseService getInstance() {
+        return databaseService;
+    }
 
     public Connection getConnection() {
         if (conn == null) {

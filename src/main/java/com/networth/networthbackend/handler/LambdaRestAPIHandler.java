@@ -185,18 +185,20 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
     }
 
     public APIGatewayProxyResponseEvent handleWatchAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
-        WatchService watchService = new WatchService();
+        WatchAccountService watchAccountService = new WatchAccountService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
                 case "POST":
-                    return watchService.post(apiGatewayRequest, context, WatchEntity.class);
+                    return watchAccountService.post(apiGatewayRequest, context, WatchAccountEntity.class);
+                case "GET":
+                    return watchAccountService.getBySecondaryField(apiGatewayRequest, context, WatchAccountEntity.class);
                 case "DELETE":
-                    return watchService.delete(apiGatewayRequest, context, WatchEntity.class);
+                    return watchAccountService.delete(apiGatewayRequest, context, WatchAccountEntity.class);
                 default:
                     throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
             }
         } finally {
-            watchService.repository.databaseService.disconnect();
+            watchAccountService.repository.databaseService.disconnect();
         }
     }
 }
