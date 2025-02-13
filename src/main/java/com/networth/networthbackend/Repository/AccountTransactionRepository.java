@@ -30,7 +30,7 @@ public class AccountTransactionRepository extends Repository<AccountTransactionE
         } else {
             preparedStatement.setNull(2, INTEGER);
         }
-        preparedStatement.setDate(3, data.getTransactionDate());
+        preparedStatement.setString(3, data.getTransactionDate());
         preparedStatement.setDouble(4, data.getValue());
         return preparedStatement;
     }
@@ -49,7 +49,7 @@ public class AccountTransactionRepository extends Repository<AccountTransactionE
         } else {
             preparedStatement.setNull(2, INTEGER);
         }
-        preparedStatement.setDate(3, data.getTransactionDate());
+        preparedStatement.setString(3, data.getTransactionDate());
         preparedStatement.setDouble(4, data.getValue());
         preparedStatement.setInt(5, data.getId());
         return preparedStatement;
@@ -63,7 +63,7 @@ public class AccountTransactionRepository extends Repository<AccountTransactionE
             accountTransactionEntity.setId(rs.getInt("id"));
             accountTransactionEntity.setAccountId(rs.getInt("account_id"));
             accountTransactionEntity.setAccountBrokerId(rs.getInt("account_broker_id"));
-            accountTransactionEntity.setTransactionDate(rs.getDate("transaction_date"));
+            accountTransactionEntity.setTransactionDate(rs.getString("transaction_date"));
             accountTransactionEntity.setValue(rs.getDouble("value"));
             accountTransactionEntityList.add(accountTransactionEntity);
         }

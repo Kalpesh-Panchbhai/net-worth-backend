@@ -6,24 +6,22 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.service.AccountService;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.networth.networthbackend.entity.AccountTransactionEntity;
+import com.networth.networthbackend.service.AccountTransactionService;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) {
-        AccountService accountService = new AccountService();
+        AccountTransactionService accountTransactionService = new AccountTransactionService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            Map<String, String> headers = new HashMap<>();
-            headers.put("id", "1");
-            apiGatewayProxyRequestEvent.setPathParameters(headers);
-            accountService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
+            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": \"1\",\n" + "    \"transactionDate\": \"2021-01-01 10:01:01\",\n" + "    \"value\": 10.00\n" + "}");
+//            Map<String, String> headers = new HashMap<>();
+//            headers.put("id", "1");
+//            apiGatewayProxyRequestEvent.setPathParameters(headers);
+            accountTransactionService.post(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
         } finally {
-            accountService.repository.databaseService.disconnect();
+            accountTransactionService.repository.databaseService.disconnect();
         }
     }
 

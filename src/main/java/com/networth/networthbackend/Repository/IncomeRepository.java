@@ -5,8 +5,6 @@ import com.networth.networthbackend.entity.IncomeEntity;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +21,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setDouble(2, data.getAmount());
         preparedStatement.setDouble(3, data.getTaxPaid());
-        preparedStatement.setDate(4, data.getCreditedDate());
+        preparedStatement.setString(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
         preparedStatement.setInt(6, data.getIncomeType());
         preparedStatement.setInt(7, data.getIncomeTag());
@@ -37,7 +35,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
         preparedStatement.setInt(1, data.getUserId());
         preparedStatement.setDouble(2, data.getAmount());
         preparedStatement.setDouble(3, data.getTaxPaid());
-        preparedStatement.setDate(4, data.getCreditedDate());
+        preparedStatement.setString(4, data.getCreditedDate());
         preparedStatement.setString(5, data.getCurrency());
         preparedStatement.setInt(6, data.getIncomeType());
         preparedStatement.setInt(7, data.getIncomeTag());
@@ -54,7 +52,7 @@ public class IncomeRepository extends Repository<IncomeEntity> {
             incomeEntity.setUserId(rs.getInt("user_id"));
             incomeEntity.setAmount(rs.getDouble("amount"));
             incomeEntity.setTaxPaid(rs.getDouble("tax_paid"));
-            incomeEntity.setCreditedDate(rs.getDate("credited_date"));
+            incomeEntity.setCreditedDate(rs.getString("credited_date"));
             incomeEntity.setCurrency(rs.getString("currency"));
             incomeEntity.setIncomeType(rs.getInt("income_type"));
             incomeEntity.setIncomeTag(rs.getInt("income_tag"));

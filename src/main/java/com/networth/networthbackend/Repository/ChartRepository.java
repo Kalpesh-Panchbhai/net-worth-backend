@@ -30,7 +30,7 @@ public class ChartRepository extends Repository<ChartEntity> {
         } else {
             preparedStatement.setNull(2, INTEGER);
         }
-        preparedStatement.setDate(3, data.getDate());
+        preparedStatement.setString(3, data.getDate());
         preparedStatement.setDouble(4, data.getValue());
         return preparedStatement;
     }
@@ -49,7 +49,7 @@ public class ChartRepository extends Repository<ChartEntity> {
         } else {
             preparedStatement.setNull(2, INTEGER);
         }
-        preparedStatement.setDate(3, data.getDate());
+        preparedStatement.setString(3, data.getDate());
         preparedStatement.setDouble(4, data.getValue());
         preparedStatement.setInt(5, data.getId());
         return preparedStatement;
@@ -63,7 +63,7 @@ public class ChartRepository extends Repository<ChartEntity> {
             chartEntity.setId(rs.getInt("id"));
             chartEntity.setAccountId(rs.getInt("account_id"));
             chartEntity.setAccountBrokerId(rs.getInt("account_broker_id"));
-            chartEntity.setDate(rs.getDate("date"));
+            chartEntity.setDate(rs.getString("date"));
             chartEntity.setValue(rs.getDouble("value"));
             chartEntityList.add(chartEntity);
         }

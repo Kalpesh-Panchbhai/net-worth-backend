@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Date;
-
 @Setter
 @Getter
 @AllArgsConstructor
@@ -19,7 +17,7 @@ public class AccountTransactionEntity {
 
     private Integer accountBrokerId;
 
-    private Date transactionDate;
+    private String transactionDate;
 
     private Double value;
 }
