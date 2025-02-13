@@ -21,6 +21,7 @@ public class DatabaseService {
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             conn = DriverManager.getConnection(url);
+            System.out.println("Connected to database");
         } catch (Exception e) {
             System.err.println("Cannot connect to database server");
             System.err.println(e.getMessage());

@@ -33,6 +33,7 @@ public class UserService extends Service<UserEntity> {
             watchEntity.setUserId(restResponse.getId());
             watchEntity.setName("All");
             watchService.repository.save(watchEntity);
+            watchService.repository.databaseService.disconnect();
             return apiGatewayProxyResponseEvent;
         }
         RestResponse restResponse = Utility.generateRestResponse("success", userEntityList.get(0).getId());
