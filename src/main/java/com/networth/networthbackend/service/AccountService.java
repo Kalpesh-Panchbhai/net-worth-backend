@@ -10,6 +10,7 @@ import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public class AccountService extends Service<AccountEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountEntity> entityType) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountEntity> entityType) throws SQLException {
         APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.post(apiGatewayRequest, context, entityType);
         RestResponse restResponse = new Utility<RestResponse>().convertStringToObj(apiGatewayProxyResponseEvent.getBody(), context, RestResponse.class);
         WatchEntity defaultWatchList = getDefaultWatchList();
@@ -30,7 +31,7 @@ public class AccountService extends Service<AccountEntity> {
         return apiGatewayProxyResponseEvent;
     }
 
-    private WatchEntity getDefaultWatchList() {
+    private WatchEntity getDefaultWatchList() throws SQLException {
         WatchService watchService = new WatchService();
         List<WatchEntity> watchEntityList = watchService.repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("name", ALL_WATCH_LIST_NAME);
@@ -38,7 +39,7 @@ public class AccountService extends Service<AccountEntity> {
         return watchEntityList.get(0);
     }
 
-    private void addAccountToDefaultWatchList(WatchEntity watchEntity, Integer accountId) {
+    private void addAccountToDefaultWatchList(WatchEntity watchEntity, Integer accountId) throws SQLException {
         WatchAccountService watchAccountService = new WatchAccountService();
         WatchAccountEntity watchAccountEntity = new WatchAccountEntity();
         watchAccountEntity.setAccountId(accountId);

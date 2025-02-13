@@ -8,6 +8,7 @@ import com.networth.networthbackend.entity.AccountTransactionEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,7 +20,7 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) throws SQLException {
         AccountTransactionEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         if (requestData.getOperation().equalsIgnoreCase("update")) {
             return super.post(apiGatewayRequest, context, entityType);
@@ -46,7 +47,7 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) {
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) throws SQLException {
         String id = apiGatewayRequest.getPathParameters().get("id");
         String type = apiGatewayRequest.getPathParameters().get("type");
         List<AccountTransactionEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{

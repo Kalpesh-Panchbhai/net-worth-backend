@@ -48,21 +48,29 @@ public class WatchAccountRepository extends Repository<WatchAccountEntity> {
             watchEntityList.forEach(watchAccountEntity -> {
                 WatchEntity watchEntity = new WatchEntity();
                 watchEntity.setId(watchAccountEntity.getId());
-                fetchAccountValueForWatchEntity(watchEntity);
+                try {
+                    fetchAccountValueForWatchEntity(watchEntity);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 watchAccountEntity.setWatch(watchEntity);
             });
         } else {
             watchEntityList.forEach(watchAccountEntity -> {
                 AccountEntity accountEntity = new AccountEntity();
                 accountEntity.setId(watchAccountEntity.getId());
-                fetchAccountValueForAccountEntity(accountEntity);
+                try {
+                    fetchAccountValueForAccountEntity(accountEntity);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 watchAccountEntity.setAccount(accountEntity);
             });
         }
         return watchEntityList;
     }
 
-    private void fetchAccountValueForWatchEntity(WatchEntity watchEntity) {
+    private void fetchAccountValueForWatchEntity(WatchEntity watchEntity) throws SQLException {
         WatchAccountService watchAccountService = new WatchAccountService();
         AccountService accountService = new AccountService();
         AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);
@@ -87,7 +95,7 @@ public class WatchAccountRepository extends Repository<WatchAccountEntity> {
         }
     }
 
-    private void fetchAccountValueForAccountEntity(AccountEntity accountEntity) {
+    private void fetchAccountValueForAccountEntity(AccountEntity accountEntity) throws SQLException {
         AccountService accountService = new AccountService();
         Optional<AccountEntity> fetchedAccountEntity = accountService.repository.getByPrimaryField(accountEntity.getId());
         String type = "";

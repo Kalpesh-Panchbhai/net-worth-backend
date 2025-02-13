@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.Repository.IncomeTypeRepository;
 import com.networth.networthbackend.entity.IncomeTypeEntity;
 
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -16,7 +17,7 @@ public class IncomeTypeService extends Service<IncomeTypeEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeTypeEntity> entityType) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeTypeEntity> entityType) throws SQLException {
         IncomeTypeEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         if (requestData.getIsDefault()) {
             updateDefaultRecordToFalse(requestData);
@@ -27,13 +28,13 @@ public class IncomeTypeService extends Service<IncomeTypeEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeTypeEntity> entityType) {
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<IncomeTypeEntity> entityType) throws SQLException {
         IncomeTypeEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         updateDefaultRecordToFalse(requestData);
         return super.patch(apiGatewayRequest, context, entityType);
     }
 
-    private void updateDefaultRecordToFalse(IncomeTypeEntity requestData) {
+    private void updateDefaultRecordToFalse(IncomeTypeEntity requestData) throws SQLException {
         List<IncomeTypeEntity> incomeTypeEntityList = repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("user_id", requestData.getUserId());
             put("is_default", requestData.getIsDefault());

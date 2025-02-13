@@ -7,6 +7,7 @@ import com.networth.networthbackend.Repository.Repository;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) throws SQLException {
         V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         Integer id = repository.save(requestData);
         RestResponse restResponse = Utility.generateRestResponse("success", id);
@@ -31,7 +32,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
+    public APIGatewayProxyResponseEvent patch(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) throws SQLException {
         V requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         Integer id = repository.update(requestData);
         RestResponse restResponse = Utility.generateRestResponse("success", id);
@@ -41,7 +42,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
+    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) throws SQLException {
         Integer id = Integer.valueOf(apiGatewayRequest.getPathParameters().get("id"));
         repository.delete(id);
         RestResponse restResponse = Utility.generateRestResponse("success", id);
@@ -51,7 +52,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) {
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) throws SQLException {
         String id = apiGatewayRequest.getPathParameters().get("id");
         List<V> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("user_id", id);

@@ -9,9 +9,11 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.networth.networthbackend.entity.UserEntity;
 import com.networth.networthbackend.service.UserService;
 
+import java.sql.SQLException;
+
 public class NetWorthApplication {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         UserService userService = new UserService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();

@@ -5,6 +5,7 @@ import com.networth.networthbackend.service.DatabaseService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,7 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public int save(T data) {
+    public int save(T data) throws SQLException {
         try {
             PreparedStatement preparedStatement = prepareInsertQuery(data);
             int affectedRows = preparedStatement.executeUpdate();
@@ -34,13 +35,13 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
                 }
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new SQLException(e.getMessage());
         }
         return 0;
     }
 
     @Override
-    public int update(T data) {
+    public int update(T data) throws SQLException {
         try {
             PreparedStatement preparedStatement = prepareUpdateQuery(data);
             int affectedRows = preparedStatement.executeUpdate();
@@ -52,25 +53,25 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
                 }
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new SQLException(e.getMessage());
         }
         return 0;
     }
 
     @Override
-    public void delete(Integer id) {
+    public void delete(Integer id) throws SQLException {
         try {
             String query = "delete from " + tableName + " where id = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setInt(1, id);
             pstmt.execute();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new SQLException(e.getMessage());
         }
     }
 
     @Override
-    public Optional<T> getByPrimaryField(Integer id) {
+    public Optional<T> getByPrimaryField(Integer id) throws SQLException {
         try {
             String query = "select * from " + tableName + " where id = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
@@ -79,13 +80,12 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             List<T> list = generateEntityData(rs);
             return !list.isEmpty() ? Optional.of(list.get(0)) : Optional.empty();
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new SQLException(e.getMessage());
         }
-        return null;
     }
 
     @Override
-    public List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) {
+    public List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException {
         try {
             StringBuilder query = new StringBuilder("select * from " + tableName + " where (");
             boolean multipleFields = false;
@@ -103,8 +103,7 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            throw new SQLException(e.getMessage());
         }
-        return null;
     }
 }

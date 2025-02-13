@@ -54,7 +54,7 @@ public class WatchRepository extends Repository<WatchEntity> {
         return watchEntityList;
     }
 
-    private void fetchAccountValueEntity(WatchEntity watchEntity) {
+    private void fetchAccountValueEntity(WatchEntity watchEntity) throws SQLException {
         WatchAccountService watchAccountService = new WatchAccountService();
         AccountService accountService = new AccountService();
         AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);

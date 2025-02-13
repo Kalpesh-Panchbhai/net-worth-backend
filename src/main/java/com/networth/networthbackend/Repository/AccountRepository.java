@@ -63,7 +63,7 @@ public class AccountRepository extends Repository<AccountEntity> {
         return accountEntityList;
     }
 
-    private AccountValueEntity fetchAccountValueEntity(Integer id, String type) {
+    private AccountValueEntity fetchAccountValueEntity(Integer id, String type) throws SQLException {
         ChartService chartService = new ChartService();
         if (type.equals("Broker")) {
             AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);

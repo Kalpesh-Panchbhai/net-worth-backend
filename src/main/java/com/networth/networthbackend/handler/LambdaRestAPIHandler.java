@@ -8,6 +8,8 @@ import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.service.*;
 import lombok.SneakyThrows;
 
+import java.sql.SQLException;
+
 public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
     @SneakyThrows
@@ -36,7 +38,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleUserRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleUserRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         UserService userService = new UserService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -52,7 +54,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         AccountService accountService = new AccountService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -72,7 +74,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountBrokerRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -90,7 +92,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleAccountTransactionRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         AccountTransactionService accountTransactionService = new AccountTransactionService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -108,7 +110,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         IncomeService incomeService = new IncomeService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -128,7 +130,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeTypeRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         IncomeTypeService incomeTypeService = new IncomeTypeService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -146,7 +148,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleIncomeTagRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         IncomeTagService incomeTagService = new IncomeTagService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -164,7 +166,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleWatchRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         WatchService watchService = new WatchService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {
@@ -184,7 +186,7 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
         }
     }
 
-    public APIGatewayProxyResponseEvent handleWatchAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) {
+    public APIGatewayProxyResponseEvent handleWatchAccountRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
         WatchAccountService watchAccountService = new WatchAccountService();
         try {
             switch (apiGatewayRequest.getHttpMethod()) {

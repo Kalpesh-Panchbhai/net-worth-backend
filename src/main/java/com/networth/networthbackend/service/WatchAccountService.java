@@ -7,6 +7,7 @@ import com.networth.networthbackend.Repository.WatchAccountRepository;
 import com.networth.networthbackend.entity.WatchAccountEntity;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -17,7 +18,7 @@ public class WatchAccountService extends Service<WatchAccountEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<WatchAccountEntity> entityType) {
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<WatchAccountEntity> entityType) throws SQLException {
         String id = apiGatewayRequest.getPathParameters().get("id");
         String type = apiGatewayRequest.getPathParameters().get("type");
         List<WatchAccountEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{

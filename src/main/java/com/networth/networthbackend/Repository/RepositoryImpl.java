@@ -5,20 +5,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface RepositoryImpl<T> {
 
-    int save(T data);
+    int save(T data) throws SQLException;
 
-    int update(T data);
+    int update(T data) throws SQLException;
 
-    void delete(Integer id);
+    void delete(Integer id) throws SQLException;
 
     Optional<T> getByPrimaryField(Integer id) throws SQLException;
 
-    List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap);
+    List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException;
 
     List<T> generateEntityData(ResultSet rs) throws SQLException;
 

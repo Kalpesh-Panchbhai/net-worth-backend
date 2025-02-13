@@ -55,7 +55,7 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
         return accountBrokerEntityList;
     }
 
-    private AccountValueEntity fetchAccountValueEntity(Integer id) {
+    private AccountValueEntity fetchAccountValueEntity(Integer id) throws SQLException {
         ChartService chartService = new ChartService();
         List<ChartEntity> chartEntityList = chartService.repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("account_broker_id", id);

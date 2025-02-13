@@ -9,6 +9,7 @@ import com.networth.networthbackend.entity.WatchEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class UserService extends Service<UserEntity> {
     }
 
     @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) throws SQLException {
         UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
         List<UserEntity> userEntityList = repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("user_id", requestData.getUserId());
