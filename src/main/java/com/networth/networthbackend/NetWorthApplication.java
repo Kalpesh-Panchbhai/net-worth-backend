@@ -6,27 +6,35 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountEntity;
-import com.networth.networthbackend.service.AccountService;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.service.AccountBrokerService;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) throws SQLException {
-        AccountService accountService = new AccountService();
+        AccountBrokerService accountBrokerService = new AccountBrokerService();
         try {
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"userId\": 1,\n" + "    \"name\": \"B\",\n" + "    \"type\": \"Non Broker\",\n" + "    \"currency\": \"INR\",\n" + "    \"active\": true\n" + "}");
-            accountService.post(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
+//            apiGatewayProxyRequestEvent.setBody("{\n" +
+//                    "    \"userId\": 1,\n" +
+//                    "    \"name\": \"B\",\n" +
+//                    "    \"type\": \"Non Broker\",\n" +
+//                    "    \"currency\": \"INR\",\n" +
+//                    "    \"active\": true\n" +
+//                    "}");
+//            accountService.post(apiGatewayProxyRequestEvent, getContext(), AccountEntity.class);
 
 
-//            Map<String, String> headers = new HashMap<>();
-//            headers.put("id", "3");
-//            apiGatewayProxyRequestEvent.setPathParameters(headers);
-//            userService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), UserEntity.class);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("id", "3");
+            apiGatewayProxyRequestEvent.setPathParameters(headers);
+            accountBrokerService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountBrokerEntity.class);
         } finally {
-            accountService.repository.databaseService.disconnect();
+            accountBrokerService.repository.databaseService.disconnect();
         }
     }
 
