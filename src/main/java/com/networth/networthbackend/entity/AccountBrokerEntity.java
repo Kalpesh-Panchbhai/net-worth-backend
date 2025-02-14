@@ -17,5 +17,7 @@ public class AccountBrokerEntity {
 
     private String name;
 
+    private Double currentUnit;
+
     private AccountValueEntity value;
 }

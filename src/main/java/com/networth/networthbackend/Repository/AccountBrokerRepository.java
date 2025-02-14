@@ -17,24 +17,28 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(AccountBrokerEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(account_id, name, symbol, current_value, previous_value) VALUES (?, ?, ?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(account_id, name, symbol, current_value, previous_value, current_unit) VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setString(2, data.getName());
         preparedStatement.setString(3, data.getSymbol());
         preparedStatement.setDouble(4, 0.0);
         preparedStatement.setDouble(5, 0.0);
+        preparedStatement.setDouble(6, 0.0);
         return preparedStatement;
     }
 
     @Override
     public PreparedStatement prepareUpdateQuery(AccountBrokerEntity data) throws SQLException {
-        String updateQuery = "UPDATE " + tableName + " SET account_id = ?, name = ?, symbol = ? WHERE id = ?";
+        String updateQuery = "UPDATE " + tableName + " SET account_id = ?, name = ?, symbol = ?, current_unit = ?, current_value = ?, previous_value = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setInt(1, data.getAccountId());
         preparedStatement.setString(2, data.getName());
         preparedStatement.setString(3, data.getSymbol());
-        preparedStatement.setInt(4, data.getId());
+        preparedStatement.setDouble(4, data.getCurrentUnit());
+        preparedStatement.setDouble(5, data.getValue().getCurrentValue());
+        preparedStatement.setDouble(6, data.getValue().getPreviousValue());
+        preparedStatement.setInt(7, data.getId());
         return preparedStatement;
     }
 
@@ -47,6 +51,7 @@ public class AccountBrokerRepository extends Repository<AccountBrokerEntity> {
             accountBrokerEntity.setAccountId(rs.getInt("account_id"));
             accountBrokerEntity.setName(rs.getString("name"));
             accountBrokerEntity.setSymbol(rs.getString("symbol"));
+            accountBrokerEntity.setCurrentUnit(rs.getDouble("current_unit"));
             accountBrokerEntity.setValue(new AccountValueEntity(rs.getDouble("current_value"), rs.getDouble("previous_value")));
             accountBrokerEntityList.add(accountBrokerEntity);
         }

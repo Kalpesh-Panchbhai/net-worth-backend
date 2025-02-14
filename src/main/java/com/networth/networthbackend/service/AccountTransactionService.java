@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.AccountTransactionRepository;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
 import com.networth.networthbackend.entity.AccountTransactionEntity;
 import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
@@ -12,6 +13,7 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 
 public class AccountTransactionService extends Service<AccountTransactionEntity> {
 
@@ -22,6 +24,20 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
     @Override
     public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<AccountTransactionEntity> entityType) throws SQLException {
         AccountTransactionEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
+
+        if (requestData.getAccountId() == null || requestData.getAccountId() == 0) {
+            AccountBrokerService accountBrokerService = new AccountBrokerService();
+            Optional<AccountBrokerEntity> accountBrokerEntity = accountBrokerService.repository.getByPrimaryField(requestData.getAccountBrokerId());
+            accountBrokerEntity.ifPresent(accountBrokerEntity1 -> {
+                if (requestData.getOperation().equalsIgnoreCase("update")) {
+                    accountBrokerEntity1.setCurrentUnit(requestData.getValue());
+                } else {
+                    accountBrokerEntity1.setCurrentUnit(accountBrokerEntity1.getCurrentUnit() + requestData.getValue());
+                }
+            });
+            accountBrokerService.repository.update(accountBrokerEntity.orElse(null));
+            accountBrokerService.repository.databaseService.disconnect();
+        }
         if (requestData.getOperation().equalsIgnoreCase("update")) {
             return super.post(apiGatewayRequest, context, entityType);
         } else {
@@ -44,6 +60,7 @@ public class AccountTransactionService extends Service<AccountTransactionEntity>
             context.getLogger().log("data added successfully to database:::" + jsonBody);
             return createAPIResponse(jsonBody, 201, Utility.createHeaders());
         }
+
     }
 
     @Override
