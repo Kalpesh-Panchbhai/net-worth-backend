@@ -9,7 +9,7 @@ import lombok.*;
 @ToString
 public class AccountValueEntity {
 
-    private Double currentBalance;
+    private Double currentValue;
 
-    private Double previousBalance;
+    private Double previousValue;
 }
