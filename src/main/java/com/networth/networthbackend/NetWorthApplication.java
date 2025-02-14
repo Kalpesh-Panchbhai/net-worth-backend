@@ -6,19 +6,24 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
-import com.networth.networthbackend.entity.AccountTransactionEntity;
-import com.networth.networthbackend.service.AccountTransactionService;
+import com.networth.networthbackend.entity.AccountBrokerEntity;
+import com.networth.networthbackend.service.AccountBrokerService;
 
 import java.sql.SQLException;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) throws SQLException {
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        AccountBrokerService accountBrokerService = new AccountBrokerService();
         try {
+
             APIGatewayProxyRequestEvent apiGatewayProxyRequestEvent = new APIGatewayProxyRequestEvent();
-            apiGatewayProxyRequestEvent.setBody("{\n" + "    \"accountId\": null,\n" + "    \"accountBrokerId\": 1,\n" + "    \"transactionDate\": \"2025-02-07 00:00:00\",\n" + "    \"value\": 1100.00,\n" + "    \"operation\": \"add\"\n" + "}");
-            accountTransactionService.post(apiGatewayProxyRequestEvent, getContext(), AccountTransactionEntity.class);
+            apiGatewayProxyRequestEvent.setBody("{\n" +
+                    "      \"symbol\": \"0P0001DJZI.BO\",\n" +
+                    "      \"name\": \"ICICI Pru BHARAT 22 FOF Dir Gr\",\n" +
+                    "      \"accountId\": \"3\"\n" +
+                    "    }");
+            accountBrokerService.post(apiGatewayProxyRequestEvent, getContext(), AccountBrokerEntity.class);
 
 
 //            Map<String, String> headers = new HashMap<>();
@@ -26,7 +31,7 @@ public class NetWorthApplication {
 //            apiGatewayProxyRequestEvent.setPathParameters(headers);
 //            accountBrokerService.getBySecondaryField(apiGatewayProxyRequestEvent, getContext(), AccountBrokerEntity.class);
         } finally {
-            accountTransactionService.repository.databaseService.disconnect();
+            accountBrokerService.repository.databaseService.disconnect();
         }
     }
 
