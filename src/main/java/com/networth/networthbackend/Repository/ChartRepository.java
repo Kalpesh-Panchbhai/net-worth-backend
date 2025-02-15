@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static java.sql.Types.INTEGER;
@@ -60,13 +61,58 @@ public class ChartRepository extends Repository<ChartEntity> {
         List<ChartEntity> chartEntityList = new ArrayList<>();
         while (rs.next()) {
             ChartEntity chartEntity = new ChartEntity();
-            chartEntity.setId(rs.getInt("id"));
-            chartEntity.setAccountId(rs.getInt("account_id"));
-            chartEntity.setAccountBrokerId(rs.getInt("account_broker_id"));
-            chartEntity.setDate(rs.getString("date"));
-            chartEntity.setValue(rs.getDouble("value"));
+            chartEntity.setValue(rs.getDouble(1));
+            chartEntity.setDate(rs.getString(2));
             chartEntityList.add(chartEntity);
         }
         return chartEntityList;
+    }
+
+    @Override
+    public List<ChartEntity> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException {
+        try {
+            PreparedStatement pstmt = getQuery(queryMap.get("type"), queryMap.get("id"));
+            ResultSet rs = pstmt.executeQuery();
+            return generateEntityData(rs);
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+    private PreparedStatement getQuery(Object type, Object value) throws SQLException {
+        if (type.equals("single_broker")) {
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where id = ?)) group by date order by date";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, value);
+            return pstmt;
+        } else if (type.equals("one_non_broker")) {
+            String query = "select sum(value), date from chart where (account_id in (select id from account where id = ?)) group by date order by date";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, value);
+            return pstmt;
+        } else if (type.equals("one_broker")) {
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where id = ?))) group by date order by date";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, value);
+            return pstmt;
+        } else if (type.equals("non_broker_type")) {
+            String query = "select sum(value), date from chart where (account_id in (select id from account where type = ?)) group by date order by date";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, value);
+            return pstmt;
+        } else if (type.equals("broker_type")) {
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where type = 'Broker'))) group by date order by date";
+            return connection.prepareStatement(query);
+        } else if (type.equals("all_watch")) {
+            String query = "select sum(value), date from chart group by date order by date";
+            return connection.prepareStatement(query);
+        } else if (type.equals("non_all_watch")) {
+            String query = "select sum(value), date from chart where account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type != 'Broker') OR account_broker_id in (select id from account_broker where account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type = 'Broker')) group by date order by date";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, value);
+            pstmt.setObject(2, value);
+            return pstmt;
+        }
+        return null;
     }
 }

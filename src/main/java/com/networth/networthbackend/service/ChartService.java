@@ -1,6 +1,8 @@
 package com.networth.networthbackend.service;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.ChartRepository;
 import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
@@ -32,6 +34,19 @@ public class ChartService extends Service<ChartEntity> {
     public ChartService(Context context) {
         super(new ChartRepository());
         this.context = context;
+    }
+
+    @Override
+    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<ChartEntity> entityType) throws SQLException {
+        String id = apiGatewayRequest.getPathParameters().get("id");
+        String type = apiGatewayRequest.getPathParameters().get("type");
+        List<ChartEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("id", id);
+            put("type", type);
+        }});
+        String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
+        context.getLogger().log("data fetched successfully from database:::" + jsonBody);
+        return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
     public void generateData() throws SQLException, IOException, URISyntaxException, InterruptedException {
@@ -264,16 +279,12 @@ public class ChartService extends Service<ChartEntity> {
     }
 
     private void addData(List<ChartEntity> chartEntityList) throws SQLException {
-        ChartService chartService = new ChartService(context);
         for (ChartEntity chartEntity : chartEntityList) {
-            chartService.repository.save(chartEntity);
+            repository.save(chartEntity);
         }
-        chartService.repository.databaseService.disconnect();
     }
 
     private void deleteData(Integer id, String type) throws SQLException {
-        ChartService chartService = new ChartService(context);
-        chartService.repository.delete(type, id);
-        chartService.repository.databaseService.disconnect();
+        repository.delete(type, id);
     }
 }
