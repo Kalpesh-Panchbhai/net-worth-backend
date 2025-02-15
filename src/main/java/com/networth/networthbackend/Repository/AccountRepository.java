@@ -31,14 +31,16 @@ public class AccountRepository extends Repository<AccountEntity> {
 
     @Override
     public PreparedStatement prepareUpdateQuery(AccountEntity data) throws SQLException {
-        String updateQuery = "UPDATE " + tableName + " SET name = ?, type = ?, is_active = ?, currency = ?, user_id = ? WHERE id = ?";
+        String updateQuery = "UPDATE " + tableName + " SET name = ?, type = ?, is_active = ?, currency = ?, user_id = ?, current_value = ?, previous_value = ? WHERE id = ?";
         PreparedStatement preparedStatement = connection.prepareStatement(updateQuery, PreparedStatement.RETURN_GENERATED_KEYS);
         preparedStatement.setString(1, data.getName());
         preparedStatement.setString(2, data.getType());
         preparedStatement.setBoolean(3, data.getActive());
         preparedStatement.setString(4, data.getCurrency());
         preparedStatement.setInt(5, data.getUserId());
-        preparedStatement.setInt(6, data.getId());
+        preparedStatement.setDouble(6, data.getValue().getCurrentValue());
+        preparedStatement.setDouble(7, data.getValue().getPreviousValue());
+        preparedStatement.setInt(8, data.getId());
         return preparedStatement;
     }
 

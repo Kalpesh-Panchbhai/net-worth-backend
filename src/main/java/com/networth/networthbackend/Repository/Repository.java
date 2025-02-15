@@ -59,11 +59,11 @@ public abstract class Repository<T> implements RepositoryImpl<T> {
     }
 
     @Override
-    public void delete(Integer id) throws SQLException {
+    public void delete(Object fieldName, Object fieldValue) throws SQLException {
         try {
-            String query = "delete from " + tableName + " where id = ?";
+            String query = "delete from " + tableName + " where " + fieldName + " = ?";
             PreparedStatement pstmt = connection.prepareStatement(query);
-            pstmt.setInt(1, id);
+            pstmt.setObject(1, fieldValue);
             pstmt.execute();
         } catch (Exception e) {
             throw new SQLException(e.getMessage());

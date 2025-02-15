@@ -44,7 +44,7 @@ public abstract class Service<V> implements ServiceImpl<V> {
     @Override
     public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<V> entityType) throws SQLException {
         Integer id = Integer.valueOf(apiGatewayRequest.getPathParameters().get("id"));
-        repository.delete(id);
+        repository.delete("id", id);
         RestResponse restResponse = Utility.generateRestResponse("success", id);
         String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
         context.getLogger().log("data deleted successfully to database:::" + jsonBody);

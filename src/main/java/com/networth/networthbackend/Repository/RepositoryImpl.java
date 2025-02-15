@@ -13,7 +13,7 @@ public interface RepositoryImpl<T> {
 
     int update(T data) throws SQLException;
 
-    void delete(Integer id) throws SQLException;
+    void delete(Object fieldName, Object fieldValue) throws SQLException;
 
     Optional<T> getByPrimaryField(Integer id) throws SQLException;
 
