@@ -10,7 +10,7 @@ public class LambdaSchedulerHandler implements RequestHandler<Void, Void> {
     @SneakyThrows
     @Override
     public Void handleRequest(Void unused, Context context) {
-        ChartService chartService = new ChartService();
+        ChartService chartService = new ChartService(context);
         chartService.generateData();
         chartService.repository.databaseService.disconnect();
         return unused;

@@ -21,7 +21,7 @@ public class DatabaseService {
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             conn = DriverManager.getConnection(url);
-            System.out.println("Connected to database");
+//            System.out.println("Connected to database");
         } catch (Exception e) {
             System.err.println("Cannot connect to database server");
             System.err.println(e.getMessage());
@@ -32,7 +32,7 @@ public class DatabaseService {
         if (conn != null) {
             try {
                 conn.close();
-                System.out.println("Database Connection Terminated");
+//                System.out.println("Database Connection Terminated");
             } catch (Exception e) {
             }
         }
