@@ -20,4 +20,15 @@ public class AccountTransactionEntity {
     private Double value;
 
     private String operation;
+
+    @Override
+    public String toString() {
+        return "{\n" +
+                "    \"accountId\": " + accountId + ",\n" +
+                "    \"accountBrokerId\": " + accountBrokerId + ",\n" +
+                "    \"transactionDate\": \"" + transactionDate + "\",\n" +
+                "    \"value\": " + value + ",\n" +
+                "    \"operation\": \"" + operation + "\"\n" +
+                "}";
+    }
 }
