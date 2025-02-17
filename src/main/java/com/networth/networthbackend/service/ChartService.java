@@ -38,11 +38,13 @@ public class ChartService extends Service<ChartEntity> {
 
     @Override
     public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<ChartEntity> entityType) throws SQLException {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        String type = apiGatewayRequest.getPathParameters().get("type");
+        String id = apiGatewayRequest.getQueryStringParameters().get("id");
+        String type = apiGatewayRequest.getQueryStringParameters().get("type");
+        String range = apiGatewayRequest.getQueryStringParameters().get("range");
         List<ChartEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("id", id);
             put("type", type);
+            put("range", range);
         }});
         String jsonBody = utilityRest.convertListOfObjToString(dataList, context);
         context.getLogger().log("data fetched successfully from database:::" + jsonBody);

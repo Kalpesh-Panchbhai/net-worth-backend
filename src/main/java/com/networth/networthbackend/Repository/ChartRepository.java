@@ -71,7 +71,7 @@ public class ChartRepository extends Repository<ChartEntity> {
     @Override
     public List<ChartEntity> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException {
         try {
-            PreparedStatement pstmt = getQuery(queryMap.get("type"), queryMap.get("id"));
+            PreparedStatement pstmt = getQuery(queryMap.get("type"), queryMap.get("id"), queryMap.get("range"));
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);
         } catch (Exception e) {
@@ -79,40 +79,59 @@ public class ChartRepository extends Repository<ChartEntity> {
         }
     }
 
-    private PreparedStatement getQuery(Object type, Object value) throws SQLException {
+    private PreparedStatement getQuery(Object type, Object value, Object range) throws SQLException {
+        String rangeQuery = getRangeQuery(range);
         if (type.equals("single_broker")) {
-            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where id = ?)) group by date order by date";
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where id = ?))" + rangeQuery + " group by date order by date";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, value);
             return pstmt;
         } else if (type.equals("one_non_broker")) {
-            String query = "select sum(value), date from chart where (account_id in (select id from account where id = ?)) group by date order by date";
+            String query = "select sum(value), date from chart where (account_id in (select id from account where id = ?))" + rangeQuery + " group by date order by date";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, value);
             return pstmt;
         } else if (type.equals("one_broker")) {
-            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where id = ?))) group by date order by date";
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where id = ?)))" + rangeQuery + " group by date order by date";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, value);
             return pstmt;
         } else if (type.equals("non_broker_type")) {
-            String query = "select sum(value), date from chart where (account_id in (select id from account where type = ?)) group by date order by date";
+            String query = "select sum(value), date from chart where (account_id in (select id from account where type = ?))" + rangeQuery + " group by date order by date";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, value);
             return pstmt;
         } else if (type.equals("broker_type")) {
-            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where type = 'Broker'))) group by date order by date";
+            String query = "select sum(value), date from chart where (account_broker_id in (select id from account_broker where account_id in (select id from account where type = 'Broker')))" + rangeQuery + " group by date order by date";
             return connection.prepareStatement(query);
         } else if (type.equals("all_watch")) {
-            String query = "select sum(value), date from chart group by date order by date";
+            String query = "select sum(value), date from chart where true" + rangeQuery + " group by date order by date";
             return connection.prepareStatement(query);
         } else if (type.equals("non_all_watch")) {
-            String query = "select sum(value), date from chart where account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type != 'Broker') OR account_broker_id in (select id from account_broker where account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type = 'Broker')) group by date order by date";
+            String query = "select sum(value), date from chart where (account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type != 'Broker') OR account_broker_id in (select id from account_broker where account_id in (select id from account where id in (select account_id from watch_account where watch_id = ?) and type = 'Broker')))" + rangeQuery + " group by date order by date";
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, value);
             pstmt.setObject(2, value);
             return pstmt;
         }
         return null;
+    }
+
+    private String getRangeQuery(Object range) {
+        if (range.equals("1M")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
+        } else if (range.equals("3M")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)";
+        } else if (range.equals("6M")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
+        } else if (range.equals("1Y")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)";
+        } else if (range.equals("2Y")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)";
+        } else if (range.equals("5Y")) {
+            return " AND date >= DATE_SUB(CURDATE(), INTERVAL 5 YEAR)";
+        } else {
+            return "";
+        }
     }
 }
