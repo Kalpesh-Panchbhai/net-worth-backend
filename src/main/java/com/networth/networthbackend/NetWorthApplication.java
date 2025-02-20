@@ -24,7 +24,9 @@ public class NetWorthApplication {
 
     public static void main(String[] args) throws SQLException, IOException, URISyntaxException, InterruptedException {
 //        loadAccountTransactionData();
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         generateChartData();
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
     private static void generateChartData() throws SQLException, IOException, URISyntaxException, InterruptedException {
