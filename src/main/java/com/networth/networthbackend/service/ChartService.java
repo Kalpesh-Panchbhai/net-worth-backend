@@ -57,20 +57,29 @@ public class ChartService extends Service<ChartEntity> {
             put("user_id", userId);
         }});
 
-        if (currencyDataList.isEmpty()) {
-            currencyDataList = generateCurrencyData();
+        try {
+            if (currencyDataList.isEmpty()) {
+                currencyDataList = generateCurrencyData();
+            }
+        } catch (Exception e) {
+            context.getLogger().log("Error while fetching currency data with Yahoo API");
         }
+
         for (AccountEntity accountEntity : accountEntityList) {
-            if (accountEntity.getType().equals("Broker")) {
-                accountValueEntity = new AccountValueEntity(0.0, 0.0);
-                generateBrokerAccountData(accountEntity.getId());
-                ChartEntity previousValue = new ChartEntity();
-                previousValue.setValue(accountValueEntity.getPreviousValue());
-                ChartEntity currentValue = new ChartEntity();
-                currentValue.setValue(accountValueEntity.getCurrentValue());
-                updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue));
-            } else {
-                generateNonBrokerAccountData(accountEntity.getId());
+            try {
+                if (accountEntity.getType().equals("Broker")) {
+                    accountValueEntity = new AccountValueEntity(0.0, 0.0);
+                    generateBrokerAccountData(accountEntity.getId());
+                    ChartEntity previousValue = new ChartEntity();
+                    previousValue.setValue(accountValueEntity.getPreviousValue());
+                    ChartEntity currentValue = new ChartEntity();
+                    currentValue.setValue(accountValueEntity.getCurrentValue());
+                    updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue));
+                } else {
+                    generateNonBrokerAccountData(accountEntity.getId());
+                }
+            } catch (Exception e) {
+                context.getLogger().log("Error while fetching " + accountEntity.getName() + " from Yahoo API");
             }
         }
         accountService.repository.databaseService.disconnect();
@@ -82,10 +91,14 @@ public class ChartService extends Service<ChartEntity> {
             put("account_id", id);
         }});
         for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
-            List<ChartEntity> chartEntityList = generateData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
-            deleteData(accountBrokerEntity.getId(), "account_broker_id");
-            addData(chartEntityList);
-            updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList);
+            try {
+                List<ChartEntity> chartEntityList = generateData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
+                deleteData(accountBrokerEntity.getId(), "account_broker_id");
+                addData(chartEntityList);
+                updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList);
+            } catch (Exception e) {
+                context.getLogger().log("Error while fetching " + accountBrokerEntity.getName() + " from Yahoo API");
+            }
         }
         accountBrokerService.repository.databaseService.disconnect();
     }

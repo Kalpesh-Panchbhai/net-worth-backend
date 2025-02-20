@@ -20,4 +20,9 @@ public class AccountBrokerEntity {
     private Double currentUnit;
 
     private AccountValueEntity value;
+
+    @Override
+    public String toString() {
+        return "{\n" + "    \"accountId\": " + accountId + ",\n" + "    \"symbol\": \"" + symbol + "\",\n" + "    \"name\": \"" + name + "\"\n" + "}";
+    }
 }
