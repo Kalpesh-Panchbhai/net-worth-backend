@@ -119,19 +119,19 @@ public class ChartRepository extends Repository<ChartEntity> {
 
     private String getRangeQuery(Object range) {
         if (range.equals("1M")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 1) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH) AND CURDATE()";
         } else if (range.equals("3M")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 2) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 3 MONTH) AND CURDATE()";
         } else if (range.equals("6M")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 3) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 MONTH) AND CURDATE()";
         } else if (range.equals("1Y")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 4) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND CURDATE()";
         } else if (range.equals("2Y")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 5) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 2 YEAR) AND CURDATE()";
         } else if (range.equals("5Y")) {
-            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 YEAR) AND CURDATE() AND MOD(DATEDIFF(CURDATE(), date), 6) = 0";
+            return " AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 5 YEAR) AND CURDATE()";
         } else {
-            return " AND MOD(DATEDIFF(CURDATE(), date), 7) = 0";
+            return "";
         }
     }
 }
