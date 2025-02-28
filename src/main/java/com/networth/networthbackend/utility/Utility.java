@@ -2,8 +2,10 @@ package com.networth.networthbackend.utility;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networth.networthbackend.Root;
 import com.networth.networthbackend.model.RestResponse;
 
 import java.time.LocalDateTime;
@@ -22,10 +24,8 @@ public class Utility<T> {
         return headers;
     }
 
-    public static RestResponse generateRestResponse(String result) {
-        RestResponse restResponse = new RestResponse();
-        restResponse.setResult(result);
-        return restResponse;
+    public static RestResponse generateRestResponse(String result, Integer id) {
+        return new RestResponse(result, id);
     }
 
     public static String convertLocalToUTC() {
@@ -34,6 +34,16 @@ public class Utility<T> {
     }
 
     public String convertObjToString(T data, Context context) {
+        String jsonBody = null;
+        try {
+            jsonBody = new ObjectMapper().writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            context.getLogger().log("Error while converting obj to string:::" + e.getMessage());
+        }
+        return jsonBody;
+    }
+
+    public String convertListOfObjToString(List<T> data, Context context) {
         String jsonBody = null;
         try {
             jsonBody = new ObjectMapper().writeValueAsString(data);
@@ -53,13 +63,14 @@ public class Utility<T> {
         return data;
     }
 
-    public String convertListOfObjToString(List<T> data, Context context) {
-        String jsonBody = null;
+    public List<Root> convertStringToListOfObj(String jsonBody, Context context) {
+        List<Root> data = null;
         try {
-            jsonBody = new ObjectMapper().writeValueAsString(data);
+            data = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(jsonBody, new TypeReference<List<Root>>() {
+            });
         } catch (JsonProcessingException e) {
-            context.getLogger().log("Error while converting obj to string:::" + e.getMessage());
+            context.getLogger().log("Error while converting string to obj:::" + e.getMessage());
         }
-        return jsonBody;
+        return data;
     }
 }

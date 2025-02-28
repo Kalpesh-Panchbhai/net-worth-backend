@@ -1,55 +1,109 @@
 package com.networth.networthbackend.Repository;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import com.networth.networthbackend.service.DatabaseService;
 
-import java.util.HashMap;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class Repository<T> implements RepositoryImpl<T> {
+public abstract class Repository<T> implements RepositoryImpl<T> {
 
-    private final AmazonDynamoDB client;
-    private final DynamoDBMapper dynamoDBMapper;
+    public final DatabaseService databaseService;
+    public final Connection connection;
     public String tableName;
 
     public Repository() {
-        client = AmazonDynamoDBClientBuilder.standard().withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("dynamodb.ap-south-1.amazonaws.com", "ap-south-1")).withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("AKIAUF72G2OIBNECZK4F", "EXCUuNK4xD14hqxkrpB04l7XI9TR+JvuthBv9+tZ"))).build();
-        dynamoDBMapper = new DynamoDBMapper(client);
+        databaseService = new DatabaseService();
+        connection = databaseService.getConnection();
     }
 
     @Override
-    public void save(T data) {
-        dynamoDBMapper.save(data);
+    public int save(T data) throws SQLException {
+        try {
+            PreparedStatement preparedStatement = prepareInsertQuery(data);
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
+        return 0;
     }
 
     @Override
-    public void update(T data) {
-        dynamoDBMapper.save(data);
+    public int update(T data) throws SQLException {
+        try {
+            PreparedStatement preparedStatement = prepareUpdateQuery(data);
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
+        return 0;
     }
 
     @Override
-    public void delete(T data) {
-        dynamoDBMapper.delete(data);
+    public void delete(Object fieldName, Object fieldValue) throws SQLException {
+        try {
+            String query = "delete from " + tableName + " where " + fieldName + " = ?";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, fieldValue);
+            pstmt.execute();
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
     @Override
-    public T getByPrimaryField(String id, Class<T> type) {
-        return dynamoDBMapper.load(type, id);
+    public Optional<T> getByPrimaryField(Integer id) throws SQLException {
+        try {
+            String query = "select * from " + tableName + " where id = ?";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            List<T> list = generateEntityData(rs);
+            return !list.isEmpty() ? Optional.of(list.get(0)) : Optional.empty();
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 
     @Override
-    public ScanResult getBySecondaryField(String fieldName, String fieldValue) {
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":val", new AttributeValue().withS(fieldValue));
-
-        ScanRequest scanRequest = new ScanRequest().withTableName(tableName).withFilterExpression(fieldName + " = :val").withExpressionAttributeValues(expressionAttributeValues);
-        return client.scan(scanRequest);
+    public List<T> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException {
+        try {
+            StringBuilder query = new StringBuilder("select * from " + tableName + " where (");
+            boolean multipleFields = false;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                if (multipleFields) query.append(" AND ").append(entry.getKey()).append(" = ?");
+                else query.append(entry.getKey()).append(" = ?");
+                multipleFields = true;
+            }
+            query.append(")");
+            PreparedStatement pstmt = connection.prepareStatement(String.valueOf(query));
+            int queryId = 1;
+            for (Map.Entry<String, Object> entry : queryMap.entrySet()) {
+                pstmt.setObject(queryId++, entry.getValue());
+            }
+            ResultSet rs = pstmt.executeQuery();
+            return generateEntityData(rs);
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
     }
 }

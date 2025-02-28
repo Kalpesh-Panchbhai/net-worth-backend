@@ -1,102 +1,44 @@
 package com.networth.networthbackend.service;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.UserRepository;
-import com.networth.networthbackend.entity.AccountEntity;
 import com.networth.networthbackend.entity.UserEntity;
 import com.networth.networthbackend.entity.WatchEntity;
-import com.networth.networthbackend.model.*;
+import com.networth.networthbackend.model.RestResponse;
 import com.networth.networthbackend.utility.Utility;
 
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
-public class UserService extends Service<UserRest, UserEntity> {
-
-    private final AccountService accountService = new AccountService();
-    private final WatchService watchService = new WatchService();
-    private final IncomeService incomeService = new IncomeService();
-    private final IncomeTagService incomeTagService = new IncomeTagService();
-    private final IncomeTypeService incomeTypeService = new IncomeTypeService();
-    private Boolean isUserAvailable = false;
+public class UserService extends Service<UserEntity> {
 
     public UserService() {
         super(new UserRepository());
     }
 
     @Override
-    public APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) {
-        String id = apiGatewayRequest.getPathParameters().get("id");
-        deleteUser(id);
-        return super.delete(apiGatewayRequest, context, entityType);
-    }
-
-    private void deleteUser(String userId) {
-        List<AccountRest> accountRestList = accountService.getAllAccount(userId);
-        for (AccountRest accountRest : accountRestList) {
-            accountService.deleteOneAccount(accountRest.getId(), AccountEntity.class);
-            accountService.repository.delete(accountService.convertRequestToEntity(accountRest));
-        }
-        List<WatchRest> watchRestList = watchService.getWatchList(userId);
-        for (WatchRest watchRest : watchRestList) {
-            watchService.repository.delete(watchService.convertRequestToEntity(watchRest));
-        }
-        List<IncomeRest> incomeRestList = incomeService.getIncomeList(userId);
-        for (IncomeRest incomeRest : incomeRestList) {
-            incomeService.repository.delete(incomeService.convertRequestToEntity(incomeRest));
-        }
-        List<TypeRest> incomeTagList = incomeTagService.getIncomeTagList(userId);
-        for (TypeRest typeRest : incomeTagList) {
-            incomeTagService.repository.delete(incomeTagService.convertRequestToEntity(typeRest));
-        }
-        List<TypeRest> incomeTypeList = incomeTypeService.getIncomeTypeList(userId);
-        for (TypeRest typeRest : incomeTypeList) {
-            incomeTypeService.repository.delete(incomeTypeService.convertRequestToEntity(typeRest));
-        }
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) {
-        APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = getBySecondaryField(apiGatewayRequest, context, type);
-        if (isUserAvailable) {
+    public APIGatewayProxyResponseEvent post(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserEntity> entityType) throws SQLException {
+        UserEntity requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, entityType);
+        List<UserEntity> userEntityList = repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("user_id", requestData.getUserId());
+        }});
+        if (userEntityList.isEmpty()) {
+            APIGatewayProxyResponseEvent apiGatewayProxyResponseEvent = super.post(apiGatewayRequest, context, entityType);
+            WatchService watchService = new WatchService();
+            RestResponse restResponse = new Utility<RestResponse>().convertStringToObj(apiGatewayProxyResponseEvent.getBody(), context, RestResponse.class);
+            WatchEntity watchEntity = new WatchEntity();
+            watchEntity.setUserId(restResponse.getId());
+            watchEntity.setName("All");
+            watchService.repository.save(watchEntity);
+            watchService.repository.databaseService.disconnect();
             return apiGatewayProxyResponseEvent;
         }
-        UserRest requestData = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        UserEntity savedData = convertRequestToEntity(requestData);
-        repository.save(savedData);
-        watchService.repository.save(new WatchEntity(null, savedData.getId(), "All", new ArrayList<>()));
-        requestData.setId(savedData.getId());
-        String jsonBody = utilityRest.convertObjToString(requestData, context);
-        context.getLogger().log("data saved successfully to dynamodb:::" + jsonBody);
-        return createAPIResponse(jsonBody, 201, Utility.createHeaders());
-    }
-
-    @Override
-    public APIGatewayProxyResponseEvent getBySecondaryField(APIGatewayProxyRequestEvent apiGatewayRequest, Context context, Class<UserRest> type) {
-        UserRest userEntity = utilityRest.convertStringToObj(apiGatewayRequest.getBody(), context, type);
-        ScanResult scanResult = repository.getBySecondaryField("userId", userEntity.getUserId());
-        if (scanResult.getCount() > 0) {
-            isUserAvailable = true;
-        }
-        UserRest userRest = new UserRest();
-        for (Map<String, AttributeValue> attributeValueMap : scanResult.getItems()) {
-            userRest.setId(attributeValueMap.get("id").getS());
-            userRest.setUserId(attributeValueMap.get("userId").getS());
-        }
-        String jsonBody = new Utility<UserRest>().convertObjToString(userRest, context);
+        RestResponse restResponse = Utility.generateRestResponse("success", userEntityList.get(0).getId());
+        String jsonBody = new Utility<RestResponse>().convertObjToString(restResponse, context);
+        context.getLogger().log("data fetched successfully from database:::" + jsonBody);
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
-    }
-
-    @Override
-    public UserEntity convertRequestToEntity(UserRest userRest) {
-        UserEntity userEntity = new UserEntity();
-        userEntity.setId(userRest.getId());
-        userEntity.setUserId(userRest.getUserId());
-        return userEntity;
     }
 }

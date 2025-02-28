@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class RestResponse {
 
     private String result;
+
+    private Integer id;
 }
