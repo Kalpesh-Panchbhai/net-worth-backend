@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.networth.networthbackend.entity.AccountTransactionEntity;
 import com.networth.networthbackend.service.AccountBrokerService;
 import com.networth.networthbackend.service.AccountTransactionService;
@@ -92,7 +93,17 @@ public class NetWorthApplication {
                 return new LambdaLogger() {
                     @Override
                     public void log(String s) {
-                        System.out.println(s);
+
+                    }
+
+                    @Override
+                    public void log(byte[] bytes) {
+
+                    }
+
+                    @Override
+                    public void log(String message, LogLevel logLevel) {
+                        LambdaLogger.super.log(message, logLevel);
                     }
                 };
             }
