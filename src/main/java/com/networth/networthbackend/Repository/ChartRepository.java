@@ -69,6 +69,18 @@ public class ChartRepository extends Repository<ChartEntity> {
     }
 
     @Override
+    public void delete(Object fieldName, Object fieldValue) throws SQLException {
+        try {
+            String query = "delete from " + tableName + " where " + fieldName + " = ? AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 WEEK) AND CURDATE()";
+            PreparedStatement pstmt = connection.prepareStatement(query);
+            pstmt.setObject(1, fieldValue);
+            pstmt.execute();
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+    @Override
     public List<ChartEntity> getBySecondaryField(LinkedHashMap<String, Object> queryMap) throws SQLException {
         try {
             PreparedStatement pstmt = getQuery(queryMap.get("type"), queryMap.get("id"), queryMap.get("range"));

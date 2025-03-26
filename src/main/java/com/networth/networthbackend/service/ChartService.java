@@ -17,10 +17,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ChartService extends Service<ChartEntity> {
 
     private final Integer userId = 1;
+    private final LocalDate oneWeekAgo = LocalDate.now().minusDays(7);
 
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
@@ -136,25 +138,28 @@ public class ChartService extends Service<ChartEntity> {
             for (int i = 0; i < accountTransactionEntityList.size(); i++) {
                 LocalDate currentDate = LocalDate.parse(accountTransactionEntityList.get(i).getTransactionDate(), formatter);
                 while (startDate.isBefore(currentDate)) {
-                    ChartEntity chartEntity = new ChartEntity();
-                    chartEntity.setAccountBrokerId(id);
-                    chartEntity.setDate(startDate.format(formatter1));
-                    symbolDataList.containsKey(startDate);
                     Double value = symbolDataList.getOrDefault(startDate, validLastSymbolValue) * accountTransactionEntityList.get(i - 1).getValue() * (currency.equals("INR") ? 1 : currencyDataList.getOrDefault(startDate, validLastCurrencyValue));
                     validLastSymbolValue = symbolDataList.getOrDefault(startDate, validLastSymbolValue);
                     validLastCurrencyValue = currencyDataList.getOrDefault(startDate, validLastCurrencyValue);
-                    chartEntity.setValue(value);
-                    chartEntityList.add(chartEntity);
+                    if (!startDate.isBefore(oneWeekAgo)) {
+                        ChartEntity chartEntity = new ChartEntity();
+                        chartEntity.setAccountBrokerId(id);
+                        chartEntity.setDate(startDate.format(formatter1));
+                        chartEntity.setValue(value);
+                        chartEntityList.add(chartEntity);
+                    }
                     startDate = startDate.plusDays(1);
                 }
-                ChartEntity chartEntity = new ChartEntity();
-                chartEntity.setAccountBrokerId(id);
-                chartEntity.setDate(startDate.format(formatter1));
                 Double value = symbolDataList.getOrDefault(startDate, validLastSymbolValue) * accountTransactionEntityList.get(i).getValue() * (currency.equals("INR") ? 1 : currencyDataList.getOrDefault(startDate, validLastCurrencyValue));
                 validLastSymbolValue = symbolDataList.getOrDefault(startDate, validLastSymbolValue);
                 validLastCurrencyValue = currencyDataList.getOrDefault(startDate, validLastCurrencyValue);
-                chartEntity.setValue(value);
-                chartEntityList.add(chartEntity);
+                if (!startDate.isBefore(oneWeekAgo)) {
+                    ChartEntity chartEntity = new ChartEntity();
+                    chartEntity.setAccountBrokerId(id);
+                    chartEntity.setDate(startDate.format(formatter1));
+                    chartEntity.setValue(value);
+                    chartEntityList.add(chartEntity);
+                }
                 startDate = startDate.plusDays(1);
             }
 
@@ -162,14 +167,16 @@ public class ChartService extends Service<ChartEntity> {
             if (lastAccountTransactionEntity.getValue() != 0) {
                 LocalDate now = LocalDateTime.now().toLocalDate().plusDays(1);
                 while (!startDate.isEqual(now)) {
-                    ChartEntity chartEntity = new ChartEntity();
-                    chartEntity.setAccountBrokerId(id);
-                    chartEntity.setDate(startDate.format(formatter1));
                     Double value = symbolDataList.getOrDefault(startDate, validLastSymbolValue) * lastAccountTransactionEntity.getValue() * (currency.equals("INR") ? 1 : currencyDataList.getOrDefault(startDate, validLastCurrencyValue));
                     validLastSymbolValue = symbolDataList.getOrDefault(startDate, validLastSymbolValue);
                     validLastCurrencyValue = currencyDataList.getOrDefault(startDate, validLastCurrencyValue);
-                    chartEntity.setValue(value);
-                    chartEntityList.add(chartEntity);
+                    if (!startDate.isBefore(oneWeekAgo)) {
+                        ChartEntity chartEntity = new ChartEntity();
+                        chartEntity.setAccountBrokerId(id);
+                        chartEntity.setDate(startDate.format(formatter1));
+                        chartEntity.setValue(value);
+                        chartEntityList.add(chartEntity);
+                    }
                     startDate = startDate.plusDays(1);
                 }
             }
@@ -221,24 +228,28 @@ public class ChartService extends Service<ChartEntity> {
 
         accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate));
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         if (!accountTransactionEntityList.isEmpty()) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             LocalDateTime startDate = LocalDateTime.parse(accountTransactionEntityList.get(0).getTransactionDate(), formatter);
             for (int i = 0; i < accountTransactionEntityList.size(); i++) {
                 LocalDateTime currentDate = LocalDateTime.parse(accountTransactionEntityList.get(i).getTransactionDate(), formatter);
                 while (startDate.isBefore(currentDate)) {
+                    if (!startDate.toLocalDate().isBefore(oneWeekAgo)) {
+                        ChartEntity chartEntity = new ChartEntity();
+                        chartEntity.setAccountId(id);
+                        chartEntity.setDate(startDate.format(formatter));
+                        chartEntity.setValue(accountTransactionEntityList.get(i - 1).getValue());
+                        chartEntityList.add(chartEntity);
+                    }
+                    startDate = startDate.plusDays(1);
+                }
+                if (!startDate.toLocalDate().isBefore(oneWeekAgo)) {
                     ChartEntity chartEntity = new ChartEntity();
                     chartEntity.setAccountId(id);
                     chartEntity.setDate(startDate.format(formatter));
                     chartEntity.setValue(accountTransactionEntityList.get(i - 1).getValue());
                     chartEntityList.add(chartEntity);
-                    startDate = startDate.plusDays(1);
                 }
-                ChartEntity chartEntity = new ChartEntity();
-                chartEntity.setAccountId(id);
-                chartEntity.setDate(startDate.format(formatter));
-                chartEntity.setValue(accountTransactionEntityList.get(i).getValue());
-                chartEntityList.add(chartEntity);
                 startDate = startDate.plusDays(1);
             }
 
@@ -246,11 +257,13 @@ public class ChartService extends Service<ChartEntity> {
             if (lastAccountTransactionEntity.getValue() != 0) {
                 LocalDate now = LocalDateTime.now().toLocalDate().plusDays(1);
                 while (!startDate.toLocalDate().isEqual(now)) {
-                    ChartEntity chartEntity = new ChartEntity();
-                    chartEntity.setAccountId(id);
-                    chartEntity.setDate(startDate.format(formatter));
-                    chartEntity.setValue(lastAccountTransactionEntity.getValue());
-                    chartEntityList.add(chartEntity);
+                    if (!startDate.toLocalDate().isBefore(oneWeekAgo)) {
+                        ChartEntity chartEntity = new ChartEntity();
+                        chartEntity.setAccountId(id);
+                        chartEntity.setDate(startDate.format(formatter));
+                        chartEntity.setValue(lastAccountTransactionEntity.getValue());
+                        chartEntityList.add(chartEntity);
+                    }
                     startDate = startDate.plusDays(1);
                 }
             }
