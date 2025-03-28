@@ -247,7 +247,7 @@ public class ChartService extends Service<ChartEntity> {
                     ChartEntity chartEntity = new ChartEntity();
                     chartEntity.setAccountId(id);
                     chartEntity.setDate(startDate.format(formatter));
-                    chartEntity.setValue(accountTransactionEntityList.get(i - 1).getValue());
+                    chartEntity.setValue(accountTransactionEntityList.get(i).getValue());
                     chartEntityList.add(chartEntity);
                 }
                 startDate = startDate.plusDays(1);
