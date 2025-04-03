@@ -60,7 +60,7 @@ public class WatchRepository extends Repository<WatchEntity> {
             put("watch_id", watchId);
         }});
         watchEntity.setTotalAccount(dataList.size());
-        AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);
+        AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0, 0.0);
         AccountService accountService = new AccountService();
         for (WatchAccountEntity watchAccountEntity : dataList) {
             Optional<AccountEntity> accountEntity = accountService.repository.getByPrimaryField(watchAccountEntity.getAccountId());

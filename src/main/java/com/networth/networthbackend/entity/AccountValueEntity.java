@@ -12,4 +12,6 @@ public class AccountValueEntity {
     private Double currentValue;
 
     private Double previousValue;
+
+    private Double invested;
 }

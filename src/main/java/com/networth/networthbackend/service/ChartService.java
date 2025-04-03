@@ -31,7 +31,7 @@ public class ChartService extends Service<ChartEntity> {
     private final Context context;
     Map<LocalDate, Double> currencyDataList = new LinkedHashMap<>();
 
-    AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0);
+    AccountValueEntity accountValueEntity = new AccountValueEntity(0.0, 0.0, 0.0);
 
     public ChartService(Context context) {
         super(new ChartRepository());
@@ -53,7 +53,7 @@ public class ChartService extends Service<ChartEntity> {
         return createAPIResponse(jsonBody, 200, Utility.createHeaders());
     }
 
-    public void generateData() throws SQLException, IOException, URISyntaxException, InterruptedException {
+    public void generateData() throws SQLException {
         AccountService accountService = new AccountService();
         List<AccountEntity> accountEntityList = accountService.repository.getBySecondaryField(new LinkedHashMap<>() {{
             put("user_id", userId);
@@ -70,12 +70,14 @@ public class ChartService extends Service<ChartEntity> {
         for (AccountEntity accountEntity : accountEntityList) {
             try {
                 if (accountEntity.getType().equals("Broker")) {
-                    accountValueEntity = new AccountValueEntity(0.0, 0.0);
+                    accountValueEntity = new AccountValueEntity(0.0, 0.0, 0.0);
                     generateBrokerAccountData(accountEntity.getId());
                     ChartEntity previousValue = new ChartEntity();
                     previousValue.setValue(accountValueEntity.getPreviousValue());
+                    previousValue.setInvested(accountValueEntity.getInvested());
                     ChartEntity currentValue = new ChartEntity();
                     currentValue.setValue(accountValueEntity.getCurrentValue());
+                    currentValue.setInvested(accountValueEntity.getInvested());
                     updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue));
                 } else {
                     generateNonBrokerAccountData(accountEntity.getId());
@@ -305,13 +307,12 @@ public class ChartService extends Service<ChartEntity> {
     private void updateAccountData(Integer id, List<ChartEntity> chartEntityList) throws SQLException {
         Double currentValue = !chartEntityList.isEmpty() ? chartEntityList.get(chartEntityList.size() - 1).getValue() : 0.0;
         Double previousValue = chartEntityList.size() >= 2 ? chartEntityList.get(chartEntityList.size() - 2).getValue() : 0.0;
+        Double invested = !chartEntityList.isEmpty() ? chartEntityList.get(chartEntityList.size() - 1).getInvested() : 0.0;
 
         AccountService accountService = new AccountService();
         Optional<AccountEntity> accountEntity = accountService.repository.getByPrimaryField(id);
         if (accountEntity.isPresent()) {
-            accountEntity.ifPresent(accountEntity1 -> {
-                accountEntity1.setValue(new AccountValueEntity(currentValue, previousValue));
-            });
+            accountEntity.ifPresent(accountEntity1 -> accountEntity1.setValue(new AccountValueEntity(currentValue, previousValue, invested)));
             accountService.repository.update(accountEntity.get());
         }
         accountService.repository.databaseService.disconnect();
@@ -320,15 +321,15 @@ public class ChartService extends Service<ChartEntity> {
     private void updateAccountBrokerData(Integer id, List<ChartEntity> chartEntityList) throws SQLException {
         Double currentValue = !chartEntityList.isEmpty() ? chartEntityList.get(chartEntityList.size() - 1).getValue() : 0.0;
         Double previousValue = chartEntityList.size() >= 2 ? chartEntityList.get(chartEntityList.size() - 2).getValue() : 0.0;
+        Double invested = !chartEntityList.isEmpty() ? chartEntityList.get(chartEntityList.size() - 1).getInvested() : 0.0;
 
         accountValueEntity.setCurrentValue(accountValueEntity.getCurrentValue() + currentValue);
         accountValueEntity.setPreviousValue(accountValueEntity.getPreviousValue() + previousValue);
+        accountValueEntity.setInvested(accountValueEntity.getInvested() + invested);
         AccountBrokerService accountBrokerService = new AccountBrokerService();
         Optional<AccountBrokerEntity> accountBrokerEntity = accountBrokerService.repository.getByPrimaryField(id);
         if (accountBrokerEntity.isPresent()) {
-            accountBrokerEntity.ifPresent(accountEntity1 -> {
-                accountEntity1.setValue(new AccountValueEntity(currentValue, previousValue));
-            });
+            accountBrokerEntity.ifPresent(accountEntity1 -> accountEntity1.setValue(new AccountValueEntity(currentValue, previousValue, invested)));
             accountBrokerService.repository.update(accountBrokerEntity.get());
         }
         accountBrokerService.repository.databaseService.disconnect();
