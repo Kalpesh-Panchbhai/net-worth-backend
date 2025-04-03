@@ -128,6 +128,13 @@ public class ChartService extends Service<ChartEntity> {
         accountTransactionService.repository.databaseService.disconnect();
         accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate));
 
+        InvestService investService = new InvestService();
+        List<InvestEntity> investEntityList = investService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("account_broker_id", id);
+        }});
+        investService.repository.databaseService.disconnect();
+        investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
+
         List<ChartEntity> chartEntityList = new ArrayList<>();
         if (!accountTransactionEntityList.isEmpty()) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -146,6 +153,12 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountBrokerId(id);
                         chartEntity.setDate(startDate.format(formatter1));
                         chartEntity.setValue(value);
+                        LocalDate finalStartDate = startDate;
+                        List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                            LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                            return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                        }).toList();
+                        chartEntity.setInvested(!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0);
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);
@@ -158,6 +171,12 @@ public class ChartService extends Service<ChartEntity> {
                     chartEntity.setAccountBrokerId(id);
                     chartEntity.setDate(startDate.format(formatter1));
                     chartEntity.setValue(value);
+                    LocalDate finalStartDate = startDate;
+                    List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                        LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                        return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                    }).toList();
+                    chartEntity.setInvested(!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0);
                     chartEntityList.add(chartEntity);
                 }
                 startDate = startDate.plusDays(1);
@@ -175,6 +194,12 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountBrokerId(id);
                         chartEntity.setDate(startDate.format(formatter1));
                         chartEntity.setValue(value);
+                        LocalDate finalStartDate = startDate;
+                        List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                            LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                            return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                        }).toList();
+                        chartEntity.setInvested(!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0);
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);
@@ -239,6 +264,7 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountId(id);
                         chartEntity.setDate(startDate.format(formatter));
                         chartEntity.setValue(accountTransactionEntityList.get(i - 1).getValue());
+                        chartEntity.setInvested(accountTransactionEntityList.get(i - 1).getValue());
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);
@@ -248,6 +274,7 @@ public class ChartService extends Service<ChartEntity> {
                     chartEntity.setAccountId(id);
                     chartEntity.setDate(startDate.format(formatter));
                     chartEntity.setValue(accountTransactionEntityList.get(i).getValue());
+                    chartEntity.setInvested(accountTransactionEntityList.get(i).getValue());
                     chartEntityList.add(chartEntity);
                 }
                 startDate = startDate.plusDays(1);
@@ -262,6 +289,7 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountId(id);
                         chartEntity.setDate(startDate.format(formatter));
                         chartEntity.setValue(lastAccountTransactionEntity.getValue());
+                        chartEntity.setInvested(lastAccountTransactionEntity.getValue());
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);

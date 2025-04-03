@@ -35,6 +35,8 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             return handleWatchAccountRequest(apiGatewayRequest, context);
         } else if (apiGatewayRequest.getPath().startsWith("/chart")) {
             return handleChartRequest(apiGatewayRequest, context);
+        } else if (apiGatewayRequest.getPath().startsWith("/invest")) {
+            return handleInvestRequest(apiGatewayRequest, context);
         } else {
             throw new Error("Unsupported Path:::" + apiGatewayRequest.getPath());
         }
@@ -217,6 +219,20 @@ public class LambdaRestAPIHandler implements RequestHandler<APIGatewayProxyReque
             }
         } finally {
             chartService.repository.databaseService.disconnect();
+        }
+    }
+
+    public APIGatewayProxyResponseEvent handleInvestRequest(APIGatewayProxyRequestEvent apiGatewayRequest, Context context) throws SQLException {
+        InvestService investService = new InvestService();
+        try {
+            switch (apiGatewayRequest.getHttpMethod()) {
+                case "POST":
+                    return investService.post(apiGatewayRequest, context, InvestEntity.class);
+                default:
+                    throw new Error("Unsupported Methods:::" + apiGatewayRequest.getHttpMethod());
+            }
+        } finally {
+            investService.repository.databaseService.disconnect();
         }
     }
 }

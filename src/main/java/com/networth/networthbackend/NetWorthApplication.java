@@ -8,9 +8,12 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.logging.LogLevel;
 import com.networth.networthbackend.entity.AccountTransactionEntity;
+import com.networth.networthbackend.entity.ChartEntity;
+import com.networth.networthbackend.entity.InvestEntity;
 import com.networth.networthbackend.service.AccountBrokerService;
 import com.networth.networthbackend.service.AccountTransactionService;
 import com.networth.networthbackend.service.ChartService;
+import com.networth.networthbackend.service.InvestService;
 import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
@@ -19,21 +22,37 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class NetWorthApplication {
 
     public static void main(String[] args) throws SQLException, IOException, URISyntaxException, InterruptedException {
 //        loadAccountTransactionData();
-        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         generateChartData();
-        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+//        addInvestData();
+    }
+
+    private static void addInvestData() throws SQLException {
+        InvestService investService = new InvestService();
+        APIGatewayProxyRequestEvent apiGatewayRequestEvent = new APIGatewayProxyRequestEvent();
+        InvestEntity investEntity = new InvestEntity();
+        investEntity.setAccountBrokerId(8);
+        investEntity.setOperation("add");
+        investEntity.setDate("2025-04-01");
+        investEntity.setValue(0.001);
+        apiGatewayRequestEvent.setBody(investEntity.toString());
+        investService.post(apiGatewayRequestEvent, getContext(), InvestEntity.class);
+        investService.repository.databaseService.disconnect();
     }
 
     private static void generateChartData() throws SQLException, IOException, URISyntaxException, InterruptedException {
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         ChartService chartService = new ChartService(getContext());
         chartService.generateData();
         chartService.repository.databaseService.disconnect();
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
     private static Context getContext() {

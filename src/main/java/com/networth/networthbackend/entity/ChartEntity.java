@@ -18,4 +18,6 @@ public class ChartEntity {
     private String date;
 
     private Double value;
+
+    private Double invested;
 }
