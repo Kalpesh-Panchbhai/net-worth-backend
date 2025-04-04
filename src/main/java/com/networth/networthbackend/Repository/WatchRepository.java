@@ -67,6 +67,7 @@ public class WatchRepository extends Repository<WatchEntity> {
             accountEntity.ifPresent(accountEntity1 -> {
                 accountValueEntity.setCurrentValue(accountValueEntity.getCurrentValue() + accountEntity1.getValue().getCurrentValue());
                 accountValueEntity.setPreviousValue(accountValueEntity.getPreviousValue() + accountEntity1.getValue().getPreviousValue());
+                accountValueEntity.setInvested(accountValueEntity.getInvested() + accountEntity1.getValue().getInvested());
             });
         }
         watchEntity.setValue(accountValueEntity);

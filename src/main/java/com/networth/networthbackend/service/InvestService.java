@@ -28,7 +28,11 @@ public class InvestService extends Service<InvestEntity> {
             return super.post(apiGatewayRequest, context, entityType);
         } else {
             List<InvestEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
-                put("account_broker_id", investEntity.getAccountBrokerId());
+                if (investEntity.getAccountId() != null && investEntity.getAccountId() != 0) {
+                    put("account_id", investEntity.getAccountId());
+                } else {
+                    put("account_broker_id", investEntity.getAccountBrokerId());
+                }
             }});
             dataList.sort(Comparator.comparing(InvestEntity::getDate));
 

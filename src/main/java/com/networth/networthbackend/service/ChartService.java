@@ -255,6 +255,13 @@ public class ChartService extends Service<ChartEntity> {
 
         accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate));
 
+        InvestService investService = new InvestService();
+        List<InvestEntity> investEntityList = investService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("account_id", id);
+        }});
+        investService.repository.databaseService.disconnect();
+        investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         if (!accountTransactionEntityList.isEmpty()) {
             LocalDateTime startDate = LocalDateTime.parse(accountTransactionEntityList.get(0).getTransactionDate(), formatter);
@@ -266,7 +273,12 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountId(id);
                         chartEntity.setDate(startDate.format(formatter));
                         chartEntity.setValue(accountTransactionEntityList.get(i - 1).getValue());
-                        chartEntity.setInvested(accountTransactionEntityList.get(i - 1).getValue());
+                        LocalDate finalStartDate = startDate.toLocalDate();
+                        List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                            LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                            return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                        }).toList();
+                        chartEntity.setInvested(investEntityList.isEmpty() ? accountTransactionEntityList.get(i - 1).getValue() : (!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0));
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);
@@ -276,7 +288,12 @@ public class ChartService extends Service<ChartEntity> {
                     chartEntity.setAccountId(id);
                     chartEntity.setDate(startDate.format(formatter));
                     chartEntity.setValue(accountTransactionEntityList.get(i).getValue());
-                    chartEntity.setInvested(accountTransactionEntityList.get(i).getValue());
+                    LocalDate finalStartDate = startDate.toLocalDate();
+                    List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                        LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                        return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                    }).toList();
+                    chartEntity.setInvested(investEntityList.isEmpty() ? accountTransactionEntityList.get(i).getValue() : (!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0));
                     chartEntityList.add(chartEntity);
                 }
                 startDate = startDate.plusDays(1);
@@ -291,7 +308,12 @@ public class ChartService extends Service<ChartEntity> {
                         chartEntity.setAccountId(id);
                         chartEntity.setDate(startDate.format(formatter));
                         chartEntity.setValue(lastAccountTransactionEntity.getValue());
-                        chartEntity.setInvested(lastAccountTransactionEntity.getValue());
+                        LocalDate finalStartDate = startDate.toLocalDate();
+                        List<InvestEntity> filteredInvestEntityList = investEntityList.stream().filter(data -> {
+                            LocalDate date = LocalDate.parse(data.getDate(), formatter);
+                            return date.isBefore(finalStartDate) || date.isEqual(finalStartDate);
+                        }).toList();
+                        chartEntity.setInvested(investEntityList.isEmpty() ? lastAccountTransactionEntity.getValue() : (!filteredInvestEntityList.isEmpty() ? filteredInvestEntityList.get(filteredInvestEntityList.size() - 1).getValue() : 0.0));
                         chartEntityList.add(chartEntity);
                     }
                     startDate = startDate.plusDays(1);

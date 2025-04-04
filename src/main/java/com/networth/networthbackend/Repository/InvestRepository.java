@@ -19,11 +19,20 @@ public class InvestRepository extends Repository<InvestEntity> {
 
     @Override
     public PreparedStatement prepareInsertQuery(InvestEntity data) throws SQLException {
-        String insertQuery = "INSERT INTO " + tableName + "(account_broker_id, date, value) VALUES (?, ?, ?)";
+        String insertQuery = "INSERT INTO " + tableName + "(account_id, account_broker_id, date, value) VALUES (?, ?, ?, ?)";
         PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, PreparedStatement.RETURN_GENERATED_KEYS);
-        preparedStatement.setInt(1, data.getAccountBrokerId());
-        preparedStatement.setString(2, data.getDate());
-        preparedStatement.setDouble(3, data.getValue());
+        if (data.getAccountId() != null && data.getAccountId() != 0) {
+            preparedStatement.setInt(1, data.getAccountId());
+        } else {
+            preparedStatement.setNull(1, INTEGER);
+        }
+        if (data.getAccountBrokerId() != null && data.getAccountBrokerId() != 0) {
+            preparedStatement.setInt(2, data.getAccountBrokerId());
+        } else {
+            preparedStatement.setNull(2, INTEGER);
+        }
+        preparedStatement.setString(3, data.getDate());
+        preparedStatement.setDouble(4, data.getValue());
         return preparedStatement;
     }
 
@@ -39,6 +48,7 @@ public class InvestRepository extends Repository<InvestEntity> {
         while (rs.next()) {
             InvestEntity investEntity = new InvestEntity();
             investEntity.setId(rs.getInt("id"));
+            investEntity.setAccountId(rs.getInt("account_id"));
             investEntity.setAccountBrokerId(rs.getInt("account_broker_id"));
             investEntity.setDate(rs.getString("date"));
             investEntity.setValue(rs.getDouble("value"));
