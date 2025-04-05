@@ -54,18 +54,8 @@ public class ChartService extends Service<ChartEntity> {
     }
 
     public void generateData() throws SQLException {
-        AccountService accountService = new AccountService();
-        List<AccountEntity> accountEntityList = accountService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("user_id", userId);
-        }});
-
-        try {
-            if (currencyDataList.isEmpty()) {
-                currencyDataList = generateCurrencyData();
-            }
-        } catch (Exception e) {
-            context.getLogger().log("Error while fetching currency data with Yahoo API");
-        }
+        List<AccountEntity> accountEntityList = getAccountList();
+        generateCurrencyData();
 
         for (AccountEntity accountEntity : accountEntityList) {
             try {
@@ -86,17 +76,35 @@ public class ChartService extends Service<ChartEntity> {
                 context.getLogger().log("Error while fetching " + accountEntity.getName() + " from Yahoo API");
             }
         }
-        accountService.repository.databaseService.disconnect();
     }
 
-    private void generateBrokerAccountData(Integer id) throws SQLException, IOException, URISyntaxException, InterruptedException {
-        AccountBrokerService accountBrokerService = new AccountBrokerService();
-        List<AccountBrokerEntity> accountBrokerEntityList = accountBrokerService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("account_id", id);
+    private List<AccountEntity> getAccountList() throws SQLException {
+        AccountService accountService = new AccountService();
+        List<AccountEntity> accountEntityList = accountService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("user_id", userId);
         }});
+        accountService.repository.databaseService.disconnect();
+        return accountEntityList;
+    }
+
+    private void generateCurrencyData() {
+        try {
+            if (currencyDataList.isEmpty()) {
+                String url = generateURL("USDINR=X");
+                String currencyResponse = restAPIService.executeAPI(url);
+                YahooAPIResponse currencyResponseYahooAPI = new Utility<YahooAPIResponse>().convertStringToObj(currencyResponse, context, YahooAPIResponse.class);
+                currencyDataList = convertYahooAPIToChartData(currencyResponseYahooAPI);
+            }
+        } catch (Exception e) {
+            context.getLogger().log("Error while fetching currency data with Yahoo API");
+        }
+    }
+
+    private void generateBrokerAccountData(Integer id) throws SQLException {
+        List<AccountBrokerEntity> accountBrokerEntityList = getAccountBrokerList(id);
         for (AccountBrokerEntity accountBrokerEntity : accountBrokerEntityList) {
             try {
-                List<ChartEntity> chartEntityList = generateData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
+                List<ChartEntity> chartEntityList = generateSingleBrokerAccountData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
                 deleteData(accountBrokerEntity.getId(), "account_broker_id");
                 addData(chartEntityList);
                 updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList);
@@ -104,17 +112,18 @@ public class ChartService extends Service<ChartEntity> {
                 context.getLogger().log("Error while fetching " + accountBrokerEntity.getName() + " from Yahoo API");
             }
         }
+    }
+
+    private List<AccountBrokerEntity> getAccountBrokerList(Integer id) throws SQLException {
+        AccountBrokerService accountBrokerService = new AccountBrokerService();
+        List<AccountBrokerEntity> accountBrokerEntityList = accountBrokerService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put("account_id", id);
+        }});
         accountBrokerService.repository.databaseService.disconnect();
+        return accountBrokerEntityList;
     }
 
-    public LinkedHashMap<LocalDate, Double> generateCurrencyData() throws IOException, URISyntaxException, InterruptedException {
-        String url = generateURL("USDINR=X");
-        String currencyResponse = restAPIService.executeAPI(url);
-        YahooAPIResponse currencyResponseYahooAPI = new Utility<YahooAPIResponse>().convertStringToObj(currencyResponse, context, YahooAPIResponse.class);
-        return convertYahooAPIToChartData(currencyResponseYahooAPI);
-    }
-
-    public List<ChartEntity> generateData(String symbol, Integer id) throws IOException, URISyntaxException, InterruptedException, SQLException {
+    private List<ChartEntity> generateSingleBrokerAccountData(String symbol, Integer id) throws IOException, URISyntaxException, InterruptedException, SQLException {
         String url = generateURL(symbol);
         String response = restAPIService.executeAPI(url);
 
@@ -123,18 +132,10 @@ public class ChartService extends Service<ChartEntity> {
         String currency = api.getChart().getResult().get(0).getMeta().getCurrency();
         LinkedHashMap<LocalDate, Double> symbolDataList = convertYahooAPIToChartData(api);
 
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
-        List<AccountTransactionEntity> accountTransactionEntityList = accountTransactionService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("account_broker_id", id);
-        }});
-        accountTransactionService.repository.databaseService.disconnect();
+        List<AccountTransactionEntity> accountTransactionEntityList = getAccountTransactionList(id, "account_broker_id");
         accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate));
 
-        InvestService investService = new InvestService();
-        List<InvestEntity> investEntityList = investService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("account_broker_id", id);
-        }});
-        investService.repository.databaseService.disconnect();
+        List<InvestEntity> investEntityList = getInvestList(id, "account_broker_id");
         investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
 
         List<ChartEntity> chartEntityList = new ArrayList<>();
@@ -248,18 +249,11 @@ public class ChartService extends Service<ChartEntity> {
 
     private void generateNonBrokerAccountData(Integer id) throws SQLException {
         List<ChartEntity> chartEntityList = new ArrayList<>();
-        AccountTransactionService accountTransactionService = new AccountTransactionService();
-        List<AccountTransactionEntity> accountTransactionEntityList = accountTransactionService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("account_id", id);
-        }});
 
+        List<AccountTransactionEntity> accountTransactionEntityList = getAccountTransactionList(id, "account_id");
         accountTransactionEntityList.sort(Comparator.comparing(AccountTransactionEntity::getTransactionDate));
 
-        InvestService investService = new InvestService();
-        List<InvestEntity> investEntityList = investService.repository.getBySecondaryField(new LinkedHashMap<>() {{
-            put("account_id", id);
-        }});
-        investService.repository.databaseService.disconnect();
+        List<InvestEntity> investEntityList = getInvestList(id, "account_id");
         investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -323,7 +317,24 @@ public class ChartService extends Service<ChartEntity> {
         deleteData(id, "account_id");
         addData(chartEntityList);
         updateAccountData(id, chartEntityList);
+    }
+
+    private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {
+        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        List<AccountTransactionEntity> accountTransactionEntityList = accountTransactionService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put(fieldName, id);
+        }});
         accountTransactionService.repository.databaseService.disconnect();
+        return accountTransactionEntityList;
+    }
+
+    private List<InvestEntity> getInvestList(Integer id, String fieldName) throws SQLException {
+        InvestService investService = new InvestService();
+        List<InvestEntity> investEntityList = investService.repository.getBySecondaryField(new LinkedHashMap<>() {{
+            put(fieldName, id);
+        }});
+        investService.repository.databaseService.disconnect();
+        return investEntityList;
     }
 
     private void updateAccountData(Integer id, List<ChartEntity> chartEntityList) throws SQLException {
