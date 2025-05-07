@@ -67,9 +67,11 @@ public class ChartService extends Service<ChartEntity> {
                     ChartEntity previousValue = new ChartEntity();
                     previousValue.setValue(accountValueEntity.getPreviousValue());
                     previousValue.setInvested(accountValueEntity.getInvested());
+                    previousValue.setDate(LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern(getDateFormatAccountBroker)));
                     ChartEntity currentValue = new ChartEntity();
                     currentValue.setValue(accountValueEntity.getCurrentValue());
                     currentValue.setInvested(accountValueEntity.getInvested());
+                    currentValue.setDate(LocalDate.now().format(DateTimeFormatter.ofPattern(getDateFormatAccountBroker)));
                     updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue), getDateFormatAccountBroker);
                 } else {
                     generateNonBrokerAccountData(accountEntity.getId());

@@ -18,7 +18,7 @@ public class RestAPIService {
     public String executeAPI(String url) throws IOException, URISyntaxException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URL(url).toURI())
-                .header("User-Agent", "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.49 Safari/537.36")
+                .header("User-Agent", "MyYahooClient/1.0 Net-Worth API")
                 .header("Accept", "application/json")
                 .GET()
                 .build();
