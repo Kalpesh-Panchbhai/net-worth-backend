@@ -23,6 +23,8 @@ public class ChartService extends Service<ChartEntity> {
 
     private final Integer userId = 1;
     private final LocalDate oneWeekAgo = LocalDate.now().minusDays(7);
+    private final String dateFormatAccount = "yyyy-MM-dd HH:mm:ss";
+    private final String getDateFormatAccountBroker = "yyyy-MM-dd";
 
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
@@ -68,7 +70,7 @@ public class ChartService extends Service<ChartEntity> {
                     ChartEntity currentValue = new ChartEntity();
                     currentValue.setValue(accountValueEntity.getCurrentValue());
                     currentValue.setInvested(accountValueEntity.getInvested());
-                    updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue));
+                    updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue), getDateFormatAccountBroker);
                 } else {
                     generateNonBrokerAccountData(accountEntity.getId());
                 }
@@ -107,7 +109,7 @@ public class ChartService extends Service<ChartEntity> {
                 List<ChartEntity> chartEntityList = generateSingleBrokerAccountData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
                 deleteData(accountBrokerEntity.getId(), "account_broker_id");
                 addData(chartEntityList);
-                updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList);
+                updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList, getDateFormatAccountBroker);
             } catch (Exception e) {
                 context.getLogger().log("Error while fetching " + accountBrokerEntity.getName() + " from Yahoo API");
             }
@@ -316,7 +318,7 @@ public class ChartService extends Service<ChartEntity> {
         }
         deleteData(id, "account_id");
         addData(chartEntityList);
-        updateAccountData(id, chartEntityList);
+        updateAccountData(id, chartEntityList, dateFormatAccount);
     }
 
     private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {
@@ -337,13 +339,13 @@ public class ChartService extends Service<ChartEntity> {
         return investEntityList;
     }
 
-    private void updateAccountData(Integer id, List<ChartEntity> chartEntityList) throws SQLException {
+    private void updateAccountData(Integer id, List<ChartEntity> chartEntityList, String dateFormat) throws SQLException {
         LocalDate currentDate = LocalDate.now(ZoneId.of(ZoneId.SHORT_IDS.get("IST"))).atStartOfDay().toLocalDate();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         chartEntityList = chartEntityList.stream().filter(chartEntity -> LocalDate.parse(chartEntity.getDate(), formatter).isAfter(currentDate.minusDays(1)) || LocalDate.parse(chartEntity.getDate(), formatter).equals(currentDate.minusDays(1))).toList();
-        Double currentValue = getCurrentValue(chartEntityList);
-        Double previousValue = getPreviousValue(chartEntityList);
-        Double invested = getInvestedValue(chartEntityList);
+        Double currentValue = getCurrentValue(chartEntityList, dateFormat);
+        Double previousValue = getPreviousValue(chartEntityList, dateFormat);
+        Double invested = getInvestedValue(chartEntityList, dateFormat);
 
         AccountService accountService = new AccountService();
         Optional<AccountEntity> accountEntity = accountService.repository.getByPrimaryField(id);
@@ -354,13 +356,13 @@ public class ChartService extends Service<ChartEntity> {
         accountService.repository.databaseService.disconnect();
     }
 
-    private void updateAccountBrokerData(Integer id, List<ChartEntity> chartEntityList) throws SQLException {
+    private void updateAccountBrokerData(Integer id, List<ChartEntity> chartEntityList, String dateFormat) throws SQLException {
         LocalDate currentDate = LocalDate.now(ZoneId.of(ZoneId.SHORT_IDS.get("IST"))).atStartOfDay().toLocalDate();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         chartEntityList = chartEntityList.stream().filter(chartEntity -> LocalDate.parse(chartEntity.getDate(), formatter).isAfter(currentDate.minusDays(1)) || LocalDate.parse(chartEntity.getDate(), formatter).equals(currentDate.minusDays(1))).toList();
-        Double currentValue = getCurrentValue(chartEntityList);
-        Double previousValue = getPreviousValue(chartEntityList);
-        Double invested = getInvestedValue(chartEntityList);
+        Double currentValue = getCurrentValue(chartEntityList, dateFormat);
+        Double previousValue = getPreviousValue(chartEntityList, dateFormat);
+        Double invested = getInvestedValue(chartEntityList, dateFormat);
 
         accountValueEntity.setCurrentValue(accountValueEntity.getCurrentValue() + currentValue);
         accountValueEntity.setPreviousValue(accountValueEntity.getPreviousValue() + previousValue);
@@ -374,9 +376,9 @@ public class ChartService extends Service<ChartEntity> {
         accountBrokerService.repository.databaseService.disconnect();
     }
 
-    private Double getCurrentValue(List<ChartEntity> chartEntityList) {
+    private Double getCurrentValue(List<ChartEntity> chartEntityList, String dateFormat) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(ZoneId.SHORT_IDS.get("IST"))).atStartOfDay().toLocalDate();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         if (!chartEntityList.isEmpty()) {
             if (LocalDate.parse(chartEntityList.get(chartEntityList.size() - 1).getDate(), formatter).equals(currentDate)) {
                 return chartEntityList.get(chartEntityList.size() - 1).getValue();
@@ -385,9 +387,9 @@ public class ChartService extends Service<ChartEntity> {
         return 0.0;
     }
 
-    private Double getPreviousValue(List<ChartEntity> chartEntityList) {
+    private Double getPreviousValue(List<ChartEntity> chartEntityList, String dateFormat) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(ZoneId.SHORT_IDS.get("IST"))).atStartOfDay().toLocalDate();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         if (chartEntityList.size() >= 2) {
             if (LocalDate.parse(chartEntityList.get(chartEntityList.size() - 2).getDate(), formatter).equals(currentDate.minusDays(1))) {
                 return chartEntityList.get(chartEntityList.size() - 2).getValue();
@@ -396,9 +398,9 @@ public class ChartService extends Service<ChartEntity> {
         return 0.0;
     }
 
-    private Double getInvestedValue(List<ChartEntity> chartEntityList) {
+    private Double getInvestedValue(List<ChartEntity> chartEntityList, String dateFormat) {
         LocalDate currentDate = LocalDate.now(ZoneId.of(ZoneId.SHORT_IDS.get("IST"))).atStartOfDay().toLocalDate();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
         if (!chartEntityList.isEmpty()) {
             if (LocalDate.parse(chartEntityList.get(chartEntityList.size() - 1).getDate(), formatter).equals(currentDate)) {
                 return chartEntityList.get(chartEntityList.size() - 1).getInvested();

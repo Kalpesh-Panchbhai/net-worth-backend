@@ -38,10 +38,10 @@ public class NetWorthApplication {
         InvestService investService = new InvestService();
         APIGatewayProxyRequestEvent apiGatewayRequestEvent = new APIGatewayProxyRequestEvent();
         InvestEntity investEntity = new InvestEntity();
-        investEntity.setAccountId(10);
-        investEntity.setOperation("add");
-        investEntity.setDate("2024-09-07");
-        investEntity.setValue(50000.0);
+        investEntity.setAccountId(16);
+        investEntity.setOperation("update");
+        investEntity.setDate("2025-05-07");
+        investEntity.setValue(100000.20);
         apiGatewayRequestEvent.setBody(investEntity.toString());
         investService.post(apiGatewayRequestEvent, getContext(), InvestEntity.class);
         investService.repository.databaseService.disconnect();
