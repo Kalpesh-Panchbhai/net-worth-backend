@@ -5,6 +5,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.Repository.ChartRepository;
 import com.networth.networthbackend.entity.*;
+import com.networth.networthbackend.model.dhanapimodel.FundLimitAPIResponse;
+import com.networth.networthbackend.model.dhanapimodel.PositionAPIResponse;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
 import com.networth.networthbackend.utility.Utility;
 
@@ -17,16 +19,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ChartService extends Service<ChartEntity> {
 
     private final Integer userId = 1;
     private final LocalDate oneWeekAgo = LocalDate.now().minusDays(7);
-    private final String dateFormatAccount = "yyyy-MM-dd HH:mm:ss";
-    private final String getDateFormatAccountBroker = "yyyy-MM-dd";
+    private final String dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    private final String dateFormatAccount = "yyyy-MM-dd";
 
     private final String baseURL = "https://query1.finance.yahoo.com/v8/finance/chart/";
+    private final String dhanBaseURL = "https://api.dhan.co/v2/";
 
     private final RestAPIService restAPIService = new RestAPIService();
 
@@ -67,14 +69,18 @@ public class ChartService extends Service<ChartEntity> {
                     ChartEntity previousValue = new ChartEntity();
                     previousValue.setValue(accountValueEntity.getPreviousValue());
                     previousValue.setInvested(accountValueEntity.getInvested());
-                    previousValue.setDate(LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern(getDateFormatAccountBroker)));
+                    previousValue.setDate(LocalDate.now().minusDays(1).format(DateTimeFormatter.ofPattern(dateFormatAccount)));
                     ChartEntity currentValue = new ChartEntity();
                     currentValue.setValue(accountValueEntity.getCurrentValue());
                     currentValue.setInvested(accountValueEntity.getInvested());
-                    currentValue.setDate(LocalDate.now().format(DateTimeFormatter.ofPattern(getDateFormatAccountBroker)));
-                    updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue), getDateFormatAccountBroker);
+                    currentValue.setDate(LocalDate.now().format(DateTimeFormatter.ofPattern(dateFormatAccount)));
+                    updateAccountData(accountEntity.getId(), List.of(previousValue, currentValue), dateFormatAccount);
                 } else {
-                    generateNonBrokerAccountData(accountEntity.getId());
+                    if (accountEntity.getName().equals("Dhan")) {
+                        generateDhanNonBrokerAccountData(accountEntity.getId());
+                    } else {
+                        generateNonBrokerAccountData(accountEntity.getId());
+                    }
                 }
             } catch (Exception e) {
                 context.getLogger().log("Error while fetching " + accountEntity.getName() + " from Yahoo API");
@@ -111,7 +117,7 @@ public class ChartService extends Service<ChartEntity> {
                 List<ChartEntity> chartEntityList = generateSingleBrokerAccountData(accountBrokerEntity.getSymbol(), accountBrokerEntity.getId());
                 deleteData(accountBrokerEntity.getId(), "account_broker_id");
                 addData(chartEntityList);
-                updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList, getDateFormatAccountBroker);
+                updateAccountBrokerData(accountBrokerEntity.getId(), chartEntityList, dateFormatAccount);
             } catch (Exception e) {
                 context.getLogger().log("Error while fetching " + accountBrokerEntity.getName() + " from Yahoo API");
             }
@@ -251,6 +257,10 @@ public class ChartService extends Service<ChartEntity> {
         return baseURL + symbol + "?interval=1d&range=10y";
     }
 
+    private String generateDhanURL(String path) {
+        return dhanBaseURL + path;
+    }
+
     private void generateNonBrokerAccountData(Integer id) throws SQLException {
         List<ChartEntity> chartEntityList = new ArrayList<>();
 
@@ -320,7 +330,43 @@ public class ChartService extends Service<ChartEntity> {
         }
         deleteData(id, "account_id");
         addData(chartEntityList);
-        updateAccountData(id, chartEntityList, dateFormatAccount);
+        updateAccountData(id, chartEntityList, dateTimeFormat);
+    }
+
+    private void generateDhanNonBrokerAccountData(Integer id) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        try {
+            double openPositionsValue = getOpenPositionsValue();
+            double openHoldingsValue = 0.0;
+            double fundBalance = getFundBalance();
+            List<InvestEntity> investEntityList = getInvestList(id, "account_id");
+            investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
+            ChartEntity chartEntity = new ChartEntity();
+            chartEntity.setAccountId(id);
+            chartEntity.setDate(LocalDate.now().format(formatter));
+            chartEntity.setValue(openPositionsValue);
+            chartEntity.setInvested(investEntityList.get(investEntityList.size() - 1).getValue());
+            chartEntity.setValue(fundBalance + openPositionsValue + openHoldingsValue);
+            deleteData(id, "account_id");
+            addData(List.of(chartEntity));
+            updateAccountData(id, List.of(chartEntity), dateFormatAccount);
+        } catch (Exception e) {
+            context.getLogger().log("Error while fetching data with Dhan API");
+        }
+    }
+
+    private double getOpenPositionsValue() throws IOException, URISyntaxException, InterruptedException {
+        String url = generateDhanURL("positions");
+        String response = restAPIService.executeDhanAPI(url);
+        List<PositionAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, PositionAPIResponse.class);
+        return positionAPIResponseList.stream().mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
+    }
+
+    private double getFundBalance() throws IOException, URISyntaxException, InterruptedException {
+        String url = generateDhanURL("fundlimit");
+        String response = restAPIService.executeDhanAPI(url);
+        FundLimitAPIResponse fundLimitAPIResponse = new Utility<FundLimitAPIResponse>().convertStringToObj(response, context, FundLimitAPIResponse.class);
+        return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getUtilizedAmount();
     }
 
     private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {

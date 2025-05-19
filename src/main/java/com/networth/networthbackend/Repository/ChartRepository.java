@@ -78,7 +78,12 @@ public class ChartRepository extends Repository<ChartEntity> {
     @Override
     public void delete(Object fieldName, Object fieldValue) throws SQLException {
         try {
-            String query = "delete from " + tableName + " where " + fieldName + " = ? AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 WEEK) AND CURDATE()";
+            String query;
+            if (fieldValue.toString().equals("17")) {
+                query = "delete from " + tableName + " where " + fieldName + " = ? AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 0 DAY) AND CURDATE()";
+            } else {
+                query = "delete from " + tableName + " where " + fieldName + " = ? AND date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 WEEK) AND CURDATE()";
+            }
             PreparedStatement pstmt = connection.prepareStatement(query);
             pstmt.setObject(1, fieldValue);
             pstmt.execute();

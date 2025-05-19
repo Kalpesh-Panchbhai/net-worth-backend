@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import com.networth.networthbackend.Root;
 import com.networth.networthbackend.model.RestResponse;
 
@@ -63,11 +64,12 @@ public class Utility<T> {
         return data;
     }
 
-    public List<Root> convertStringToListOfObj(String jsonBody, Context context) {
-        List<Root> data = null;
+    public <T> List<T> convertStringToListOfObj(String jsonBody, Context context, Class<T> elementClass) {
+        List<T> data = null;
         try {
-            data = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false).readValue(jsonBody, new TypeReference<List<Root>>() {
-            });
+            CollectionType listType = new ObjectMapper().getTypeFactory()
+                    .constructCollectionType(List.class, elementClass);
+            data = new ObjectMapper().readValue(jsonBody, listType);
         } catch (JsonProcessingException e) {
             context.getLogger().log("Error while converting string to obj:::" + e.getMessage());
         }
