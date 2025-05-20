@@ -38,10 +38,10 @@ public class NetWorthApplication {
         InvestService investService = new InvestService();
         APIGatewayProxyRequestEvent apiGatewayRequestEvent = new APIGatewayProxyRequestEvent();
         InvestEntity investEntity = new InvestEntity();
-        investEntity.setAccountId(16);
-        investEntity.setOperation("update");
-        investEntity.setDate("2025-05-07");
-        investEntity.setValue(100000.20);
+        investEntity.setAccountId(17);
+        investEntity.setOperation("add");
+        investEntity.setDate("2025-05-20");
+        investEntity.setValue(50000.0);
         apiGatewayRequestEvent.setBody(investEntity.toString());
         investService.post(apiGatewayRequestEvent, getContext(), InvestEntity.class);
         investService.repository.databaseService.disconnect();
@@ -50,7 +50,8 @@ public class NetWorthApplication {
     private static void generateChartData() throws SQLException {
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         ChartService chartService = new ChartService(getContext());
-        chartService.generateData();
+//        chartService.generateData();
+        chartService.generateDhanNonBrokerAccountData(17);
         chartService.repository.databaseService.disconnect();
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }

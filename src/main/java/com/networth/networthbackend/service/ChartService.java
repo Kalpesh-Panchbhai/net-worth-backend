@@ -331,7 +331,7 @@ public class ChartService extends Service<ChartEntity> {
         updateAccountData(id, chartEntityList, dateTimeFormat);
     }
 
-    private void generateDhanNonBrokerAccountData(Integer id) {
+    public void generateDhanNonBrokerAccountData(Integer id) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         try {
             double openPositionsValue = getOpenPositionsValue();
@@ -378,14 +378,14 @@ public class ChartService extends Service<ChartEntity> {
         String url = generateDhanURL("holdings");
         String response = restAPIService.executeDhanAPI(url);
         List<HoldingAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, HoldingAPIResponse.class);
-        return positionAPIResponseList.stream().mapToDouble(item -> item.getTotalQty() * item.getLastTradedPrice()).sum();
+        return positionAPIResponseList.stream().mapToDouble(item -> item.getAvailableQty() * item.getLastTradedPrice()).sum();
     }
 
     private double getFundBalance() throws IOException, URISyntaxException, InterruptedException {
         String url = generateDhanURL("fundlimit");
         String response = restAPIService.executeDhanAPI(url);
         FundLimitAPIResponse fundLimitAPIResponse = new Utility<FundLimitAPIResponse>().convertStringToObj(response, context, FundLimitAPIResponse.class);
-        return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getUtilizedAmount();
+        return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getWithdrawableBalance() + fundLimitAPIResponse.getUtilizedAmount();
     }
 
     private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {
