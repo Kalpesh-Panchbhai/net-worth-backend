@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.Repository.ChartRepository;
 import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.dhanapimodel.FundLimitAPIResponse;
+import com.networth.networthbackend.model.dhanapimodel.HoldingAPIResponse;
 import com.networth.networthbackend.model.dhanapimodel.PositionAPIResponse;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
 import com.networth.networthbackend.utility.Utility;
@@ -13,10 +14,7 @@ import com.networth.networthbackend.utility.Utility;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -334,22 +332,36 @@ public class ChartService extends Service<ChartEntity> {
     }
 
     private void generateDhanNonBrokerAccountData(Integer id) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         try {
             double openPositionsValue = getOpenPositionsValue();
-            double openHoldingsValue = 0.0;
+            double openHoldingsValue = getOpenHoldingsValue();
             double fundBalance = getFundBalance();
+            List<ChartEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
+                put("id", id);
+                put("type", "one_non_broker");
+                put("range", "1M");
+            }});
+            LocalDate today = LocalDate.now();
+            String todayDate = LocalDateTime.of(today, LocalTime.MIN).format(dateTimeFormatter);
+            dataList = dataList.stream().filter(chartEntity -> !chartEntity.getDate().equals(todayDate)).toList();
+            ChartEntity lastChartData = !dataList.isEmpty() ? dataList.get(dataList.size() - 1) : null;
+            List<ChartEntity> chartEntityList = new ArrayList<>();
+            if (lastChartData != null) {
+                chartEntityList.add(lastChartData);
+            }
             List<InvestEntity> investEntityList = getInvestList(id, "account_id");
             investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
             ChartEntity chartEntity = new ChartEntity();
             chartEntity.setAccountId(id);
-            chartEntity.setDate(LocalDate.now().format(formatter));
+            chartEntity.setDate(todayDate);
             chartEntity.setValue(openPositionsValue);
             chartEntity.setInvested(investEntityList.get(investEntityList.size() - 1).getValue());
             chartEntity.setValue(fundBalance + openPositionsValue + openHoldingsValue);
             deleteData(id, "account_id");
             addData(List.of(chartEntity));
-            updateAccountData(id, List.of(chartEntity), dateFormatAccount);
+            chartEntityList.add(chartEntity);
+            updateAccountData(id, chartEntityList, dateTimeFormat);
         } catch (Exception e) {
             context.getLogger().log("Error while fetching data with Dhan API");
         }
@@ -360,6 +372,13 @@ public class ChartService extends Service<ChartEntity> {
         String response = restAPIService.executeDhanAPI(url);
         List<PositionAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, PositionAPIResponse.class);
         return positionAPIResponseList.stream().mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
+    }
+
+    private double getOpenHoldingsValue() throws IOException, URISyntaxException, InterruptedException {
+        String url = generateDhanURL("holdings");
+        String response = restAPIService.executeDhanAPI(url);
+        List<HoldingAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, HoldingAPIResponse.class);
+        return positionAPIResponseList.stream().mapToDouble(item -> item.getTotalQty() * item.getLastTradedPrice()).sum();
     }
 
     private double getFundBalance() throws IOException, URISyntaxException, InterruptedException {
