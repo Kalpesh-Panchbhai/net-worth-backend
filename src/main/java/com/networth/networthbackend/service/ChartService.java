@@ -385,7 +385,7 @@ public class ChartService extends Service<ChartEntity> {
         String url = generateDhanURL("fundlimit");
         String response = restAPIService.executeDhanAPI(url);
         FundLimitAPIResponse fundLimitAPIResponse = new Utility<FundLimitAPIResponse>().convertStringToObj(response, context, FundLimitAPIResponse.class);
-        return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getWithdrawableBalance() + fundLimitAPIResponse.getUtilizedAmount();
+        return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getUtilizedAmount();
     }
 
     private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {
