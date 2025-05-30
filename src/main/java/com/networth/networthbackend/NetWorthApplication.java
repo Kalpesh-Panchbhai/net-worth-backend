@@ -50,8 +50,8 @@ public class NetWorthApplication {
     private static void generateChartData() throws SQLException {
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         ChartService chartService = new ChartService(getContext());
-//        chartService.generateData();
-        chartService.generateDhanNonBrokerAccountData(17);
+        chartService.generateData();
+//        chartService.generateDhanNonBrokerAccountData(17);
         chartService.repository.databaseService.disconnect();
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
