@@ -371,7 +371,7 @@ public class ChartService extends Service<ChartEntity> {
         String url = generateDhanURL("positions");
         String response = restAPIService.executeDhanAPI(url);
         List<PositionAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, PositionAPIResponse.class);
-        return positionAPIResponseList.stream().mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
+        return positionAPIResponseList.stream().filter(data -> data.getNetQty() > 0).mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
     }
 
     private double getOpenHoldingsValue() throws IOException, URISyntaxException, InterruptedException {
