@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Service class which reads symbols from {@code src/main/resources/stocks.txt},
@@ -103,7 +104,7 @@ public class SupertrendService {
 
     private List<String> readSymbols() throws IOException {
         URL resource = getClass().getClassLoader().getResource("stocks.txt");
-        Path path = Paths.get(resource.getPath());
+        Path path = Paths.get(Objects.requireNonNull(resource).getPath());
         if (!Files.exists(path)) {
             throw new IOException("stocks.txt not found at " + STOCK_FILE);
         }
