@@ -378,7 +378,7 @@ public class ChartService extends Service<ChartEntity> {
         String url = generateDhanURL("holdings");
         String response = restAPIService.executeDhanAPI(url);
         List<HoldingAPIResponse> positionAPIResponseList = new Utility<PositionAPIResponse>().convertStringToListOfObj(response, context, HoldingAPIResponse.class);
-        return positionAPIResponseList.stream().mapToDouble(item -> item.getAvailableQty() * item.getLastTradedPrice()).sum();
+        return Objects.requireNonNullElse(positionAPIResponseList, new ArrayList<HoldingAPIResponse>()).stream().mapToDouble(item -> item.getAvailableQty() * item.getLastTradedPrice()).sum();
     }
 
     private double getFundBalance() throws IOException, URISyntaxException, InterruptedException {
