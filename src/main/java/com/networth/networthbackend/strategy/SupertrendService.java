@@ -11,6 +11,7 @@ import org.ta4j.core.indicators.supertrend.SuperTrendIndicator;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -101,7 +102,8 @@ public class SupertrendService {
     }
 
     private List<String> readSymbols() throws IOException {
-        Path path = Paths.get(STOCK_FILE);
+        URL resource = getClass().getClassLoader().getResource("stocks.txt");
+        Path path = Paths.get(resource.getPath());
         if (!Files.exists(path)) {
             throw new IOException("stocks.txt not found at " + STOCK_FILE);
         }
