@@ -1,11 +1,14 @@
 package com.networth.networthbackend.service;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 
 public class RestAPIService {
 
@@ -18,23 +21,26 @@ public class RestAPIService {
     }
 
     public String executeAPI(String url) throws IOException, URISyntaxException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URL(url).toURI())
-                .header("User-Agent", "MyYahooClient/1.0 Net-Worth API")
-                .header("Accept", "application/json")
-                .GET()
-                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(new URL(url).toURI()).header("User-Agent", "MyYahooClient/1.0 Net-Worth API").header("Accept", "application/json").GET().build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
     }
 
     public String executeDhanAPI(String url) throws IOException, URISyntaxException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URL(url).toURI())
-                .header("access-token", accessToken)
-                .GET()
-                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(new URL(url).toURI()).header("access-token", accessToken).GET().build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
+    }
+
+    public void executePostAPI(String data) throws IOException, InterruptedException {
+        String token = "8064290352:AAEZKbX3WiqwjeGBYSe-ltioJwrDmX3D1wk";
+        String chatId = "7310096013";
+
+        String postData = "chat_id=" + URLEncoder.encode(chatId, StandardCharsets.UTF_8) + "&text=" + URLEncoder.encode(data, StandardCharsets.UTF_8);
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://api.telegram.org/bot" + token + "/sendMessage")).header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(postData)).build();
+
+        client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 }

@@ -85,7 +85,7 @@ public class SupertrendService {
                 String verdict = (!lastUp && prevUp) ? "Valid" : "Invalid";
 
                 if (!lastUp && prevUp) {
-                    String symbolResponse = String.format("%-20s | ST: %-20.2f | PrevUp: %-5s, LastUp: %-5s -> %-10s", symbol, st.getValue(endIndex).doubleValue(), prevUp, lastUp, verdict);
+                    String symbolResponse = String.format("%s%n%.2f", symbol, st.getValue(endIndex).doubleValue());
                     symbolResponseList.add(symbolResponse);
                 }
                 printProgressBar(i, totalRecords);
@@ -93,8 +93,13 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
-        System.out.println("\nAll records processed.");
-        symbolResponseList.forEach(System.out::println);
+        symbolResponseList.forEach(data -> {
+            try {
+                restAPIService.executePostAPI(data);
+            } catch (Exception e) {
+                System.out.println("Error posting " + data + " - " + e.getMessage());
+            }
+        });
     }
 
     private List<String> readSymbols() throws IOException {
