@@ -82,8 +82,6 @@ public class SupertrendService {
                 boolean lastUp = series.getBar(endIndex).getClosePrice().isGreaterThan(st.getValue(endIndex));
                 boolean prevUp = series.getBar(endIndex - 1).getClosePrice().isGreaterThan(st.getValue(endIndex - 1));
 
-                String verdict = (!lastUp && prevUp) ? "Valid" : "Invalid";
-
                 if (!lastUp && prevUp) {
                     String symbolResponse = String.format("%s%n%.2f", symbol, st.getValue(endIndex).doubleValue());
                     symbolResponseList.add(symbolResponse);
