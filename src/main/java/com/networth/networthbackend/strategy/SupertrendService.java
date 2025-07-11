@@ -64,6 +64,7 @@ public class SupertrendService {
         List<String> symbolResponseList = new ArrayList<>();
         int totalRecords = symbols.size();
         boolean sendToTelegram = true;
+        boolean recordAll = false;
         for (int i = 1; i <= totalRecords; i++) {
             String symbol = symbols.get(i - 1);
             try {
@@ -72,7 +73,7 @@ public class SupertrendService {
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
                     if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-50s%-20s | No data", symbolName, symbol);
+                        String symbolResponse = String.format("%-100s%-20sNo data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
                     continue;
@@ -81,7 +82,7 @@ public class SupertrendService {
                 int endIndex = series.getEndIndex();
                 if (endIndex < 1) {
                     if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-50s%-20s | Not enough data", symbolName, symbol);
+                        String symbolResponse = String.format("%-100s%-20sNot enough data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
                     continue;
@@ -90,13 +91,18 @@ public class SupertrendService {
                 boolean lastUp = series.getBar(endIndex).getClosePrice().isGreaterThan(st.getValue(endIndex));
                 boolean prevUp = series.getBar(endIndex - 1).getClosePrice().isGreaterThan(st.getValue(endIndex - 1));
 
-                if (!lastUp && prevUp) {
-                    if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-50s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
-                        symbolResponseList.add(symbolResponse);
-                    } else {
-                        String symbolResponse = String.format("%s%n%s%n%.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
-                        symbolResponseList.add(symbolResponse);
+                if (recordAll) {
+                    String symbolResponse = String.format("%-100s%-20s%-20.2f%-10s", symbolName, symbol, st.getValue(endIndex).doubleValue(), !lastUp && prevUp);
+                    symbolResponseList.add(symbolResponse);
+                } else {
+                    if (!lastUp && prevUp) {
+                        if (!sendToTelegram) {
+                            String symbolResponse = String.format("%-100s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
+                            symbolResponseList.add(symbolResponse);
+                        } else {
+                            String symbolResponse = String.format("%s%n%s%n%.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
+                            symbolResponseList.add(symbolResponse);
+                        }
                     }
                 }
                 printProgressBar(i, totalRecords);
@@ -105,6 +111,7 @@ public class SupertrendService {
             }
         }
         if (!sendToTelegram) {
+            System.out.println();
             symbolResponseList.forEach(System.out::println);
         } else {
             symbolResponseList.forEach(data -> {
@@ -176,11 +183,5 @@ public class SupertrendService {
             series.addBar(new BaseBar(Duration.ofDays(1), time, open, high, low, close, volume));
         }
         return series;
-    }
-
-    private void writeSymbols(List<String> symbols) throws IOException {
-        Path path = Paths.get(STOCK_FILE);
-        Files.createDirectories(path.getParent());
-        Files.write(path, symbols);
     }
 }
