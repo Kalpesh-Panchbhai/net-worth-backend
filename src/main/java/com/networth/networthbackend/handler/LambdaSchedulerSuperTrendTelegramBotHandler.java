@@ -10,7 +10,7 @@ public class LambdaSchedulerSuperTrendTelegramBotHandler implements RequestHandl
     @SneakyThrows
     @Override
     public Void handleRequest(Void unused, Context context) {
-        new SupertrendService().execute();
+        new SupertrendService().execute(true, false);
         return unused;
     }
 }

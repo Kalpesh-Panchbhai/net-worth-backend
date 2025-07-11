@@ -59,12 +59,10 @@ public class SupertrendService {
      * resulting latest supertrend value (boolean trend + numeric line) is printed on console.
      */
     @SneakyThrows
-    public void execute() {
+    public void execute(Boolean fromAWS, Boolean sendAll) {
         List<String> symbols = readSymbols();
         List<String> symbolResponseList = new ArrayList<>();
         int totalRecords = symbols.size();
-        boolean sendToTelegram = true;
-        boolean recordAll = false;
         for (int i = 1; i <= totalRecords; i++) {
             String symbol = symbols.get(i - 1);
             try {
@@ -72,7 +70,7 @@ public class SupertrendService {
                 String symbolName = fetchStockName(jsonResponse);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
-                    if (!sendToTelegram) {
+                    if (!fromAWS) {
                         String symbolResponse = String.format("%-100s%-20sNo data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
@@ -81,7 +79,7 @@ public class SupertrendService {
                 SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
                 int endIndex = series.getEndIndex();
                 if (endIndex < 1) {
-                    if (!sendToTelegram) {
+                    if (!fromAWS) {
                         String symbolResponse = String.format("%-100s%-20sNot enough data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
@@ -91,12 +89,12 @@ public class SupertrendService {
                 boolean lastUp = series.getBar(endIndex).getClosePrice().isGreaterThan(st.getValue(endIndex));
                 boolean prevUp = series.getBar(endIndex - 1).getClosePrice().isGreaterThan(st.getValue(endIndex - 1));
 
-                if (recordAll) {
+                if (sendAll) {
                     String symbolResponse = String.format("%-100s%-20s%-20.2f%-10s", symbolName, symbol, st.getValue(endIndex).doubleValue(), !lastUp && prevUp);
                     symbolResponseList.add(symbolResponse);
                 } else {
                     if (!lastUp && prevUp) {
-                        if (!sendToTelegram) {
+                        if (!fromAWS) {
                             String symbolResponse = String.format("%-100s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
                             symbolResponseList.add(symbolResponse);
                         } else {
@@ -110,7 +108,7 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
-        if (!sendToTelegram) {
+        if (!fromAWS) {
             System.out.println();
             symbolResponseList.forEach(System.out::println);
         } else {
