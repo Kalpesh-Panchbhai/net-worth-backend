@@ -10,6 +10,8 @@ import org.ta4j.core.BaseBarSeriesBuilder;
 import org.ta4j.core.indicators.supertrend.SuperTrendIndicator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -98,7 +100,12 @@ public class SupertrendService {
                             String symbolResponse = String.format("%-100s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
                             symbolResponseList.add(symbolResponse);
                         } else {
-                            String symbolResponse = String.format("%s%n%s%n%.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
+                            symbolName = symbolName.replaceAll("\\.", "\\\\.");
+                            symbol = symbol.replaceAll("\\.", "\\\\.");
+                            BigDecimal bd = new BigDecimal(st.getValue(endIndex).toString());
+                            bd = bd.setScale(2, RoundingMode.CEILING);
+                            String value = bd.toString().replaceAll("\\.", "\\\\.");
+                            String symbolResponse = String.format("*%s*%n%n`%s`%n_%s_", symbolName, symbol, value);
                             symbolResponseList.add(symbolResponse);
                         }
                     }

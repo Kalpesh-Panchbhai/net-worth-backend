@@ -36,7 +36,7 @@ public class RestAPIService {
         String token = "8064290352:AAEZKbX3WiqwjeGBYSe-ltioJwrDmX3D1wk";
         String chatId = "7310096013";
 
-        String postData = "chat_id=" + URLEncoder.encode(chatId, StandardCharsets.UTF_8) + "&text=" + URLEncoder.encode(data, StandardCharsets.UTF_8);
+        String postData = "chat_id=" + URLEncoder.encode(chatId, StandardCharsets.UTF_8) + "&text=" + URLEncoder.encode(data, StandardCharsets.UTF_8) + "&parse_mode=MarkdownV2";
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://api.telegram.org/bot" + token + "/sendMessage")).header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(postData)).build();
