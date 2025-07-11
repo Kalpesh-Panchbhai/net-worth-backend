@@ -8,7 +8,7 @@ public class SupertrendIndicatorRunner {
 
     public static void main(String[] args) {
         System.out.println(LocalDateTime.now());
-        new SupertrendService().execute(false, Boolean.valueOf(args[0]));
+        new SupertrendService().execute(Boolean.valueOf(args[0]), Boolean.valueOf(args[1]));
         System.out.println(LocalDateTime.now());
     }
 }
