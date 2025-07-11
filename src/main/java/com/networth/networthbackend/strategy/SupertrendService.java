@@ -36,6 +36,7 @@ public class SupertrendService {
 
     private final RestAPIService restAPIService = new RestAPIService();
     private final ObjectMapper mapper = new ObjectMapper();
+    private final Boolean sendToTelegram = false;
 
     public static void printProgressBar(int current, int total) {
         int barLength = 100;
@@ -69,15 +70,25 @@ public class SupertrendService {
                 String jsonResponse = fetchHistoricalData(symbol);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
-                    String symbolResponse = String.format("%-20s | No data", symbol);
-                    symbolResponseList.add(symbolResponse);
+                    if (!sendToTelegram) {
+                        String symbolResponse = String.format("%-20s | No data", symbol);
+                        symbolResponseList.add(symbolResponse);
+                    } else {
+                        String symbolResponse = String.format("%s | No data", symbol);
+                        symbolResponseList.add(symbolResponse);
+                    }
                     continue;
                 }
                 SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
                 int endIndex = series.getEndIndex();
                 if (endIndex < 1) {
-//                    String symbolResponse = String.format("%-20s | Not enough data", symbol);
-//                    symbolResponseList.add(symbolResponse);
+                    if (!sendToTelegram) {
+                        String symbolResponse = String.format("%-20s | Not enough data", symbol);
+                        symbolResponseList.add(symbolResponse);
+                    } else {
+                        String symbolResponse = String.format("%s | Not enough data", symbol);
+                        symbolResponseList.add(symbolResponse);
+                    }
                     continue;
                 }
 
@@ -85,21 +96,30 @@ public class SupertrendService {
                 boolean prevUp = series.getBar(endIndex - 1).getClosePrice().isGreaterThan(st.getValue(endIndex - 1));
 
                 if (!lastUp && prevUp) {
-                    String symbolResponse = String.format("%s%n%.2f", symbol, st.getValue(endIndex).doubleValue());
-                    symbolResponseList.add(symbolResponse);
+                    if (!sendToTelegram) {
+                        String symbolResponse = String.format("%-20s%-20.2f", symbol, st.getValue(endIndex).doubleValue());
+                        symbolResponseList.add(symbolResponse);
+                    } else {
+                        String symbolResponse = String.format("%s%n%.2f", symbol, st.getValue(endIndex).doubleValue());
+                        symbolResponseList.add(symbolResponse);
+                    }
                 }
                 printProgressBar(i, totalRecords);
             } catch (Exception e) {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
-        symbolResponseList.forEach(data -> {
-            try {
-                restAPIService.executePostAPI(data);
-            } catch (Exception e) {
-                System.out.println("Error posting " + data + " - " + e.getMessage());
-            }
-        });
+        if (!sendToTelegram) {
+            symbolResponseList.forEach(System.out::println);
+        } else {
+            symbolResponseList.forEach(data -> {
+                try {
+                    restAPIService.executePostAPI(data);
+                } catch (Exception e) {
+                    System.out.println("Error posting " + data + " - " + e.getMessage());
+                }
+            });
+        }
     }
 
     private List<String> readSymbols() throws IOException {
