@@ -36,7 +36,6 @@ public class SupertrendService {
 
     private final RestAPIService restAPIService = new RestAPIService();
     private final ObjectMapper mapper = new ObjectMapper();
-    private final Boolean sendToTelegram = false;
 
     public static void printProgressBar(int current, int total) {
         int barLength = 100;
@@ -64,17 +63,16 @@ public class SupertrendService {
         List<String> symbols = readSymbols();
         List<String> symbolResponseList = new ArrayList<>();
         int totalRecords = symbols.size();
+        boolean sendToTelegram = true;
         for (int i = 1; i <= totalRecords; i++) {
             String symbol = symbols.get(i - 1);
             try {
                 String jsonResponse = fetchHistoricalData(symbol);
+                String symbolName = fetchStockName(jsonResponse);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
                     if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-20s | No data", symbol);
-                        symbolResponseList.add(symbolResponse);
-                    } else {
-                        String symbolResponse = String.format("%s | No data", symbol);
+                        String symbolResponse = String.format("%-50s%-20s | No data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
                     continue;
@@ -83,10 +81,7 @@ public class SupertrendService {
                 int endIndex = series.getEndIndex();
                 if (endIndex < 1) {
                     if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-20s | Not enough data", symbol);
-                        symbolResponseList.add(symbolResponse);
-                    } else {
-                        String symbolResponse = String.format("%s | Not enough data", symbol);
+                        String symbolResponse = String.format("%-50s%-20s | Not enough data", symbolName, symbol);
                         symbolResponseList.add(symbolResponse);
                     }
                     continue;
@@ -97,10 +92,10 @@ public class SupertrendService {
 
                 if (!lastUp && prevUp) {
                     if (!sendToTelegram) {
-                        String symbolResponse = String.format("%-20s%-20.2f", symbol, st.getValue(endIndex).doubleValue());
+                        String symbolResponse = String.format("%-50s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
                         symbolResponseList.add(symbolResponse);
                     } else {
-                        String symbolResponse = String.format("%s%n%.2f", symbol, st.getValue(endIndex).doubleValue());
+                        String symbolResponse = String.format("%s%n%s%n%.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
                         symbolResponseList.add(symbolResponse);
                     }
                 }
@@ -140,6 +135,17 @@ public class SupertrendService {
     private String fetchHistoricalData(String symbol) throws IOException, URISyntaxException, InterruptedException {
         String url = YAHOO_CHART_URL + symbol + "?interval=1d&range=1y";
         return restAPIService.executeAPI(url);
+    }
+
+    private String fetchStockName(String json) throws IOException {
+        JsonNode root = mapper.readTree(json);
+        JsonNode resultNode = root.path("chart").path("result");
+        if (!resultNode.isArray() || resultNode.isEmpty()) {
+            return "";
+        }
+        JsonNode first = resultNode.get(0);
+        JsonNode quote = first.path("meta").path("longName");
+        return quote.asText();
     }
 
     private BarSeries buildSeriesFromYahooResponse(String symbol, String json) throws IOException {
