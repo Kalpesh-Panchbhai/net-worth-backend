@@ -128,7 +128,9 @@ public class SupertrendService {
         }
         AtomicInteger currentRecord = new AtomicInteger(1);
         supertrendResponseList.sort(Comparator.comparingDouble(SupertrendResponse::getPotentialProfit).reversed());
-        supertrendResponseList = supertrendResponseList.stream().peek((msg) -> msg.setId(getNumberEmoji(currentRecord.getAndIncrement()))).toList();
+        supertrendResponseList.forEach((msg) -> {
+            msg.setId(getNumberEmoji(currentRecord.getAndIncrement()));
+        });
         if (!fromAWS) {
             printMessageToConsole(supertrendResponseList);
         } else {
