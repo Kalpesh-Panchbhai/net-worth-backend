@@ -159,7 +159,7 @@ public class SupertrendService {
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
                 String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                String symbolResponse = String.format(currentRecord.incrementAndGet() + "\uFE0F⃣ %n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
+                String symbolResponse = String.format(currentRecord.incrementAndGet() + "%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
