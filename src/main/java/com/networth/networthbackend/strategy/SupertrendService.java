@@ -63,7 +63,7 @@ public class SupertrendService {
     @SneakyThrows
     public void execute(Boolean fromAWS, Boolean sendAll) {
         List<String> symbols = readSymbols();
-        List<String> symbolResponseList = new ArrayList<>();
+        List<SupertrendResponse> supertrendResponseList = new ArrayList<>();
         int totalRecords = symbols.size();
         for (int i = 1; i <= totalRecords; i++) {
             String symbol = symbols.get(i - 1);
@@ -74,8 +74,12 @@ public class SupertrendService {
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
                     if (!fromAWS) {
-                        String symbolResponse = String.format("%-100s%-20sNo data", symbolName, symbol);
-                        symbolResponseList.add(symbolResponse);
+                        SupertrendResponse supertrendResponse = new SupertrendResponse();
+                        supertrendResponse.setSymbolName(symbolName);
+                        supertrendResponse.setSymbol(symbol);
+                        supertrendResponse.setHasError(true);
+                        supertrendResponse.setErrorMessage("No data");
+                        supertrendResponseList.add(supertrendResponse);
                     }
                     continue;
                 }
@@ -83,8 +87,12 @@ public class SupertrendService {
                 int endIndex = series.getEndIndex();
                 if (endIndex < 1) {
                     if (!fromAWS) {
-                        String symbolResponse = String.format("%-100s%-20sNot enough data", symbolName, symbol);
-                        symbolResponseList.add(symbolResponse);
+                        SupertrendResponse supertrendResponse = new SupertrendResponse();
+                        supertrendResponse.setSymbolName(symbolName);
+                        supertrendResponse.setSymbol(symbol);
+                        supertrendResponse.setHasError(true);
+                        supertrendResponse.setErrorMessage("Not enough data");
+                        supertrendResponseList.add(supertrendResponse);
                     }
                     continue;
                 }
@@ -93,26 +101,32 @@ public class SupertrendService {
                 boolean prevUp = series.getBar(endIndex - 1).getClosePrice().isGreaterThan(st.getValue(endIndex - 1));
 
                 if (sendAll) {
-                    String symbolResponse = String.format("%-100s%-20s%-20.2f%-10s", symbolName, symbol, st.getValue(endIndex).doubleValue(), !lastUp && prevUp);
-                    symbolResponseList.add(symbolResponse);
+                    SupertrendResponse supertrendResponse = new SupertrendResponse();
+                    supertrendResponse.setSymbolName(symbolName);
+                    supertrendResponse.setSymbol(symbol);
+                    supertrendResponse.setSupertrendValue(st.getValue(endIndex).doubleValue());
+                    supertrendResponse.setPotentialProfit((st.getValue(endIndex).doubleValue() / currentMarketPrice * 100) - 100);
+                    supertrendResponse.setShouldBuy(!lastUp && prevUp);
+                    supertrendResponseList.add(supertrendResponse);
                 } else {
                     if (!lastUp && prevUp) {
-                        if (!fromAWS) {
-                            String symbolResponse = String.format("%-100s%-20s%-20.2f", symbolName, symbol, st.getValue(endIndex).doubleValue());
-                            symbolResponseList.add(symbolResponse);
-                        } else {
-                            symbolName = symbolName.replaceAll("\\.", "\\\\.");
-                            symbol = symbol.replaceAll("\\.", "\\\\.");
-                            BigDecimal bd = new BigDecimal(st.getValue(endIndex).toString());
-                            bd = bd.setScale(2, RoundingMode.CEILING);
-                            String value = bd.toString().replaceAll("\\.", "\\\\.");
-                            double potentialProfitPercentage = (bd.doubleValue() /  currentMarketPrice * 100) - 100;
-                            bd = new BigDecimal(potentialProfitPercentage);
-                            bd = bd.setScale(2, RoundingMode.CEILING);
-                            String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                            String symbolResponse = String.format("*%s*%n%n`%s`%n*₹%s%n%s %%*", symbolName, symbol, value, potentialProfitPercentageString);
-                            symbolResponseList.add(symbolResponse);
-                        }
+                        SupertrendResponse supertrendResponse = new SupertrendResponse();
+                        supertrendResponse.setSymbolName(symbolName);
+                        supertrendResponse.setSymbol(symbol);
+                        supertrendResponse.setSupertrendValue(st.getValue(endIndex).doubleValue());
+                        supertrendResponse.setPotentialProfit((st.getValue(endIndex).doubleValue() / currentMarketPrice * 100) - 100);
+                        supertrendResponse.setShouldBuy(true);
+                        supertrendResponseList.add(supertrendResponse);
+//                            symbolName = symbolName.replaceAll("\\.", "\\\\.");
+//                            symbol = symbol.replaceAll("\\.", "\\\\.");
+//                            BigDecimal bd = new BigDecimal(st.getValue(endIndex).toString());
+//                            bd = bd.setScale(2, RoundingMode.CEILING);
+//                            String value = bd.toString().replaceAll("\\.", "\\\\.");
+//                            double potentialProfitPercentage = (bd.doubleValue() /  currentMarketPrice * 100) - 100;
+//                            bd = new BigDecimal(potentialProfitPercentage);
+//                            bd = bd.setScale(2, RoundingMode.CEILING);
+//                            String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
+//                            String symbolResponse = String.format("*%s*%n%n`%s`%n*₹%s%n%s %%*", symbolName, symbol, value, potentialProfitPercentageString);
                     }
                 }
                 printProgressBar(i, totalRecords);
@@ -121,17 +135,44 @@ public class SupertrendService {
             }
         }
         if (!fromAWS) {
-            System.out.println();
-            symbolResponseList.forEach(System.out::println);
+            printMessageToConsole(supertrendResponseList);
         } else {
-            symbolResponseList.forEach(data -> {
-                try {
-                    restAPIService.executePostAPI(data);
-                } catch (Exception e) {
-                    System.out.println("Error posting " + data + " - " + e.getMessage());
-                }
-            });
+            sendMessageToTelegram(supertrendResponseList);
         }
+    }
+
+    private void printMessageToConsole(List<SupertrendResponse> supertrendResponseList) {
+        System.out.println();
+        supertrendResponseList.forEach((msg) -> {
+            if (msg.getHasError()) {
+                String symbolResponse = String.format("%-100s%-20s%-20s", msg.getSymbolName(), msg.getSymbol(), msg.getErrorMessage());
+                System.out.println(symbolResponse);
+            } else {
+                String symbolResponse = String.format("%-100s%-20s%-20.2f%-6.2f%%            %s", msg.getSymbolName(), msg.getSymbol(), msg.getSupertrendValue(), msg.getPotentialProfit(), msg.getShouldBuy());
+                System.out.println(symbolResponse);
+            }
+        });
+    }
+
+    private void sendMessageToTelegram(List<SupertrendResponse> supertrendResponseList) {
+        supertrendResponseList.forEach((msg) -> {
+            if (!msg.getHasError()) {
+                String symbolName = msg.getSymbolName().replaceAll("\\.", "\\\\.");
+                String symbol = msg.getSymbol().replaceAll("\\.", "\\\\.");
+                BigDecimal bd = new BigDecimal(msg.getSupertrendValue().toString());
+                bd = bd.setScale(2, RoundingMode.CEILING);
+                String value = bd.toString().replaceAll("\\.", "\\\\.");
+                bd = new BigDecimal(msg.getPotentialProfit().toString());
+                bd = bd.setScale(2, RoundingMode.CEILING);
+                String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
+                String symbolResponse = String.format("\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
+                try {
+                    restAPIService.executePostAPI(symbolResponse);
+                } catch (Exception e) {
+                    System.out.println("Error posting " + symbolResponse + " - " + e.getMessage());
+                }
+            }
+        });
     }
 
     private List<String> readSymbols() throws IOException {
