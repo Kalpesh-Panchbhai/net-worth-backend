@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SupertrendResponse {
 
+    private String id;
     private String symbolName;
     private String symbol;
     private Double supertrendValue;

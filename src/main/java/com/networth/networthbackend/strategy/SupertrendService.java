@@ -72,7 +72,7 @@ public class SupertrendService {
             try {
                 String jsonResponse = fetchHistoricalData(symbol);
                 String symbolName = fetchStockName(jsonResponse);
-                Double currentMarketPrice = fetchStockCurrentMarketPrice(jsonResponse);
+                double currentMarketPrice = fetchStockCurrentMarketPrice(jsonResponse);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
                     if (!fromAWS) {
@@ -126,7 +126,9 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
+        AtomicInteger currentRecord = new AtomicInteger(1);
         supertrendResponseList.sort(Comparator.comparingDouble(SupertrendResponse::getPotentialProfit).reversed());
+        supertrendResponseList = supertrendResponseList.stream().peek((msg) -> msg.setId(getNumberEmoji(currentRecord.getAndIncrement()))).toList();
         if (!fromAWS) {
             printMessageToConsole(supertrendResponseList);
         } else {
@@ -138,17 +140,16 @@ public class SupertrendService {
         System.out.println();
         supertrendResponseList.forEach((msg) -> {
             if (msg.getHasError()) {
-                String symbolResponse = String.format("%-100s%-20s%-20s", msg.getSymbolName(), msg.getSymbol(), msg.getErrorMessage());
+                String symbolResponse = String.format("%-20s%-100s%-20s%-20s", msg.getId(), msg.getSymbolName(), msg.getSymbol(), msg.getErrorMessage());
                 System.out.println(symbolResponse);
             } else {
-                String symbolResponse = String.format("%-100s%-20s%-20.2f%-6.2f%%            %s", msg.getSymbolName(), msg.getSymbol(), msg.getSupertrendValue(), msg.getPotentialProfit(), msg.getShouldBuy());
+                String symbolResponse = String.format("%-20s%-100s%-20s%-20.2f%-6.2f%%            %s", msg.getId(), msg.getSymbolName(), msg.getSymbol(), msg.getSupertrendValue(), msg.getPotentialProfit(), msg.getShouldBuy());
                 System.out.println(symbolResponse);
             }
         });
     }
 
     private void sendMessageToTelegram(List<SupertrendResponse> supertrendResponseList) {
-        AtomicInteger currentRecord = new AtomicInteger(1);
         supertrendResponseList.forEach((msg) -> {
             if (!msg.getHasError()) {
                 String symbolName = msg.getSymbolName().replaceAll("\\.", "\\\\.");
@@ -159,7 +160,7 @@ public class SupertrendService {
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
                 String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                String symbolResponse = String.format(getNumberEmoji(currentRecord.getAndIncrement()) + "%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
+                String symbolResponse = String.format("%s%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", msg.getId(), symbolName, symbol, value, potentialProfitPercentageString);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
