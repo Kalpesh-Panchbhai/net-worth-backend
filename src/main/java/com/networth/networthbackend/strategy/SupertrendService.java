@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -117,16 +118,6 @@ public class SupertrendService {
                         supertrendResponse.setPotentialProfit((st.getValue(endIndex).doubleValue() / currentMarketPrice * 100) - 100);
                         supertrendResponse.setShouldBuy(true);
                         supertrendResponseList.add(supertrendResponse);
-//                            symbolName = symbolName.replaceAll("\\.", "\\\\.");
-//                            symbol = symbol.replaceAll("\\.", "\\\\.");
-//                            BigDecimal bd = new BigDecimal(st.getValue(endIndex).toString());
-//                            bd = bd.setScale(2, RoundingMode.CEILING);
-//                            String value = bd.toString().replaceAll("\\.", "\\\\.");
-//                            double potentialProfitPercentage = (bd.doubleValue() /  currentMarketPrice * 100) - 100;
-//                            bd = new BigDecimal(potentialProfitPercentage);
-//                            bd = bd.setScale(2, RoundingMode.CEILING);
-//                            String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-//                            String symbolResponse = String.format("*%s*%n%n`%s`%n*₹%s%n%s %%*", symbolName, symbol, value, potentialProfitPercentageString);
                     }
                 }
                 printProgressBar(i, totalRecords);
@@ -134,6 +125,7 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
+        supertrendResponseList.sort(Comparator.comparingDouble(SupertrendResponse::getPotentialProfit).reversed());
         if (!fromAWS) {
             printMessageToConsole(supertrendResponseList);
         } else {
