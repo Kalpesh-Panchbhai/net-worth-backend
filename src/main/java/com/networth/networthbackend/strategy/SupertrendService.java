@@ -148,7 +148,7 @@ public class SupertrendService {
     }
 
     private void sendMessageToTelegram(List<SupertrendResponse> supertrendResponseList) {
-        AtomicInteger currentRecord = new AtomicInteger();
+        AtomicInteger currentRecord = new AtomicInteger(1);
         supertrendResponseList.forEach((msg) -> {
             if (!msg.getHasError()) {
                 String symbolName = msg.getSymbolName().replaceAll("\\.", "\\\\.");
@@ -159,7 +159,7 @@ public class SupertrendService {
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
                 String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                String symbolResponse = String.format(currentRecord.incrementAndGet() + "%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
+                String symbolResponse = String.format(getNumberEmoji(currentRecord.getAndIncrement()) + "%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
@@ -167,6 +167,22 @@ public class SupertrendService {
                 }
             }
         });
+    }
+
+    private String getNumberEmoji(int number) {
+        String[] digitEmojis = {"0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"};
+
+        StringBuilder emojiBuilder = new StringBuilder();
+        String numStr = String.valueOf(number);
+
+        for (char ch : numStr.toCharArray()) {
+            int digit = ch - '0';
+            if (digit >= 0 && digit <= 9) {
+                emojiBuilder.append(digitEmojis[digit]);
+            }
+        }
+
+        return emojiBuilder.toString();
     }
 
     private List<String> readSymbols() throws IOException {
