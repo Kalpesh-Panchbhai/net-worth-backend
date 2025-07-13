@@ -70,6 +70,7 @@ public class SupertrendService {
             try {
                 String jsonResponse = fetchHistoricalData(symbol);
                 String symbolName = fetchStockName(jsonResponse);
+                Double currentMarketPrice = fetchStockCurrentMarketPrice(jsonResponse);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
                 if (series.getBarCount() == 0) {
                     if (!fromAWS) {
@@ -105,7 +106,11 @@ public class SupertrendService {
                             BigDecimal bd = new BigDecimal(st.getValue(endIndex).toString());
                             bd = bd.setScale(2, RoundingMode.CEILING);
                             String value = bd.toString().replaceAll("\\.", "\\\\.");
-                            String symbolResponse = String.format("*%s*%n%n`%s`%n_%s_", symbolName, symbol, value);
+                            double potentialProfitPercentage = (bd.doubleValue() /  currentMarketPrice * 100) - 100;
+                            bd = new BigDecimal(potentialProfitPercentage);
+                            bd = bd.setScale(2, RoundingMode.CEILING);
+                            String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
+                            String symbolResponse = String.format("*%s*%n%n`%s`%n*₹%s%n%s %%*", symbolName, symbol, value, potentialProfitPercentageString);
                             symbolResponseList.add(symbolResponse);
                         }
                     }
@@ -158,6 +163,17 @@ public class SupertrendService {
         JsonNode first = resultNode.get(0);
         JsonNode quote = first.path("meta").path("longName");
         return quote.asText();
+    }
+
+    private Double fetchStockCurrentMarketPrice(String json) throws IOException {
+        JsonNode root = mapper.readTree(json);
+        JsonNode resultNode = root.path("chart").path("result");
+        if (!resultNode.isArray() || resultNode.isEmpty()) {
+            return 0.0;
+        }
+        JsonNode first = resultNode.get(0);
+        JsonNode quote = first.path("meta").path("regularMarketPrice");
+        return quote.asDouble();
     }
 
     private BarSeries buildSeriesFromYahooResponse(String symbol, String json) throws IOException {
