@@ -12,7 +12,7 @@ public class SupertrendResponse {
     private String symbolName;
     private String symbol;
     private Double supertrendValue;
-    private Double potentialProfit;
+    private Double potentialProfit = 0.0;
     private Boolean shouldBuy;
     private Boolean hasError = false;
     private String errorMessage;
