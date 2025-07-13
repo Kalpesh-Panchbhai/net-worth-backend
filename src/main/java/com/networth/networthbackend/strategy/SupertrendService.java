@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Service class which reads symbols from {@code src/main/resources/stocks.txt},
@@ -147,6 +148,7 @@ public class SupertrendService {
     }
 
     private void sendMessageToTelegram(List<SupertrendResponse> supertrendResponseList) {
+        AtomicInteger currentRecord = new AtomicInteger();
         supertrendResponseList.forEach((msg) -> {
             if (!msg.getHasError()) {
                 String symbolName = msg.getSymbolName().replaceAll("\\.", "\\\\.");
@@ -157,7 +159,7 @@ public class SupertrendService {
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
                 String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                String symbolResponse = String.format("\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
+                String symbolResponse = String.format(currentRecord.incrementAndGet() + "\uFE0F⃣ %n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", symbolName, symbol, value, potentialProfitPercentageString);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
