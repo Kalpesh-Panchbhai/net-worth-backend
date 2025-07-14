@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Service class which reads symbols from {@code src/main/resources/stocks.txt},
@@ -126,11 +125,10 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
-        AtomicInteger currentRecord = new AtomicInteger(1);
         supertrendResponseList.sort(Comparator.comparingDouble(SupertrendResponse::getPotentialProfit).reversed());
-        supertrendResponseList.forEach((msg) -> {
-            msg.setId(getNumberEmoji(currentRecord.getAndIncrement()));
-        });
+        for (int i = 0; i < supertrendResponseList.size(); i++) {
+            supertrendResponseList.get(i).setId(getNumberEmoji(i + 1));
+        }
         if (!fromAWS) {
             printMessageToConsole(supertrendResponseList);
         } else {
