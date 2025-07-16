@@ -356,7 +356,7 @@ public class ChartService extends Service<ChartEntity> {
             chartEntity.setAccountId(id);
             chartEntity.setDate(todayDate);
             chartEntity.setValue(openPositionsValue);
-            chartEntity.setInvested(investEntityList.get(investEntityList.size() - 1).getValue() + Objects.requireNonNullElse(lastChartData, new ChartEntity(0, 0, 0, todayDate, 0.0, 0.0)).getInvested());
+            chartEntity.setInvested(investEntityList.get(investEntityList.size() - 1).getValue());
             chartEntity.setValue(fundBalance + openPositionsValue + openHoldingsValue);
             deleteData(id, "account_id");
             addData(List.of(chartEntity));
