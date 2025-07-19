@@ -3,6 +3,7 @@ package com.networth.networthbackend.strategy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networth.networthbackend.service.RestAPIService;
+import com.networth.networthbackend.service.StockValueChecker;
 import lombok.SneakyThrows;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
@@ -187,18 +188,42 @@ public class SupertrendService {
     }
 
     private List<String> readSymbols() throws IOException {
-        URL resource = getClass().getClassLoader().getResource("stocks.txt");
+        URL resource = getClass().getClassLoader().getResource("stock_tradingview.txt");
         Path path = Paths.get(Objects.requireNonNull(resource).getPath());
         if (!Files.exists(path)) {
-            throw new IOException("stocks.txt not found at " + STOCK_FILE);
+            throw new IOException("stock_tradingview.txt not found at " + STOCK_FILE);
         }
         List<String> raw = Files.readAllLines(path);
         List<String> symbols = new ArrayList<>();
         for (String line : raw) {
             String s = line.trim();
-            if (!s.isEmpty()) symbols.add(s);
+            if (!s.isEmpty() && !s.startsWith("#")) {
+                StockValueChecker.StockData stock = parseStockLine(line);
+                if (stock != null) {
+                    symbols.add(stock.symbol);
+                }
+            }
         }
         return symbols;
+    }
+
+    private StockValueChecker.StockData parseStockLine(String line) {
+        try {
+            String[] parts = line.split(",");
+            if (parts.length != 3) {
+                System.err.println("Invalid line format (expected SYMBOL,PRICE,MATCHING): " + line);
+                return null;
+            }
+
+            String symbol = parts[0].trim();
+            double price = Double.parseDouble(parts[1].trim());
+            String matching = parts[2].trim();
+
+            return new StockValueChecker.StockData(symbol, price, matching);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid price format in line: " + line);
+            return null;
+        }
     }
 
     private String fetchHistoricalData(String symbol) throws IOException, URISyntaxException, InterruptedException {
