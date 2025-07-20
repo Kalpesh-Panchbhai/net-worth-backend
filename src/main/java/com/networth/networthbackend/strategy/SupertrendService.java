@@ -153,15 +153,15 @@ public class SupertrendService {
     private void sendMessageToTelegram(List<SupertrendResponse> supertrendResponseList) {
         supertrendResponseList.forEach((msg) -> {
             if (!msg.getHasError()) {
-                String symbolName = msg.getSymbolName().replaceAll("\\.", "\\\\.");
-                String symbol = msg.getSymbol().replaceAll("\\.", "\\\\.");
+                String symbolName = escapeMarkdownV2(msg.getSymbolName());
+                String symbol = escapeMarkdownV2(msg.getSymbol());
                 BigDecimal bd = new BigDecimal(msg.getSupertrendValue().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
-                String value = bd.toString().replaceAll("\\.", "\\\\.");
+                String value = escapeMarkdownV2(bd.toString());
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
-                String potentialProfitPercentageString = bd.toString().replaceAll("\\.", "\\\\.");
-                String symbolResponse = String.format("%s%n\uD83D\uDCCC *Name: %s*%n\uD83D\uDD16 `Symbol: %s`%n\uD83D\uDCB0 Price: ₹%s%n\uD83D\uDCCA Potential Profit: \\+%s %%", msg.getId(), symbolName, symbol, value, potentialProfitPercentageString);
+                String potentialProfitPercentageString = escapeMarkdownV2(bd.toString());
+                String symbolResponse = String.format("%s%n📌 *Name: %s*%n🔖 `Symbol: %s`%n💰 Price: ₹%s%n📊 Potential Profit: \\+%s %%", msg.getId(), symbolName, symbol, value, potentialProfitPercentageString);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
@@ -169,6 +169,17 @@ public class SupertrendService {
                 }
             }
         });
+    }
+
+    /**
+     * Escapes special characters for Telegram MarkdownV2 format
+     * Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
+     */
+    private String escapeMarkdownV2(String text) {
+        if (text == null) {
+            return null;
+        }
+        return text.replaceAll("([_*\\[\\]()~`>#+=|{}.!-])", "\\\\$1");
     }
 
     private String getNumberEmoji(int number) {
