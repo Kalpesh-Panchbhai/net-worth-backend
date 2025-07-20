@@ -23,7 +23,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -126,7 +125,6 @@ public class SupertrendService {
                 System.err.println("Error processing " + symbol + " - " + e.getMessage());
             }
         }
-        supertrendResponseList.sort(Comparator.comparingDouble(SupertrendResponse::getPotentialProfit).reversed());
         for (int i = 0; i < supertrendResponseList.size(); i++) {
             supertrendResponseList.get(i).setId(getNumberEmoji(i + 1));
         }
