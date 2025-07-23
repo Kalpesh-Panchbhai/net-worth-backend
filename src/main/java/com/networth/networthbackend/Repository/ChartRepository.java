@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static java.sql.Types.DOUBLE;
 import static java.sql.Types.INTEGER;
 
 public class ChartRepository extends Repository<ChartEntity> {
@@ -75,6 +74,21 @@ public class ChartRepository extends Repository<ChartEntity> {
         return chartEntityList;
     }
 
+    public List<ChartEntity> generateEntityDataDhan(ResultSet rs) throws SQLException {
+        List<ChartEntity> chartEntityList = new ArrayList<>();
+        while (rs.next()) {
+            ChartEntity chartEntity = new ChartEntity();
+            chartEntity.setId(rs.getInt(1));
+            chartEntity.setAccountId(rs.getInt(2));
+            chartEntity.setAccountBrokerId(rs.getInt(3));
+            chartEntity.setDate(rs.getString(4));
+            chartEntity.setValue(rs.getDouble(5));
+            chartEntity.setInvested(rs.getDouble(6));
+            chartEntityList.add(chartEntity);
+        }
+        return chartEntityList;
+    }
+
     @Override
     public void delete(Object fieldName, Object fieldValue) throws SQLException {
         try {
@@ -98,6 +112,17 @@ public class ChartRepository extends Repository<ChartEntity> {
             PreparedStatement pstmt = getQuery(queryMap.get("type"), queryMap.get("id"), queryMap.get("range"));
             ResultSet rs = pstmt.executeQuery();
             return generateEntityData(rs);
+        } catch (Exception e) {
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+    public List<ChartEntity> getBySecondaryField(String id) throws SQLException {
+        try {
+            PreparedStatement pstmt = connection.prepareStatement("select * from " + tableName + " where account_id = ?");
+            pstmt.setInt(1, Integer.parseInt(id));
+            ResultSet rs = pstmt.executeQuery();
+            return generateEntityDataDhan(rs);
         } catch (Exception e) {
             throw new SQLException(e.getMessage());
         }

@@ -1,5 +1,10 @@
 package com.networth.networthbackend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.networth.networthbackend.model.dhanapimodel.LedgerAPIResponse;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -9,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class RestAPIService {
 
@@ -30,6 +36,15 @@ public class RestAPIService {
         HttpRequest request = HttpRequest.newBuilder().uri(new URL(url).toURI()).header("access-token", accessToken).GET().build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
+    }
+
+    public List<LedgerAPIResponse> executeDhanLedgerAPI(String url) throws IOException, URISyntaxException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder().uri(new URL(url).toURI()).header("access-token", accessToken).GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        return mapper.readValue(response.body(), new TypeReference<>() {
+        });
     }
 
     public void executePostAPI(String data) throws IOException, InterruptedException {

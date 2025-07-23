@@ -7,11 +7,13 @@ import com.networth.networthbackend.Repository.ChartRepository;
 import com.networth.networthbackend.entity.*;
 import com.networth.networthbackend.model.dhanapimodel.FundLimitAPIResponse;
 import com.networth.networthbackend.model.dhanapimodel.HoldingAPIResponse;
+import com.networth.networthbackend.model.dhanapimodel.LedgerAPIResponse;
 import com.networth.networthbackend.model.dhanapimodel.PositionAPIResponse;
 import com.networth.networthbackend.model.yahooapimodel.YahooAPIResponse;
 import com.networth.networthbackend.utility.Utility;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.time.*;
@@ -334,31 +336,29 @@ public class ChartService extends Service<ChartEntity> {
     public void generateDhanNonBrokerAccountData(Integer id) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         try {
+            ChartRepository chartRepository = new ChartRepository();
             double openPositionsValue = getOpenPositionsValue();
             double openHoldingsValue = getOpenHoldingsValue();
             double fundBalance = getFundBalance();
-            List<ChartEntity> dataList = repository.getBySecondaryField(new LinkedHashMap<>() {{
-                put("id", id);
-                put("type", "one_non_broker");
-                put("range", "1M");
-            }});
+            double currentInvestedOfDhanAccount = getCurrentInvestedOfDhanAccount(id);
+            List<ChartEntity> dataList = chartRepository.getBySecondaryField(String.valueOf(id));
             LocalDate today = LocalDate.now();
             String todayDate = LocalDateTime.of(today, LocalTime.MIN).format(dateTimeFormatter);
+            List<ChartEntity> dataListToDelete = dataList.stream().filter(chartEntity -> chartEntity.getDate().equals(todayDate)).toList();
             dataList = dataList.stream().filter(chartEntity -> !chartEntity.getDate().equals(todayDate)).toList();
             ChartEntity lastChartData = !dataList.isEmpty() ? dataList.get(dataList.size() - 1) : null;
             List<ChartEntity> chartEntityList = new ArrayList<>();
             if (lastChartData != null) {
+                if (!dataListToDelete.isEmpty()) {
+                    deleteData(dataListToDelete.get(0).getId(), "id");
+                }
                 chartEntityList.add(lastChartData);
             }
-            List<InvestEntity> investEntityList = getInvestList(id, "account_id");
-            investEntityList.sort(Comparator.comparing(InvestEntity::getDate));
             ChartEntity chartEntity = new ChartEntity();
             chartEntity.setAccountId(id);
             chartEntity.setDate(todayDate);
-            chartEntity.setValue(openPositionsValue);
-            chartEntity.setInvested(investEntityList.get(investEntityList.size() - 1).getValue());
+            chartEntity.setInvested(currentInvestedOfDhanAccount);
             chartEntity.setValue(fundBalance + openPositionsValue + openHoldingsValue);
-            deleteData(id, "account_id");
             addData(List.of(chartEntity));
             chartEntityList.add(chartEntity);
             updateAccountData(id, chartEntityList, dateTimeFormat);
@@ -386,6 +386,42 @@ public class ChartService extends Service<ChartEntity> {
         String response = restAPIService.executeDhanAPI(url);
         FundLimitAPIResponse fundLimitAPIResponse = new Utility<FundLimitAPIResponse>().convertStringToObj(response, context, FundLimitAPIResponse.class);
         return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getUtilizedAmount();
+    }
+
+    private double getCurrentInvestedOfDhanAccount(Integer id) throws IOException, URISyntaxException, InterruptedException, SQLException {
+        List<LedgerAPIResponse> ledgerAPIResponses = restAPIService.executeDhanLedgerAPI("https://api.dhan.co/v2/ledger?from-date=2025-01-01&to-date=2025-12-31");
+        LocalDate localDate = LocalDate.now();
+        ledgerAPIResponses = ledgerAPIResponses.stream().filter(data -> (data.getNarration().equals("Funds Withdrawal") || data.getNarration().equals("Funds Deposited"))).filter(data -> data.getVoucherdate().equals(localDate)).toList();
+        BigDecimal sum = ledgerAPIResponses.stream().map(data -> (data.getCredit() != null ? data.getCredit() : BigDecimal.ZERO).subtract(data.getDebit() != null ? data.getDebit() : BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<AccountTransactionEntity> accountTransactionEntityList = getAccountTransactionList(id, "account_id");
+        AccountTransactionEntity lastAccountTransactionEntity = accountTransactionEntityList.get(accountTransactionEntityList.size() - 1);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDate lastTransactionDate = LocalDate.parse(lastAccountTransactionEntity.getTransactionDate(), formatter);
+        double returnValue = sum.doubleValue();
+        if (lastTransactionDate.equals(localDate) && !ledgerAPIResponses.isEmpty()) {
+            deleteAccountTransactionLatestTransaction(lastAccountTransactionEntity.getId());
+        }
+        returnValue = returnValue + lastAccountTransactionEntity.getValue();
+        if (!ledgerAPIResponses.isEmpty()) {
+            AccountTransactionEntity accountTransactionEntity = new AccountTransactionEntity();
+            accountTransactionEntity.setAccountId(id);
+            accountTransactionEntity.setTransactionDate(localDate.toString());
+            accountTransactionEntity.setValue(returnValue);
+            addAccountTransactionLatestTransaction(accountTransactionEntity);
+        }
+        return returnValue;
+    }
+
+    private void deleteAccountTransactionLatestTransaction(Integer id) throws SQLException {
+        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        accountTransactionService.repository.delete("id", id);
+        accountTransactionService.repository.databaseService.disconnect();
+    }
+
+    private void addAccountTransactionLatestTransaction(AccountTransactionEntity accountTransactionEntity) throws SQLException {
+        AccountTransactionService accountTransactionService = new AccountTransactionService();
+        accountTransactionService.repository.save(accountTransactionEntity);
+        accountTransactionService.repository.databaseService.disconnect();
     }
 
     private List<AccountTransactionEntity> getAccountTransactionList(Integer id, String fieldName) throws SQLException {
