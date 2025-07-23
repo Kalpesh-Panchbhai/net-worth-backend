@@ -1,4 +1,4 @@
-package com.networth.networthbackend.strategytester;
+package com.networth.networthbackend.main;
 
 import com.networth.networthbackend.strategy.SupertrendService;
 
