@@ -389,7 +389,7 @@ public class ChartService extends Service<ChartEntity> {
     }
 
     private double getCurrentInvestedOfDhanAccount(Integer id) throws IOException, URISyntaxException, InterruptedException, SQLException {
-        List<LedgerAPIResponse> ledgerAPIResponses = restAPIService.executeDhanLedgerAPI("https://api.dhan.co/v2/ledger?from-date=2025-01-01&to-date=2025-12-31");
+        List<LedgerAPIResponse> ledgerAPIResponses = restAPIService.executeDhanLedgerAPI("https://api.dhan.co/v2/ledger?from-date=2025-01-01&to-date=2099-12-31");
         LocalDate localDate = LocalDate.now();
         ledgerAPIResponses = ledgerAPIResponses.stream().filter(data -> (data.getNarration().equals("Funds Withdrawal") || data.getNarration().equals("Funds Deposited"))).filter(data -> data.getVoucherdate().equals(localDate)).toList();
         BigDecimal sum = ledgerAPIResponses.stream().map(data -> (data.getCredit() != null ? data.getCredit() : BigDecimal.ZERO).subtract(data.getDebit() != null ? data.getDebit() : BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
