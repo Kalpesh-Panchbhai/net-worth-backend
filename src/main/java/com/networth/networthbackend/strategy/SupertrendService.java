@@ -57,6 +57,28 @@ public class SupertrendService {
         System.out.print(bar);
     }
 
+    public static PerDayResult calculatePerDayPercent(List<Trade> trades) {
+        double capital = 1.0;
+        Double lastBuy = null;
+        ZonedDateTime lastBuyDate = null;
+        long totalDays = 0;
+        for (Trade trade : trades) {
+            if ("BUY".equals(trade.type)) {
+                lastBuy = trade.price;
+                lastBuyDate = trade.date;
+            } else if ("SELL".equals(trade.type) && lastBuy != null && lastBuyDate != null) {
+                capital *= (trade.price / lastBuy);
+                long days = java.time.Duration.between(lastBuyDate.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
+                if (days <= 0) days = 1;
+                totalDays += days;
+                lastBuy = null;
+                lastBuyDate = null;
+            }
+        }
+        if (totalDays == 0) return new PerDayResult(0.0, 0);
+        return new PerDayResult((capital - 1.0) / totalDays * 100, totalDays);
+    }
+
     /**
      * Executes the complete E2E flow – read symbols, fetch data and calculate supertrend. The
      * resulting latest supertrend value (boolean trend + numeric line) is printed on console.
@@ -196,7 +218,7 @@ public class SupertrendService {
         return emojiBuilder.toString();
     }
 
-    private List<String> readSymbols() throws IOException {
+    public List<String> readSymbols() throws IOException {
         URL resource = getClass().getClassLoader().getResource("stock_tradingview.txt");
         Path path = Paths.get(Objects.requireNonNull(resource).getPath());
         if (!Files.exists(path)) {
@@ -236,7 +258,7 @@ public class SupertrendService {
     }
 
     private String fetchHistoricalData(String symbol) throws IOException, URISyntaxException, InterruptedException {
-        String url = YAHOO_CHART_URL + symbol + "?interval=1d&range=1y";
+        String url = YAHOO_CHART_URL + symbol + "?interval=1d&range=40y";
         return restAPIService.executeAPI(url);
     }
 
@@ -290,5 +312,58 @@ public class SupertrendService {
             series.addBar(new BaseBar(Duration.ofDays(1), time, open, high, low, close, volume));
         }
         return series;
+    }
+    
+    public List<Trade> simulateSupertrendTrades(String symbol) throws IOException, URISyntaxException, InterruptedException {
+        String jsonResponse = fetchHistoricalData(symbol);
+        BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
+        List<Trade> trades = new ArrayList<>();
+        if (series.getBarCount() < 2) return trades;
+        SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
+        boolean inPosition = false;
+        double lastBuyPrice = 0;
+        for (int i = 1; i < series.getBarCount() - 1; i++) { // up to second last bar
+            boolean prevUp = series.getBar(i - 1).getClosePrice().isGreaterThan(st.getValue(i - 1));
+            boolean currUp = series.getBar(i).getClosePrice().isGreaterThan(st.getValue(i));
+            if (!inPosition && !currUp && prevUp) {
+                int next = i + 1;
+                trades.add(new Trade("BUY", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue()));
+                inPosition = true;
+                lastBuyPrice = series.getBar(next).getOpenPrice().doubleValue();
+            } else if (inPosition && currUp && !prevUp) {
+                double currClose = series.getBar(i).getClosePrice().doubleValue();
+                if (currClose > lastBuyPrice) {
+                    int next = i + 1;
+                    trades.add(new Trade("SELL", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue()));
+                    inPosition = false;
+                }
+            }
+        }
+        return trades;
+    }
+
+    public static class PerDayResult {
+        public final double perDay;
+        public final long totalDays;
+
+        public PerDayResult(double perDay, long totalDays) {
+            this.perDay = perDay;
+            this.totalDays = totalDays;
+        }
+    }
+
+    /**
+     * Simple trade record
+     */
+    public static class Trade {
+        public final String type; // BUY or SELL
+        public final ZonedDateTime date;
+        public final double price;
+
+        public Trade(String type, ZonedDateTime date, double price) {
+            this.type = type;
+            this.date = date;
+            this.price = price;
+        }
     }
 }
