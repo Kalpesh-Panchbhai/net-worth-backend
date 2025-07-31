@@ -313,12 +313,12 @@ public class SupertrendService {
         }
         return series;
     }
-    
-    public List<Trade> simulateSupertrendTrades(String symbol) throws IOException, URISyntaxException, InterruptedException {
+
+    public SupertrendTradeStats simulateSupertrendTrades(String symbol) throws IOException, URISyntaxException, InterruptedException {
         String jsonResponse = fetchHistoricalData(symbol);
         BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
         List<Trade> trades = new ArrayList<>();
-        if (series.getBarCount() < 2) return trades;
+        if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0);
         SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
         boolean inPosition = false;
         double lastBuyPrice = 0;
@@ -339,22 +339,24 @@ public class SupertrendService {
                 }
             }
         }
-        return trades;
-    }
-
-    public static class PerDayResult {
-        public final double perDay;
-        public final long totalDays;
-
-        public PerDayResult(double perDay, long totalDays) {
-            this.perDay = perDay;
-            this.totalDays = totalDays;
+        int totalTradeDays = 0;
+        int totalTrades = 0;
+        Trade lastBuy = null;
+        for (Trade t : trades) {
+            if ("BUY".equals(t.type)) {
+                lastBuy = t;
+            } else if ("SELL".equals(t.type) && lastBuy != null) {
+                int days = (int) java.time.Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), t.date.toLocalDate().atStartOfDay()).toDays();
+                if (days <= 0) days = 1;
+                totalTradeDays += days;
+                totalTrades++;
+                lastBuy = null;
+            }
         }
+        double avgTradeDays = totalTrades > 0 ? (double) totalTradeDays / totalTrades : 0.0;
+        return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays);
     }
 
-    /**
-     * Simple trade record
-     */
     public static class Trade {
         public final String type; // BUY or SELL
         public final ZonedDateTime date;
@@ -364,6 +366,30 @@ public class SupertrendService {
             this.type = type;
             this.date = date;
             this.price = price;
+        }
+    }
+
+    public static class SupertrendTradeStats {
+        public final List<Trade> trades;
+        public final int totalTrades;
+        public final int totalTradeDays;
+        public final double avgTradeDays;
+
+        public SupertrendTradeStats(List<Trade> trades, int totalTrades, int totalTradeDays, double avgTradeDays) {
+            this.trades = trades;
+            this.totalTrades = totalTrades;
+            this.totalTradeDays = totalTradeDays;
+            this.avgTradeDays = avgTradeDays;
+        }
+    }
+
+    public static class PerDayResult {
+        public final double perDay;
+        public final long totalDays;
+
+        public PerDayResult(double perDay, long totalDays) {
+            this.perDay = perDay;
+            this.totalDays = totalDays;
         }
     }
 }
