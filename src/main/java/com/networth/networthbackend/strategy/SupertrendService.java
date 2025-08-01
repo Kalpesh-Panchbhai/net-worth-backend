@@ -79,7 +79,7 @@ public class SupertrendService {
         for (int i = 1; i <= totalRecords; i++) {
             String symbol = symbols.get(i - 1);
             try {
-                String jsonResponse = fetchHistoricalData(symbol);
+                String jsonResponse = fetchHistoricalData(symbol, "1y");
                 String symbolName = fetchStockName(jsonResponse);
                 double currentMarketPrice = fetchStockCurrentMarketPrice(jsonResponse);
                 BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
@@ -245,8 +245,8 @@ public class SupertrendService {
         }
     }
 
-    private String fetchHistoricalData(String symbol) throws IOException, URISyntaxException, InterruptedException {
-        String url = YAHOO_CHART_URL + symbol + "?interval=1d&range=40y";
+    private String fetchHistoricalData(String symbol, String year) throws IOException, URISyntaxException, InterruptedException {
+        String url = YAHOO_CHART_URL + symbol + "?interval=1d&range=" + year;
         return restAPIService.executeAPI(url);
     }
 
@@ -303,7 +303,7 @@ public class SupertrendService {
     }
 
     public SupertrendTradeStats simulateSupertrendTrades(String symbol) throws IOException, URISyntaxException, InterruptedException {
-        String jsonResponse = fetchHistoricalData(symbol);
+        String jsonResponse = fetchHistoricalData(symbol, "100y");
         BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
         List<Trade> trades = new ArrayList<>();
         if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0);
