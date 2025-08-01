@@ -29,9 +29,6 @@ import java.util.Objects;
 public class SupertrendService {
     private static final String YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
-    private static final String STOCK_FILE_IN = "stocks_in.txt";
-    private static final String STOCK_FILE_US = "stocks_us.txt";
-
     private final RestAPIService restAPIService = new RestAPIService();
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -76,7 +73,7 @@ public class SupertrendService {
 
     @SneakyThrows
     public void execute(Boolean fromAWS, Boolean sendAll) {
-        List<String> symbols = readSymbols();
+        List<String> symbols = readSymbols("stocks_in.txt");
         List<SupertrendResponse> supertrendResponseList = new ArrayList<>();
         int totalRecords = symbols.size();
         for (int i = 1; i <= totalRecords; i++) {
@@ -205,11 +202,11 @@ public class SupertrendService {
         return emojiBuilder.toString();
     }
 
-    public List<String> readSymbols() throws IOException {
-        URL resource = getClass().getClassLoader().getResource(STOCK_FILE_IN);
+    public List<String> readSymbols(String fileName) throws IOException {
+        URL resource = getClass().getClassLoader().getResource(fileName);
         Path path = Paths.get(Objects.requireNonNull(resource).getPath());
         if (!Files.exists(path)) {
-            throw new IOException(STOCK_FILE_IN + " not found at src/main/resources/");
+            throw new IOException(fileName + " not found at src/main/resources/");
         }
         List<String> raw = Files.readAllLines(path);
         List<String> symbols = new ArrayList<>();
@@ -228,16 +225,20 @@ public class SupertrendService {
     private StockValueChecker.StockData parseStockLine(String line) {
         try {
             String[] parts = line.split(",");
-            if (parts.length != 3) {
+            if (parts.length != 3 && parts.length != 1) {
                 System.err.println("Invalid line format (expected SYMBOL,PRICE,MATCHING): " + line);
                 return null;
             }
 
-            String symbol = parts[0].trim();
-            double price = Double.parseDouble(parts[1].trim());
-            String matching = parts[2].trim();
-
-            return new StockValueChecker.StockData(symbol, price, matching);
+            if (parts.length == 1) {
+                String symbol = parts[0].trim();
+                return new StockValueChecker.StockData(symbol, 0.0, "");
+            } else {
+                String symbol = parts[0].trim();
+                double price = Double.parseDouble(parts[1].trim());
+                String matching = parts[2].trim();
+                return new StockValueChecker.StockData(symbol, price, matching);
+            }
         } catch (NumberFormatException e) {
             System.err.println("Invalid price format in line: " + line);
             return null;
@@ -344,8 +345,8 @@ public class SupertrendService {
         return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays);
     }
 
-    public void executeHistorical() throws IOException, URISyntaxException, InterruptedException {
-        List<String> symbols = readSymbols();
+    public void executeHistorical(String fileName) throws IOException, URISyntaxException, InterruptedException {
+        List<String> symbols = readSymbols(fileName);
         double total = 0.0;
         int count = 0;
         int index = 0;
@@ -378,13 +379,14 @@ public class SupertrendService {
         }
         double combinedAvgTradeDays = totalTradesAllStocks > 0 ? (double) totalTradeDaysAllStocks / totalTradesAllStocks : 0.0;
         System.out.printf("Combined average trade days for all completed trades across all stocks: %.2f\n", combinedAvgTradeDays);
-        try (java.io.PrintWriter pw = new java.io.PrintWriter("supertrend_per_day_results.csv")) {
+        String csvFileName = "supertrend_" + fileName.split("\\.")[0] + "_per_day_results.csv ";
+        try (java.io.PrintWriter pw = new java.io.PrintWriter(csvFileName)) {
             pw.println("Rank,Symbol,PerDayProfit,TotalDays,TotalTrades,TradeDays,AvgTradeDays");
             for (StockDayResult r : results) {
                 pw.printf("%d,%s,%.6f,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays);
                 rank++;
             }
-            System.out.println("\nCSV export complete: supertrend_per_day_results.csv");
+            System.out.println("\nCSV export complete: " + csvFileName);
         } catch (Exception e) {
             System.err.println("Error writing CSV: " + e.getMessage());
         }
