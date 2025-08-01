@@ -22,9 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class SupertrendService {
     private static final String YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
@@ -51,20 +49,19 @@ public class SupertrendService {
 
     public static PerDayResult calculatePerDayPercent(List<Trade> trades) {
         double capital = 1.0;
-        Double lastBuy = null;
-        ZonedDateTime lastBuyDate = null;
         long totalDays = 0;
+        Map<Integer, Trade> buyMap = new java.util.HashMap<>();
         for (Trade trade : trades) {
             if ("BUY".equals(trade.type)) {
-                lastBuy = trade.price;
-                lastBuyDate = trade.date;
-            } else if ("SELL".equals(trade.type) && lastBuy != null && lastBuyDate != null) {
-                capital *= (trade.price / lastBuy);
-                long days = java.time.Duration.between(lastBuyDate.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
-                if (days <= 0) days = 1;
-                totalDays += days;
-                lastBuy = null;
-                lastBuyDate = null;
+                buyMap.put(trade.orderId, trade);
+            } else if ("SELL".equals(trade.type)) {
+                Trade buy = buyMap.remove(trade.orderId);
+                if (buy != null) {
+                    capital *= (trade.price / buy.price);
+                    long days = java.time.Duration.between(buy.date.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
+                    if (days <= 0) days = 1;
+                    totalDays += days;
+                }
             }
         }
         if (totalDays == 0) return new PerDayResult(0.0);
@@ -312,37 +309,47 @@ public class SupertrendService {
         List<Trade> trades = new ArrayList<>();
         if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0);
         SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
-        boolean inPosition = false;
-        double lastBuyPrice = 0;
+        List<Trade> openBuys = new ArrayList<>();
+        int orderIdCounter = 1;
         for (int i = 1; i < series.getBarCount() - 1; i++) { // up to second last bar
             boolean prevUp = series.getBar(i - 1).getClosePrice().isGreaterThan(st.getValue(i - 1));
             boolean currUp = series.getBar(i).getClosePrice().isGreaterThan(st.getValue(i));
-            if (!inPosition && !currUp && prevUp) {
+            // Buy signal: previous up, now down
+            if (!currUp && prevUp) {
                 int next = i + 1;
-                trades.add(new Trade("BUY", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue()));
-                inPosition = true;
-                lastBuyPrice = series.getBar(next).getOpenPrice().doubleValue();
-            } else if (inPosition && currUp && !prevUp) {
-                double currClose = series.getBar(i).getClosePrice().doubleValue();
-                if (currClose > lastBuyPrice) {
+                Trade buyTrade = new Trade("BUY", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue(), orderIdCounter++);
+                openBuys.add(buyTrade);
+                trades.add(buyTrade);
+            }
+            // Sell logic: for each open buy, check sell condition
+            List<Trade> sellsToAdd = new ArrayList<>();
+            List<Trade> buysToRemove = new ArrayList<>();
+            for (Trade buy : openBuys) {
+                double buyPrice = buy.price;
+                if (currUp && series.getBar(i).getClosePrice().doubleValue() > buyPrice) {
                     int next = i + 1;
-                    trades.add(new Trade("SELL", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue()));
-                    inPosition = false;
+                    Trade sellTrade = new Trade("SELL", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue(), buy.orderId);
+                    sellsToAdd.add(sellTrade);
+                    buysToRemove.add(buy);
                 }
             }
+            trades.addAll(sellsToAdd);
+            openBuys.removeAll(buysToRemove);
         }
         int totalTradeDays = 0;
         int totalTrades = 0;
-        Trade lastBuy = null;
+        Map<Integer, Trade> buyMap = new HashMap<>();
         for (Trade t : trades) {
             if ("BUY".equals(t.type)) {
-                lastBuy = t;
-            } else if ("SELL".equals(t.type) && lastBuy != null) {
-                int days = (int) java.time.Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), t.date.toLocalDate().atStartOfDay()).toDays();
-                if (days <= 0) days = 1;
-                totalTradeDays += days;
-                totalTrades++;
-                lastBuy = null;
+                buyMap.put(t.orderId, t);
+            } else if ("SELL".equals(t.type)) {
+                Trade lastBuy = buyMap.remove(t.orderId);
+                if (lastBuy != null) {
+                    int days = (int) Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), t.date.toLocalDate().atStartOfDay()).toDays();
+                    if (days <= 0) days = 1;
+                    totalTradeDays += days;
+                    totalTrades++;
+                }
             }
         }
         double avgTradeDays = totalTrades > 0 ? (double) totalTradeDays / totalTrades : 0.0;
@@ -400,11 +407,13 @@ public class SupertrendService {
         public final String type; // BUY or SELL
         public final ZonedDateTime date;
         public final double price;
+        public final int orderId;
 
-        public Trade(String type, ZonedDateTime date, double price) {
+        public Trade(String type, ZonedDateTime date, double price, int orderId) {
             this.type = type;
             this.date = date;
             this.price = price;
+            this.orderId = orderId;
         }
     }
 
