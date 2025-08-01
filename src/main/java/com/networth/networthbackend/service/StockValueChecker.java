@@ -10,13 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service class that reads stock symbols and expected prices from stock_tradingview.txt file
+ * Service class that reads stock symbols and expected prices from stocks_in.txt file
  * and compares them with Yahoo Finance API data using the regularMarketPrice field.
  * After the first run, updates the file with .NS suffix and YES/NO match results.
  */
 public class StockValueChecker {
 
-    private static final String STOCK_FILE = "stock_tradingview.txt";
+    private static final String STOCK_FILE = "stocks_in.txt";
     private static final String YAHOO_FINANCE_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
     private final RestAPIService restAPIService;
@@ -96,7 +96,7 @@ public class StockValueChecker {
     }
 
     /**
-     * Reads stock symbols and expected prices from the stock_tradingview.txt file
+     * Reads stock symbols and expected prices from the stocks_in.txt file
      */
     private List<StockData> readStocksFromFile() throws IOException {
         List<StockData> stocks = new ArrayList<>();

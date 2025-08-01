@@ -26,16 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Service class which reads symbols from {@code src/main/resources/stocks.txt},
- * fetches historical OHLCV data through the Yahoo Finance REST API using the existing
- * {@link RestAPIService}, constructs a {@link BarSeries} for each symbol and finally
- * calculates the Supertrend indicator (ATR period 10, multiplier 3) with ta4j.
- */
 public class SupertrendService {
-
-    private static final String STOCK_FILE = "src/main/resources/stocks.txt";
     private static final String YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
+
+    private static final String STOCK_FILE_IN = "stocks_in.txt";
+    private static final String STOCK_FILE_US = "stocks_us.txt";
 
     private final RestAPIService restAPIService = new RestAPIService();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -79,10 +74,6 @@ public class SupertrendService {
         return new PerDayResult((capital - 1.0) / totalDays * 100, totalDays);
     }
 
-    /**
-     * Executes the complete E2E flow – read symbols, fetch data and calculate supertrend. The
-     * resulting latest supertrend value (boolean trend + numeric line) is printed on console.
-     */
     @SneakyThrows
     public void execute(Boolean fromAWS, Boolean sendAll) {
         List<String> symbols = readSymbols();
@@ -191,10 +182,6 @@ public class SupertrendService {
         });
     }
 
-    /**
-     * Escapes special characters for Telegram MarkdownV2 format
-     * Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
-     */
     private String escapeMarkdownV2(String text) {
         if (text == null) {
             return null;
@@ -219,10 +206,10 @@ public class SupertrendService {
     }
 
     public List<String> readSymbols() throws IOException {
-        URL resource = getClass().getClassLoader().getResource("stock_tradingview.txt");
+        URL resource = getClass().getClassLoader().getResource(STOCK_FILE_IN);
         Path path = Paths.get(Objects.requireNonNull(resource).getPath());
         if (!Files.exists(path)) {
-            throw new IOException("stock_tradingview.txt not found at " + STOCK_FILE);
+            throw new IOException(STOCK_FILE_IN + " not found at src/main/resources/");
         }
         List<String> raw = Files.readAllLines(path);
         List<String> symbols = new ArrayList<>();
@@ -357,6 +344,52 @@ public class SupertrendService {
         return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays);
     }
 
+    public void executeHistorical() throws IOException, URISyntaxException, InterruptedException {
+        List<String> symbols = readSymbols();
+        double total = 0.0;
+        int count = 0;
+        int index = 0;
+        List<StockDayResult> results = new ArrayList<>();
+        System.out.printf("%-5s %-20s %20s %12s %12s %12s %16s\n", "#", "Symbol", "Per Day Profit (%)", "Total Days", "#Trades", "TradeDays", "AvgTradeDays");
+        System.out.println("---------------------------------------------------------------------------------------------------------------");
+        for (String symbol : symbols) {
+            SupertrendService.SupertrendTradeStats stats = simulateSupertrendTrades(symbol);
+            List<SupertrendService.Trade> trades = stats.trades;
+            SupertrendService.PerDayResult perDayResult = SupertrendService.calculatePerDayPercent(trades);
+            System.out.printf("%-5d %-20s %20.4f %12d %12d %12d %16.2f\n", index + 1, symbol, perDayResult.perDay, perDayResult.totalDays, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
+            results.add(new StockDayResult(symbol, perDayResult.perDay, perDayResult.totalDays, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
+            if (stats.totalTrades > 0) {
+                total += perDayResult.perDay;
+                count++;
+            }
+            index++;
+        }
+        if (count > 0) {
+            double avg = total / count;
+            System.out.println("Average Per Day Profit (all stocks): " + avg + "%");
+        }
+        results = results.stream().sorted((o1, o2) -> Double.compare(o2.perDay, o1.perDay)).toList();
+        int rank = 1;
+        int totalTradesAllStocks = 0;
+        int totalTradeDaysAllStocks = 0;
+        for (StockDayResult r : results) {
+            totalTradesAllStocks += r.totalTrades;
+            totalTradeDaysAllStocks += r.tradeDays;
+        }
+        double combinedAvgTradeDays = totalTradesAllStocks > 0 ? (double) totalTradeDaysAllStocks / totalTradesAllStocks : 0.0;
+        System.out.printf("Combined average trade days for all completed trades across all stocks: %.2f\n", combinedAvgTradeDays);
+        try (java.io.PrintWriter pw = new java.io.PrintWriter("supertrend_per_day_results.csv")) {
+            pw.println("Rank,Symbol,PerDayProfit,TotalDays,TotalTrades,TradeDays,AvgTradeDays");
+            for (StockDayResult r : results) {
+                pw.printf("%d,%s,%.6f,%d,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalDays, r.totalTrades, r.tradeDays, r.avgTradeDays);
+                rank++;
+            }
+            System.out.println("\nCSV export complete: supertrend_per_day_results.csv");
+        } catch (Exception e) {
+            System.err.println("Error writing CSV: " + e.getMessage());
+        }
+    }
+
     public static class Trade {
         public final String type; // BUY or SELL
         public final ZonedDateTime date;
@@ -392,4 +425,23 @@ public class SupertrendService {
             this.totalDays = totalDays;
         }
     }
+
+    public static class StockDayResult {
+        String symbol;
+        double perDay;
+        long totalDays;
+        int totalTrades;
+        int tradeDays;
+        double avgTradeDays;
+
+        StockDayResult(String symbol, double perDay, long totalDays, int totalTrades, int tradeDays, double avgTradeDays) {
+            this.symbol = symbol;
+            this.perDay = perDay;
+            this.totalDays = totalDays;
+            this.totalTrades = totalTrades;
+            this.tradeDays = tradeDays;
+            this.avgTradeDays = avgTradeDays;
+        }
+    }
+
 }
