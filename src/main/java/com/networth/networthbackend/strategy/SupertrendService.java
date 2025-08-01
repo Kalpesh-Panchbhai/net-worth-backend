@@ -273,31 +273,35 @@ public class SupertrendService {
     }
 
     private BarSeries buildSeriesFromYahooResponse(String symbol, String json) throws IOException {
-        JsonNode root = mapper.readTree(json);
-        JsonNode resultNode = root.path("chart").path("result");
-        if (!resultNode.isArray() || resultNode.isEmpty()) {
-            return new BaseBarSeriesBuilder().withName(symbol).build();
-        }
-        JsonNode first = resultNode.get(0);
-        JsonNode timestamps = first.path("timestamp");
-        JsonNode quote = first.path("indicators").path("quote").get(0);
-        JsonNode opens = quote.path("open");
-        JsonNode highs = quote.path("high");
-        JsonNode lows = quote.path("low");
-        JsonNode closes = quote.path("close");
-        JsonNode volumes = quote.path("volume");
-
         BarSeries series = new BaseBarSeriesBuilder().withName(symbol).build();
-        int len = timestamps.size();
-        for (int i = 0; i < len; i++) {
-            if (opens.get(i).isNull()) continue; // skip bad rows
-            ZonedDateTime time = Instant.ofEpochSecond(timestamps.get(i).asLong()).atZone(ZoneId.systemDefault());
-            double open = opens.get(i).asDouble();
-            double high = highs.get(i).asDouble();
-            double low = lows.get(i).asDouble();
-            double close = closes.get(i).asDouble();
-            double volume = volumes.get(i).asDouble();
-            series.addBar(new BaseBar(Duration.ofDays(1), time, open, high, low, close, volume));
+        try {
+            JsonNode root = mapper.readTree(json);
+            JsonNode resultNode = root.path("chart").path("result");
+            if (!resultNode.isArray() || resultNode.isEmpty()) {
+                return new BaseBarSeriesBuilder().withName(symbol).build();
+            }
+            JsonNode first = resultNode.get(0);
+            JsonNode timestamps = first.path("timestamp");
+            JsonNode quote = first.path("indicators").path("quote").get(0);
+            JsonNode opens = quote.path("open");
+            JsonNode highs = quote.path("high");
+            JsonNode lows = quote.path("low");
+            JsonNode closes = quote.path("close");
+            JsonNode volumes = quote.path("volume");
+
+            int len = timestamps.size();
+            for (int i = 0; i < len; i++) {
+                if (opens.get(i).isNull()) continue; // skip bad rows
+                ZonedDateTime time = Instant.ofEpochSecond(timestamps.get(i).asLong()).atZone(ZoneId.systemDefault());
+                double open = opens.get(i).asDouble();
+                double high = highs.get(i).asDouble();
+                double low = lows.get(i).asDouble();
+                double close = closes.get(i).asDouble();
+                double volume = volumes.get(i).asDouble();
+                series.addBar(new BaseBar(Duration.ofDays(1), time, open, high, low, close, volume));
+            }
+        } catch (Exception e) {
+            System.out.println("Error building series for " + symbol + ": " + e.getMessage());
         }
         return series;
     }
