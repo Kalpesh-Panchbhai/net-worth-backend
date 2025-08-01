@@ -70,8 +70,8 @@ public class SupertrendService {
                 lastBuyDate = null;
             }
         }
-        if (totalDays == 0) return new PerDayResult(0.0, 0);
-        return new PerDayResult((capital - 1.0) / totalDays * 100, totalDays);
+        if (totalDays == 0) return new PerDayResult(0.0);
+        return new PerDayResult((capital - 1.0) / totalDays * 100);
     }
 
     @SneakyThrows
@@ -350,14 +350,14 @@ public class SupertrendService {
         int count = 0;
         int index = 0;
         List<StockDayResult> results = new ArrayList<>();
-        System.out.printf("%-5s %-20s %20s %12s %12s %12s %16s\n", "#", "Symbol", "Per Day Profit (%)", "Total Days", "#Trades", "TradeDays", "AvgTradeDays");
+        System.out.printf("%-5s %-20s %20s %12s %12s %16s\n", "#", "Symbol", "Per Day Profit (%)", "#Trades", "TradeDays", "AvgTradeDays");
         System.out.println("---------------------------------------------------------------------------------------------------------------");
         for (String symbol : symbols) {
-            SupertrendService.SupertrendTradeStats stats = simulateSupertrendTrades(symbol);
-            List<SupertrendService.Trade> trades = stats.trades;
-            SupertrendService.PerDayResult perDayResult = SupertrendService.calculatePerDayPercent(trades);
-            System.out.printf("%-5d %-20s %20.4f %12d %12d %12d %16.2f\n", index + 1, symbol, perDayResult.perDay, perDayResult.totalDays, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
-            results.add(new StockDayResult(symbol, perDayResult.perDay, perDayResult.totalDays, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
+            SupertrendTradeStats stats = simulateSupertrendTrades(symbol);
+            List<Trade> trades = stats.trades;
+            PerDayResult perDayResult = calculatePerDayPercent(trades);
+            System.out.printf("%-5d %-20s %20.4f %12d %12d %16.2f\n", index + 1, symbol, perDayResult.perDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
+            results.add(new StockDayResult(symbol, perDayResult.perDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
             if (stats.totalTrades > 0) {
                 total += perDayResult.perDay;
                 count++;
@@ -381,7 +381,7 @@ public class SupertrendService {
         try (java.io.PrintWriter pw = new java.io.PrintWriter("supertrend_per_day_results.csv")) {
             pw.println("Rank,Symbol,PerDayProfit,TotalDays,TotalTrades,TradeDays,AvgTradeDays");
             for (StockDayResult r : results) {
-                pw.printf("%d,%s,%.6f,%d,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalDays, r.totalTrades, r.tradeDays, r.avgTradeDays);
+                pw.printf("%d,%s,%.6f,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays);
                 rank++;
             }
             System.out.println("\nCSV export complete: supertrend_per_day_results.csv");
@@ -418,26 +418,22 @@ public class SupertrendService {
 
     public static class PerDayResult {
         public final double perDay;
-        public final long totalDays;
 
-        public PerDayResult(double perDay, long totalDays) {
+        public PerDayResult(double perDay) {
             this.perDay = perDay;
-            this.totalDays = totalDays;
         }
     }
 
     public static class StockDayResult {
         String symbol;
         double perDay;
-        long totalDays;
         int totalTrades;
         int tradeDays;
         double avgTradeDays;
 
-        StockDayResult(String symbol, double perDay, long totalDays, int totalTrades, int tradeDays, double avgTradeDays) {
+        StockDayResult(String symbol, double perDay, int totalTrades, int tradeDays, double avgTradeDays) {
             this.symbol = symbol;
             this.perDay = perDay;
-            this.totalDays = totalDays;
             this.totalTrades = totalTrades;
             this.tradeDays = tradeDays;
             this.avgTradeDays = avgTradeDays;
