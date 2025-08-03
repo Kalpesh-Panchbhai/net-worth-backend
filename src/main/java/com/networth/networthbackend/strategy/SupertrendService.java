@@ -317,16 +317,27 @@ public class SupertrendService {
         }
         int totalTradeDays = 0;
         int totalTrades = 0;
-        double capital = 1.0;
+        double initialCapital = 1.0;
+        double topupCapital = 0.0;
         Map<Integer, Trade> buyMap = new HashMap<>();
-        trades.sort(Comparator.comparing((Trade p) -> p.type).thenComparingInt((Trade p) -> p.orderId));
+        Map<Integer, Double> buyCapital = new HashMap<>();
         for (Trade trade : trades) {
             if ("BUY".equals(trade.type)) {
+                if (!buyMap.isEmpty()) {
+                    buyCapital.put(trade.orderId, 1.0);
+                } else {
+                    buyCapital.put(trade.orderId, initialCapital);
+                }
                 buyMap.put(trade.orderId, trade);
             } else if ("SELL".equals(trade.type)) {
                 Trade lastBuy = buyMap.remove(trade.orderId);
-                if (lastBuy != null) {
-                    capital *= (trade.price / lastBuy.price);
+                double boughtCapital = buyCapital.remove(trade.orderId);
+                if (lastBuy != null && boughtCapital != 0.0) {
+                    if (boughtCapital == 1.0 && trade.orderId != 1) {
+                        topupCapital = topupCapital + (boughtCapital * (trade.price / lastBuy.price) - 1.0);
+                    } else {
+                        initialCapital = boughtCapital * (trade.price / lastBuy.price);
+                    }
                     int days = (int) Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
                     if (days <= 0) days = 1;
                     totalTradeDays += days;
@@ -334,8 +345,9 @@ public class SupertrendService {
                 }
             }
         }
+        double totalProfit = (initialCapital - 1.0 + topupCapital);
         double avgTradeDays = totalTrades > 0 ? (double) totalTradeDays / totalTrades : 0.0;
-        double avgPerDay = totalTradeDays == 0 ? 0.0 : ((capital - 1.0) / totalTradeDays * 100);
+        double avgPerDay = totalTradeDays == 0 ? 0.0 : (totalProfit / totalTradeDays * 100);
         return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays, avgPerDay);
     }
 
