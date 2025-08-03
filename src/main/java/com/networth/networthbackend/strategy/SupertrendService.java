@@ -36,7 +36,7 @@ public class SupertrendService {
         int percent = (int) ((double) current / total * 100);
 
         StringBuilder bar = new StringBuilder();
-        bar.append("\r[");  // Carriage return to overwrite line
+        bar.append("\r[");
 
         for (int i = 0; i < barLength; i++) {
             bar.append(i < progress ? "=" : " ");
@@ -288,7 +288,7 @@ public class SupertrendService {
 
             int len = timestamps.size();
             for (int i = 0; i < len; i++) {
-                if (opens.get(i).isNull()) continue; // skip bad rows
+                if (opens.get(i).isNull()) continue;
                 ZonedDateTime time = Instant.ofEpochSecond(timestamps.get(i).asLong()).atZone(ZoneId.systemDefault());
                 double open = opens.get(i).asDouble();
                 double high = highs.get(i).asDouble();
@@ -311,17 +311,15 @@ public class SupertrendService {
         SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
         List<Trade> openBuys = new ArrayList<>();
         int orderIdCounter = 1;
-        for (int i = 1; i < series.getBarCount() - 1; i++) { // up to second last bar
+        for (int i = 1; i < series.getBarCount() - 1; i++) {
             boolean prevUp = series.getBar(i - 1).getClosePrice().isGreaterThan(st.getValue(i - 1));
             boolean currUp = series.getBar(i).getClosePrice().isGreaterThan(st.getValue(i));
-            // Buy signal: previous up, now down
             if (!currUp && prevUp) {
                 int next = i + 1;
                 Trade buyTrade = new Trade("BUY", series.getBar(next).getEndTime(), series.getBar(next).getOpenPrice().doubleValue(), orderIdCounter++);
                 openBuys.add(buyTrade);
                 trades.add(buyTrade);
             }
-            // Sell logic: for each open buy, check sell condition
             List<Trade> sellsToAdd = new ArrayList<>();
             List<Trade> buysToRemove = new ArrayList<>();
             for (Trade buy : openBuys) {
@@ -404,7 +402,7 @@ public class SupertrendService {
     }
 
     public static class Trade {
-        public final String type; // BUY or SELL
+        public final String type;
         public final ZonedDateTime date;
         public final double price;
         public final int orderId;
