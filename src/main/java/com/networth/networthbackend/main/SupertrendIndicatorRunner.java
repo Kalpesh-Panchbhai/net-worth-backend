@@ -5,6 +5,7 @@ import com.networth.networthbackend.strategy.SupertrendService;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class SupertrendIndicatorRunner {
 
@@ -12,7 +13,7 @@ public class SupertrendIndicatorRunner {
     private static final String STOCK_FILE_US = "stocks_us.txt";
 
     public static void main(String[] args) throws IOException, URISyntaxException, InterruptedException {
-        System.out.println(LocalDateTime.now());
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         SupertrendService supertrendService = new SupertrendService();
         if (Boolean.parseBoolean(args[0])) {
             String fileName = args[1].equals("IN") ? STOCK_FILE_IN : STOCK_FILE_US;
@@ -20,6 +21,6 @@ public class SupertrendIndicatorRunner {
         } else {
             supertrendService.execute(Boolean.valueOf(args[1]), Boolean.valueOf(args[2]));
         }
-        System.out.println(LocalDateTime.now());
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 }

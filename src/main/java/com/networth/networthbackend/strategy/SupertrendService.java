@@ -7,11 +7,15 @@ import com.networth.networthbackend.service.StockValueChecker;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseBarSeriesBuilder;
 import org.ta4j.core.indicators.supertrend.SuperTrendIndicator;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,10 +24,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class SupertrendService {
@@ -383,16 +385,34 @@ public class SupertrendService {
         }
         double combinedAvgTradeDays = totalTradesAllStocks > 0 ? (double) totalTradeDaysAllStocks / totalTradesAllStocks : 0.0;
         System.out.printf("Combined average trade days for all completed trades across all stocks: %.2f\n", combinedAvgTradeDays);
-        String csvFileName = "supertrend_" + fileName.split("\\.")[0] + "_per_day_results.csv ";
-        try (java.io.PrintWriter pw = new java.io.PrintWriter(csvFileName)) {
-            pw.println("Rank,Symbol,PerDayProfit,TotalTrades,TradeDays,AvgTradeDays");
+        String excelFileName = "supertrend_" + fileName.split("\\.")[0] + "_per_day_results_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = workbook.createSheet("Supertrend Results");
+
+            Row headerRow = sheet.createRow(0);
+            headerRow.createCell(0).setCellValue("Rank");
+            headerRow.createCell(1).setCellValue("Symbol");
+            headerRow.createCell(2).setCellValue("PerDayProfit");
+            headerRow.createCell(3).setCellValue("TotalTrades");
+            headerRow.createCell(4).setCellValue("TradeDays");
+            headerRow.createCell(5).setCellValue("AvgTradeDays");
+
             for (StockDayResult r : results) {
-                pw.printf("%d,%s,%.6f,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays);
-                rank++;
+                Row row = sheet.createRow(rank++);
+                row.createCell(0).setCellValue(rank - 1);
+                row.createCell(1).setCellValue(r.symbol);
+                row.createCell(2).setCellValue(r.perDay);
+                row.createCell(3).setCellValue(r.totalTrades);
+                row.createCell(4).setCellValue(r.tradeDays);
+                row.createCell(5).setCellValue(r.avgTradeDays);
             }
-            System.out.println("\nCSV export complete: " + csvFileName);
+            try (FileOutputStream fileOut = new FileOutputStream(excelFileName)) {
+                workbook.write(fileOut);
+            }
+
+            System.out.println("\nExcel export complete: " + excelFileName);
         } catch (Exception e) {
-            System.err.println("Error writing CSV: " + e.getMessage());
+            System.err.println("Error writing Excel file: " + e.getMessage());
         }
     }
 
