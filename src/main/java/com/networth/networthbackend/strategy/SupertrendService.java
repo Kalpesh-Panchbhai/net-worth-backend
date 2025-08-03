@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networth.networthbackend.service.RestAPIService;
 import com.networth.networthbackend.service.StockValueChecker;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBar;
@@ -45,27 +47,6 @@ public class SupertrendService {
         bar.append("] ").append(percent).append("% (").append(current).append("/").append(total).append(")");
 
         System.out.print(bar);
-    }
-
-    public static PerDayResult calculatePerDayPercent(List<Trade> trades) {
-        double capital = 1.0;
-        long totalDays = 0;
-        Map<Integer, Trade> buyMap = new java.util.HashMap<>();
-        for (Trade trade : trades) {
-            if ("BUY".equals(trade.type)) {
-                buyMap.put(trade.orderId, trade);
-            } else if ("SELL".equals(trade.type)) {
-                Trade buy = buyMap.remove(trade.orderId);
-                if (buy != null) {
-                    capital *= (trade.price / buy.price);
-                    long days = java.time.Duration.between(buy.date.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
-                    if (days <= 0) days = 1;
-                    totalDays += days;
-                }
-            }
-        }
-        if (totalDays == 0) return new PerDayResult(0.0);
-        return new PerDayResult((capital - 1.0) / totalDays * 100);
     }
 
     @SneakyThrows
@@ -307,7 +288,7 @@ public class SupertrendService {
         String jsonResponse = fetchHistoricalData(symbol, "100y");
         BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
         List<Trade> trades = new ArrayList<>();
-        if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0);
+        if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0, 0.0);
         SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
         List<Trade> openBuys = new ArrayList<>();
         int orderIdCounter = 1;
@@ -336,14 +317,17 @@ public class SupertrendService {
         }
         int totalTradeDays = 0;
         int totalTrades = 0;
+        double capital = 1.0;
         Map<Integer, Trade> buyMap = new HashMap<>();
-        for (Trade t : trades) {
-            if ("BUY".equals(t.type)) {
-                buyMap.put(t.orderId, t);
-            } else if ("SELL".equals(t.type)) {
-                Trade lastBuy = buyMap.remove(t.orderId);
+        trades.sort(Comparator.comparing((Trade p) -> p.type).thenComparingInt((Trade p) -> p.orderId));
+        for (Trade trade : trades) {
+            if ("BUY".equals(trade.type)) {
+                buyMap.put(trade.orderId, trade);
+            } else if ("SELL".equals(trade.type)) {
+                Trade lastBuy = buyMap.remove(trade.orderId);
                 if (lastBuy != null) {
-                    int days = (int) Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), t.date.toLocalDate().atStartOfDay()).toDays();
+                    capital *= (trade.price / lastBuy.price);
+                    int days = (int) Duration.between(lastBuy.date.toLocalDate().atStartOfDay(), trade.date.toLocalDate().atStartOfDay()).toDays();
                     if (days <= 0) days = 1;
                     totalTradeDays += days;
                     totalTrades++;
@@ -351,7 +335,8 @@ public class SupertrendService {
             }
         }
         double avgTradeDays = totalTrades > 0 ? (double) totalTradeDays / totalTrades : 0.0;
-        return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays);
+        double avgPerDay = totalTradeDays == 0 ? 0.0 : ((capital - 1.0) / totalTradeDays * 100);
+        return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays, avgPerDay);
     }
 
     public void executeHistorical(String fileName) throws IOException, URISyntaxException, InterruptedException {
@@ -364,12 +349,10 @@ public class SupertrendService {
         System.out.println("---------------------------------------------------------------------------------------------------------------");
         for (String symbol : symbols) {
             SupertrendTradeStats stats = simulateSupertrendTrades(symbol);
-            List<Trade> trades = stats.trades;
-            PerDayResult perDayResult = calculatePerDayPercent(trades);
-            System.out.printf("%-5d %-20s %20.4f %12d %12d %16.2f\n", index + 1, symbol, perDayResult.perDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
-            results.add(new StockDayResult(symbol, perDayResult.perDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
+            System.out.printf("%-5d %-20s %20.4f %12d %12d %16.2f\n", index + 1, symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
+            results.add(new StockDayResult(symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
             if (stats.totalTrades > 0) {
-                total += perDayResult.perDay;
+                total += stats.avgPerDay;
                 count++;
             }
             index++;
@@ -401,6 +384,8 @@ public class SupertrendService {
         }
     }
 
+    @Getter
+    @Setter
     public static class Trade {
         public final String type;
         public final ZonedDateTime date;
@@ -413,6 +398,11 @@ public class SupertrendService {
             this.price = price;
             this.orderId = orderId;
         }
+
+        @Override
+        public String toString() {
+            return type + ", orderId=" + orderId + ", date=" + date.toLocalDate() + ", price=" + price;
+        }
     }
 
     public static class SupertrendTradeStats {
@@ -420,20 +410,14 @@ public class SupertrendService {
         public final int totalTrades;
         public final int totalTradeDays;
         public final double avgTradeDays;
+        public final double avgPerDay;
 
-        public SupertrendTradeStats(List<Trade> trades, int totalTrades, int totalTradeDays, double avgTradeDays) {
+        public SupertrendTradeStats(List<Trade> trades, int totalTrades, int totalTradeDays, double avgTradeDays, double avgPerDay) {
             this.trades = trades;
             this.totalTrades = totalTrades;
             this.totalTradeDays = totalTradeDays;
             this.avgTradeDays = avgTradeDays;
-        }
-    }
-
-    public static class PerDayResult {
-        public final double perDay;
-
-        public PerDayResult(double perDay) {
-            this.perDay = perDay;
+            this.avgPerDay = avgPerDay;
         }
     }
 
