@@ -385,7 +385,7 @@ public class SupertrendService {
         System.out.printf("Combined average trade days for all completed trades across all stocks: %.2f\n", combinedAvgTradeDays);
         String csvFileName = "supertrend_" + fileName.split("\\.")[0] + "_per_day_results.csv ";
         try (java.io.PrintWriter pw = new java.io.PrintWriter(csvFileName)) {
-            pw.println("Rank,Symbol,PerDayProfit,TotalDays,TotalTrades,TradeDays,AvgTradeDays");
+            pw.println("Rank,Symbol,PerDayProfit,TotalTrades,TradeDays,AvgTradeDays");
             for (StockDayResult r : results) {
                 pw.printf("%d,%s,%.6f,%d,%d,%.2f\n", rank, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays);
                 rank++;
