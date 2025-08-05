@@ -288,7 +288,7 @@ public class SupertrendService {
         String jsonResponse = fetchHistoricalData(symbol, "100y");
         BarSeries series = buildSeriesFromYahooResponse(symbol, jsonResponse);
         List<Trade> trades = new ArrayList<>();
-        if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0, 0.0);
+        if (series.getBarCount() < 2) return new SupertrendTradeStats(trades, 0, 0, 0.0, 0.0, 0);
         SuperTrendIndicator st = new SuperTrendIndicator(series, 10, 3.0);
         List<Trade> openBuys = new ArrayList<>();
         int orderIdCounter = 1;
@@ -348,7 +348,7 @@ public class SupertrendService {
         double totalProfit = (initialCapital - 1.0 + topupCapital);
         double avgTradeDays = totalTrades > 0 ? (double) totalTradeDays / totalTrades : 0.0;
         double avgPerDay = totalTradeDays == 0 ? 0.0 : (totalProfit / totalTradeDays * 100);
-        return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays, avgPerDay);
+        return new SupertrendTradeStats(trades, totalTrades, totalTradeDays, avgTradeDays, avgPerDay, openBuys.size());
     }
 
     public void executeHistorical(String fileName) throws IOException, URISyntaxException, InterruptedException {
@@ -357,12 +357,12 @@ public class SupertrendService {
         int count = 0;
         int index = 0;
         List<StockDayResult> results = new ArrayList<>();
-        System.out.printf("%-5s %-20s %20s %12s %12s %16s\n", "#", "Symbol", "Per Day Profit (%)", "#Trades", "TradeDays", "AvgTradeDays");
+        System.out.printf("%-5s %-20s %20s %12s %12s %16s %16s\n", "#", "Symbol", "Per Day Profit (%)", "#Trades", "TradeDays", "AvgTradeDays", "PendingTrades");
         System.out.println("---------------------------------------------------------------------------------------------------------------");
         for (String symbol : symbols) {
             SupertrendTradeStats stats = simulateSupertrendTrades(symbol);
-            System.out.printf("%-5d %-20s %20.4f %12d %12d %16.2f\n", index + 1, symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays);
-            results.add(new StockDayResult(symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays));
+            System.out.printf("%-5d %-20s %20.4f %12d %12d %16.2f %16s\n", index + 1, symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays, stats.pendingTrades);
+            results.add(new StockDayResult(symbol, stats.avgPerDay, stats.totalTrades, stats.totalTradeDays, stats.avgTradeDays, stats.pendingTrades));
             if (stats.totalTrades > 0) {
                 total += stats.avgPerDay;
                 count++;
@@ -378,17 +378,19 @@ public class SupertrendService {
         int rank = 1;
         int totalTradesAllStocks = 0;
         int totalTradeDaysAllStocks = 0;
+        int totalPendingTradesAllStocks = 0;
         for (StockDayResult r : results) {
             totalTradesAllStocks += r.totalTrades;
             totalTradeDaysAllStocks += r.tradeDays;
+            totalPendingTradesAllStocks += r.pendingTrades;
         }
         double combinedAvgTradeDays = totalTradesAllStocks > 0 ? (double) totalTradeDaysAllStocks / totalTradesAllStocks : 0.0;
         String csvFileName = "supertrend_" + fileName.split("\\.")[0] + "_per_day_results_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")) + ".csv";
         try (PrintWriter writer = new PrintWriter(new FileWriter(csvFileName))) {
-            writer.println("Rank,Symbol,PerDayProfit,TotalTrades,TradeDays,AvgTradeDays");
-            writer.printf("#,%s,%.4f,%s,%s,%.2f\n", "ALL STOCKS", avg, totalTradesAllStocks, totalTradeDaysAllStocks, combinedAvgTradeDays);
+            writer.println("Rank,Symbol,PerDayProfit,TotalTrades,TradeDays,AvgTradeDays,PendingTrades");
+            writer.printf("#,%s,%.4f,%s,%s,%.2f,%s\n", "ALL STOCKS", avg, totalTradesAllStocks, totalTradeDaysAllStocks, combinedAvgTradeDays, totalPendingTradesAllStocks);
             for (StockDayResult r : results) {
-                writer.printf("%d,%s,%.4f,%d,%d,%.2f\n", rank++, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays);
+                writer.printf("%d,%s,%.4f,%d,%d,%.2f,%d\n", rank++, r.symbol, r.perDay, r.totalTrades, r.tradeDays, r.avgTradeDays, r.pendingTrades);
             }
 
             System.out.println("\nCSV export complete: " + csvFileName);
@@ -418,20 +420,8 @@ public class SupertrendService {
         }
     }
 
-    public static class SupertrendTradeStats {
-        public final List<Trade> trades;
-        public final int totalTrades;
-        public final int totalTradeDays;
-        public final double avgTradeDays;
-        public final double avgPerDay;
-
-        public SupertrendTradeStats(List<Trade> trades, int totalTrades, int totalTradeDays, double avgTradeDays, double avgPerDay) {
-            this.trades = trades;
-            this.totalTrades = totalTrades;
-            this.totalTradeDays = totalTradeDays;
-            this.avgTradeDays = avgTradeDays;
-            this.avgPerDay = avgPerDay;
-        }
+    public record SupertrendTradeStats(List<Trade> trades, int totalTrades, int totalTradeDays, double avgTradeDays,
+                                       double avgPerDay, int pendingTrades) {
     }
 
     public static class StockDayResult {
@@ -440,13 +430,15 @@ public class SupertrendService {
         int totalTrades;
         int tradeDays;
         double avgTradeDays;
+        int pendingTrades;
 
-        StockDayResult(String symbol, double perDay, int totalTrades, int tradeDays, double avgTradeDays) {
+        StockDayResult(String symbol, double perDay, int totalTrades, int tradeDays, double avgTradeDays, int pendingTrades) {
             this.symbol = symbol;
             this.perDay = perDay;
             this.totalTrades = totalTrades;
             this.tradeDays = tradeDays;
             this.avgTradeDays = avgTradeDays;
+            this.pendingTrades = pendingTrades;
         }
     }
 
