@@ -20,10 +20,15 @@ public class RestAPIService {
 
     private final HttpClient client;
 
-    private final String accessToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzU1MTA5NTI5LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwNzEwMjMwNiJ9.KyjpXakU4lNVIJzvBzm90OFsaJWKAnJ-AVF0vZ8SjY236KzB8KBSReSr5ynY7TpodEnJew4ac66E5MooTP5VoQ";
+    private final String accessToken;
+    private final String telegramToken;
+    private final String telegramChatId;
 
     public RestAPIService() {
         client = HttpClient.newHttpClient();
+        accessToken = System.getenv("ACCESS_TOKEN");
+        telegramToken = System.getenv("TELEGRAM_TOKEN");
+        telegramChatId = System.getenv("TELEGRAM_CHAT_ID");
     }
 
     public String executeAPI(String url) throws IOException, URISyntaxException, InterruptedException {
@@ -48,13 +53,10 @@ public class RestAPIService {
     }
 
     public void executePostAPI(String data) throws IOException, InterruptedException {
-        String token = "8064290352:AAEZKbX3WiqwjeGBYSe-ltioJwrDmX3D1wk";
-        String chatId = "7310096013";
-
-        String postData = "chat_id=" + URLEncoder.encode(chatId, StandardCharsets.UTF_8) + "&text=" + URLEncoder.encode(data, StandardCharsets.UTF_8) + "&parse_mode=MarkdownV2";
+        String postData = "chat_id=" + URLEncoder.encode(telegramChatId, StandardCharsets.UTF_8) + "&text=" + URLEncoder.encode(data, StandardCharsets.UTF_8) + "&parse_mode=MarkdownV2";
 
         HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://api.telegram.org/bot" + token + "/sendMessage")).header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(postData)).build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://api.telegram.org/bot" + telegramToken + "/sendMessage")).header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(postData)).build();
 
         client.send(request, HttpResponse.BodyHandlers.ofString());
     }
