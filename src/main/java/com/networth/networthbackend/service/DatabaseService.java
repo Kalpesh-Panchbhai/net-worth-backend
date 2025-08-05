@@ -5,9 +5,9 @@ import java.sql.DriverManager;
 
 public class DatabaseService {
 
-    String userName = "avnadmin";
-    String password = "AVNS_rKmg4JyzsWkZNcy9jfx";
-    String url = "jdbc:mysql://net-worth-mysql-net-worth.h.aivencloud.com:18558/net_worth?user=" + userName + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
+    String userName = System.getenv("DB_USERNAME");
+    String password = System.getenv("DB_PASSWORD");
+    String url = System.getenv("DB_URL") + "?user=" + userName + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
     private Connection conn = null;
 
     public Connection getConnection() {
