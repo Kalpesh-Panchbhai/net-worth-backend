@@ -147,7 +147,9 @@ public class SupertrendService {
                 bd = new BigDecimal(msg.getPotentialProfit().toString());
                 bd = bd.setScale(2, RoundingMode.CEILING);
                 String potentialProfitPercentageString = escapeMarkdownV2(bd.toString());
-                String symbolResponse = String.format("%s%n📌 *Name: %s*%n🔖 `Symbol: %s`%n💰 Price: ₹%s%n📊 Potential Profit: \\+%s %%", msg.getId(), symbolName, symbol, value, potentialProfitPercentageString);
+                String tradingViewSymbol = msg.getSymbol().replace(".NS", "").split("-")[0];
+                String tradingViewUrl = "https://www.tradingview.com/chart/?symbol=NSE:" + tradingViewSymbol;
+                String symbolResponse = String.format("%s%n📌 *Name: %s*%n🔖 `Symbol: %s`%n💰 Price: ₹%s%n📊 Potential Profit: \\+%s %% %n📈 [Chart](%s)", msg.getId(), symbolName, symbol, value, potentialProfitPercentageString, tradingViewUrl);
                 try {
                     restAPIService.executePostAPI(symbolResponse);
                 } catch (Exception e) {
