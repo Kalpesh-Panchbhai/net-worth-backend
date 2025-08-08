@@ -36,7 +36,7 @@ public class StockValueChecker {
         StockValueChecker checker = new StockValueChecker();
         try {
             checker.checkAllStocks();
-//            checker.updateStockFile();
+            checker.updateStockFile();
         } catch (Exception e) {
             System.err.println("Error running stock value checker: " + e.getMessage());
             e.printStackTrace();
@@ -52,6 +52,10 @@ public class StockValueChecker {
         System.out.println("=".repeat(60));
 
         for (StockData stock : stocks) {
+            if (stock.matching.equals("YES")) {
+                results.add(new StockResult(stock.symbol, stock.expectedPrice, stock.expectedPrice, true));
+                continue;
+            }
             checkSingleStock(stock);
         }
     }
@@ -61,13 +65,20 @@ public class StockValueChecker {
      */
     private void checkSingleStock(StockData stock) {
         try {
-            String url = YAHOO_FINANCE_URL + stock.symbol;
+            String suffix = ".NS";
+            String url = YAHOO_FINANCE_URL + stock.symbol + suffix;
             String response = restAPIService.executeAPI(url);
 
             double apiPrice = parseRegularMarketPrice(response);
             boolean isEqual = Math.abs(stock.expectedPrice - apiPrice) == 0.00;
 
             System.out.printf("%-15s | Expected: %8.2f | API: %8.2f | Match: %s%n", stock.symbol, stock.expectedPrice, apiPrice, isEqual ? "YES" : "NO");
+
+            if (isEqual) {
+                results.add(new StockResult(stock.symbol + suffix, stock.expectedPrice, apiPrice, true));
+            } else {
+                results.add(new StockResult(stock.symbol, stock.expectedPrice, apiPrice, false));
+            }
         } catch (Exception e) {
             System.out.printf("%-15s | Error: %s%n", stock.symbol, e.getMessage());
             results.add(new StockResult(stock.symbol, stock.expectedPrice, e.getMessage()));
