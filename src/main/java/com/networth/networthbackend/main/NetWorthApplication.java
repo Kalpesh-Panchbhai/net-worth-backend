@@ -17,7 +17,7 @@ import java.time.format.DateTimeFormatter;
 public class NetWorthApplication {
 
     public static void main(String[] args) throws SQLException {
-        generateChartData(Boolean.valueOf(args[0]));
+//        generateChartData(Boolean.valueOf(args[0]));
 //        addInvestData();
     }
 
@@ -46,7 +46,7 @@ public class NetWorthApplication {
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
     }
 
-    private static Context getContext() {
+    public static Context getContext() {
         return new Context() {
             @Override
             public String getAwsRequestId() {
