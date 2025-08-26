@@ -1,0 +1,40 @@
+package com.networth.networthbackend.users;
+
+import com.networth.networthbackend.common.JdbcRepository;
+import com.networth.networthbackend.common.RowMapper;
+import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.common.SqlBuilder;
+import lombok.extern.slf4j.Slf4j;
+
+import java.sql.SQLException;
+import java.util.Optional;
+
+@Slf4j
+public class UserRepository extends JdbcRepository<User> {
+    private static final String SQL_SELECT_BY_USER_ID = SqlBuilder.selectByUnique(
+            Constants.DB.Users.TABLE,
+            new String[]{Constants.DB.Users.COL_ID, Constants.DB.Users.COL_USER_ID},
+            Constants.DB.Users.COL_USER_ID
+    );
+
+    private static final String SQL_UPSERT = SqlBuilder.insertOnDuplicateUpdate(
+            Constants.DB.Users.TABLE,
+            new String[]{Constants.DB.Users.COL_USER_ID}
+    );
+
+    private static final RowMapper<User> MAPPER = rs ->
+            User.builder()
+                    .id(rs.getLong(Constants.DB.Users.COL_ID))
+                    .userId(rs.getString(Constants.DB.Users.COL_USER_ID))
+                    .build();
+
+    public Optional<User> findByUserId(String userId) throws SQLException {
+        return queryOne(SQL_SELECT_BY_USER_ID, ps -> ps.setString(1, userId), MAPPER);
+    }
+
+    public User createIfNotExists(String userId) throws SQLException {
+        int updated = execute(SQL_UPSERT, ps -> ps.setString(1, userId));
+        log.debug(Constants.Logs.USER_UPSERT_AFFECTED, updated, userId);
+        return findByUserId(userId).orElseThrow(() -> new SQLException(Constants.Messages.USER_FETCH_AFTER_UPSERT_FAILED));
+    }
+}
