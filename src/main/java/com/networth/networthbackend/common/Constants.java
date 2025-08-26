@@ -238,6 +238,7 @@ public class Constants {
         public static final String INCOME_NET_AMOUNT_REQUIRED = "netAmount is required";
         public static final String INCOME_CURRENCY_REQUIRED = "currency is required";
         public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required (UTC ISO 8601)";
+        public static final String INCOME_NOT_FOUND = "Income not found";
     }
 
     @UtilityClass
@@ -285,5 +286,6 @@ public class Constants {
         public static final String INCOME_CREATE = "Creating income for userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
         public static final String INCOME_CREATED = "Income created: id={}, userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
         public static final String INCOME_INSERT_AFFECTED = "Insert incomes affected rows: {} for userId={}, sourceId={}, tagId={}";
+        public static final String INCOME_DELETE_AFFECTED = "Delete incomes affected rows: {} for id={}";
     }
 }

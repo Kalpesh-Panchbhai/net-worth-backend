@@ -46,6 +46,15 @@ public class IncomeRepository extends JdbcRepository<Income> {
         return queryList(sql, ps -> ps.setLong(1, userId), MAPPER);
     }
 
+    public int deleteById(long id) throws SQLException {
+        final String sql = Constants.SQL.DELETE_FROM + Constants.DB.Incomes.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Incomes.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        int affected = execute(sql, ps -> ps.setLong(1, id));
+        log.debug(Constants.Logs.INCOME_DELETE_AFFECTED, affected, id);
+        return affected;
+    }
+
     public Income create(long userId,
                          long incomeSourceId,
                          long incomeTagId,

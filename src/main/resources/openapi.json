@@ -446,6 +446,37 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "incomes"
+        ],
+        "summary": "Delete an income by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
       }
     }
   },
@@ -764,7 +795,10 @@
             },
             "examples": {
               "default": {
-                "value": { "code": "VALIDATION_ERROR", "message": "Invalid request" }
+                "value": {
+                  "code": "VALIDATION_ERROR",
+                  "message": "Invalid request"
+                }
               }
             }
           }
@@ -779,7 +813,10 @@
             },
             "examples": {
               "default": {
-                "value": { "code": "NOT_FOUND", "message": "Resource not found" }
+                "value": {
+                  "code": "NOT_FOUND",
+                  "message": "Resource not found"
+                }
               }
             }
           }
@@ -794,7 +831,10 @@
             },
             "examples": {
               "default": {
-                "value": { "code": "INTERNAL_ERROR", "message": "Internal error" }
+                "value": {
+                  "code": "INTERNAL_ERROR",
+                  "message": "Internal error"
+                }
               }
             }
           }
@@ -809,7 +849,10 @@
             },
             "examples": {
               "default": {
-                "value": { "code": "CONFLICT", "message": "Duplicate resource" }
+                "value": {
+                  "code": "CONFLICT",
+                  "message": "Duplicate resource"
+                }
               }
             }
           }

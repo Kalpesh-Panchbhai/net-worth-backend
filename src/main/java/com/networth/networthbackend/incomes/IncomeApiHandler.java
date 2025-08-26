@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.api.EntityHandlerBase;
+import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +27,8 @@ public class IncomeApiHandler extends EntityHandlerBase {
                 return create(request);
             case Constants.Actions.GET:
                 return listByUserId(request);
+            case Constants.Actions.DELETE:
+                return delete(request);
             default:
                 return badRequest(
                         Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
@@ -94,5 +97,17 @@ public class IncomeApiHandler extends EntityHandlerBase {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private APIGatewayProxyResponseEvent delete(APIGatewayProxyRequestEvent request) throws Exception {
+        Long id = parsePathId(request);
+        if (id == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        int affected = repository.deleteById(id);
+        if (affected == 0) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_NOT_FOUND);
+        }
+        return ApiGatewayResponses.noContent();
     }
 }
