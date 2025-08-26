@@ -301,7 +301,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": [
           "income-tags"
         ],
@@ -374,7 +374,7 @@
           }
         }
       },
-      "put": {
+      "patch": {
         "tags": [
           "income-sources"
         ],

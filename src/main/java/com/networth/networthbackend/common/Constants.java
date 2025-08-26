@@ -18,7 +18,7 @@ public class Constants {
         public static class Method {
             public static final String GET = "GET";
             public static final String POST = "POST";
-            public static final String PUT = "PUT";
+            public static final String PATCH = "PATCH";
             public static final String DELETE = "DELETE";
         }
         public static final String PATH_SEPARATOR = "/";
@@ -48,7 +48,7 @@ public class Constants {
 
     @UtilityClass
     public static class Cors {
-        public static final String ALLOWED_METHODS = "POST,GET,PUT,DELETE"; // OPTIONS removed by design
+        public static final String ALLOWED_METHODS = "POST,GET,PATCH,DELETE"; // OPTIONS removed by design; PUT removed
         public static final String ALLOWED_HEADERS = "*";
         public static final String ALLOW_ORIGIN = "*";
     }

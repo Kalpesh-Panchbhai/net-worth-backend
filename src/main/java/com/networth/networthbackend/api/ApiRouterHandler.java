@@ -66,7 +66,7 @@ public class ApiRouterHandler extends BaseApiHandler {
     private String inferAction(String method) {
         if (Constants.Http.Method.POST.equalsIgnoreCase(method)) return Constants.Actions.CREATE;
         if (Constants.Http.Method.GET.equalsIgnoreCase(method)) return Constants.Actions.GET;
-        if (Constants.Http.Method.PUT.equalsIgnoreCase(method)) return Constants.Actions.UPDATE;
+        if (Constants.Http.Method.PATCH.equalsIgnoreCase(method)) return Constants.Actions.UPDATE;
         if (Constants.Http.Method.DELETE.equalsIgnoreCase(method)) return Constants.Actions.DELETE;
         return null;
     }
