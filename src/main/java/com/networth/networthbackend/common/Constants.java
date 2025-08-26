@@ -14,6 +14,8 @@ public class Constants {
 
     @UtilityClass
     public static class Http {
+        public static final String PATH_SEPARATOR = "/";
+
         @UtilityClass
         public static class Method {
             public static final String GET = "GET";
@@ -21,7 +23,7 @@ public class Constants {
             public static final String PATCH = "PATCH";
             public static final String DELETE = "DELETE";
         }
-        public static final String PATH_SEPARATOR = "/";
+
         @UtilityClass
         public static class Header {
             public static final String CONTENT_TYPE = "Content-Type";
@@ -29,11 +31,13 @@ public class Constants {
             public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
             public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
         }
+
         @UtilityClass
         public static class ContentType {
             public static final String APPLICATION_JSON = "application/json";
             public static final String TEXT_HTML_UTF8 = "text/html; charset=UTF-8";
         }
+
         @UtilityClass
         public static class Status {
             public static final int OK = 200;
@@ -95,13 +99,13 @@ public class Constants {
                 <!doctype html>
                 <html>
                 <head>
-                  <meta charset=\"utf-8\"/>
+                  <meta charset="utf-8"/>
                   <title>API Docs</title>
-                  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css\" />
+                  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css" />
                 </head>
                 <body>
-                  <div id=\"swagger-ui\"></div>
-                  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js\"></script>
+                  <div id="swagger-ui"></div>
+                  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js"></script>
                   <script>
                     window.ui = SwaggerUIBundle({
                       url: '/openapi.json',
@@ -127,9 +131,8 @@ public class Constants {
 
     @UtilityClass
     public static class Query {
-        public static final String ENTITY = "entity";
-        public static final String ACTION = "action";
         public static final String USER_ID = "userId";
+        public static final String EXTERNAL_USER_ID = "externalUserId";
         public static final String NAME = "name";
         public static final String DEFAULT = "default";
         public static final String INCOME_SOURCE_ID = "incomeSourceId";
@@ -162,12 +165,14 @@ public class Constants {
         public static class Users {
             public static final String TABLE = "users";
             public static final String COL_ID = "id";
-            public static final String COL_USER_ID = "user_id";
+            public static final String COL_EXTERNAL_USER_ID = "external_user_id";
         }
+
         @UtilityClass
         public static class Driver {
             public static final String MYSQL = "com.mysql.cj.jdbc.Driver";
         }
+
         @UtilityClass
         public static class IncomeTags {
             public static final String TABLE = "income_tags";
@@ -176,6 +181,7 @@ public class Constants {
             public static final String COL_NAME = "name";
             public static final String COL_IS_DEFAULT = "is_default";
         }
+
         @UtilityClass
         public static class IncomeSources {
             public static final String TABLE = "income_sources";
@@ -184,6 +190,7 @@ public class Constants {
             public static final String COL_NAME = "name";
             public static final String COL_IS_DEFAULT = "is_default";
         }
+
         @UtilityClass
         public static class Incomes {
             public static final String TABLE = "incomes";
@@ -213,7 +220,7 @@ public class Constants {
         public static final String ACTION_NOT_SUPPORTED_FMT = "Unsupported action for %s: %s";
 
         // Users
-        public static final String USER_ID_REQUIRED = "userId is required in JSON body or as query param";
+        public static final String EXTERNAL_USER_ID_REQUIRED = "externalUserId is required in JSON body or as query param";
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
         public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";
@@ -252,9 +259,9 @@ public class Constants {
         public static final String DISPATCH_ENTITY_ACTION = "Dispatching to entity='{}', action='{}'";
 
         // Users
-        public static final String USER_ENSURE = "Ensuring user exists for userId={}";
-        public static final String USER_ENSURED = "User ensured: id={}, userId={}";
-        public static final String USER_UPSERT_AFFECTED = "Upsert users affected rows: {} for userId={} ";
+        public static final String USER_ENSURE = "Ensuring user exists for externalUserId={}";
+        public static final String USER_ENSURED = "User ensured: id={}, externalUserId={}";
+        public static final String USER_UPSERT_AFFECTED = "Upsert users affected rows: {} for externalUserId={} ";
         public static final String USER_DELETE_AFFECTED = "Delete users affected rows: {} for id={}";
 
         // Income Tags
@@ -288,6 +295,5 @@ public class Constants {
         public static final String INCOME_CREATED = "Income created: id={}, userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
         public static final String INCOME_INSERT_AFFECTED = "Insert incomes affected rows: {} for userId={}, sourceId={}, tagId={}";
         public static final String INCOME_DELETE_AFFECTED = "Delete incomes affected rows: {} for id={}";
-        public static final String INCOME_UPDATE_AFFECTED = "Update incomes affected rows: {} for id={}";
     }
 }

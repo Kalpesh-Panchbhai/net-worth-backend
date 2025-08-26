@@ -191,7 +191,7 @@
               "examples": {
                 "default": {
                   "value": {
-                    "userId": "demo-user"
+                    "externalUserId": "demo-user"
                   }
                 }
               }
@@ -543,13 +543,13 @@
             "type": "integer",
             "format": "int64"
           },
-          "userId": {
+          "externalUserId": {
             "type": "string"
           }
         },
         "required": [
           "id",
-          "userId"
+          "externalUserId"
         ]
       },
       "CreateIncomeTagRequest": {
@@ -574,12 +574,12 @@
       "CreateUserRequest": {
         "type": "object",
         "properties": {
-          "userId": {
+          "externalUserId": {
             "type": "string"
           }
         },
         "required": [
-          "userId"
+          "externalUserId"
         ]
       },
       "IncomeTag": {

@@ -15,5 +15,5 @@ import com.networth.networthbackend.common.BaseEntity;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class User extends BaseEntity {
-    private String userId;
+    private String externalUserId;
 }

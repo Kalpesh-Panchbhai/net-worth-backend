@@ -35,23 +35,23 @@ public class UserApiHandler extends EntityHandlerBase {
     }
 
     private APIGatewayProxyResponseEvent createOrEnsure(APIGatewayProxyRequestEvent request) throws Exception {
-        String userId = extractUserId(request);
-        if (userId == null || userId.isBlank()) {
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.USER_ID_REQUIRED);
+        String externalUserId = extractExternalUserId(request);
+        if (externalUserId == null || externalUserId.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.EXTERNAL_USER_ID_REQUIRED);
         }
-        log.debug(Constants.Logs.USER_ENSURE, userId);
-        EnsureUserResult result = userRepository.ensure(userId);
+        log.debug(Constants.Logs.USER_ENSURE, externalUserId);
+        EnsureUserResult result = userRepository.ensure(externalUserId);
         User user = result.getUser();
-        log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getUserId());
+        log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getExternalUserId());
         return result.isCreated() ? created(user) : ok(user);
     }
 
     private APIGatewayProxyResponseEvent getUser(APIGatewayProxyRequestEvent request) throws Exception {
-        String userId = extractUserId(request);
-        if (userId == null || userId.isBlank()) {
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.USER_ID_REQUIRED);
+        String externalUserId = extractExternalUserId(request);
+        if (externalUserId == null || externalUserId.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.EXTERNAL_USER_ID_REQUIRED);
         }
-        return userRepository.findByUserId(userId)
+        return userRepository.findByExternalUserId(externalUserId)
                 .map(this::ok)
                 .orElseGet(() -> notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND));
     }
@@ -74,15 +74,15 @@ public class UserApiHandler extends EntityHandlerBase {
         return ApiGatewayResponses.noContent();
     }
 
-    private String extractUserId(APIGatewayProxyRequestEvent request) throws Exception {
-        String userId = null;
+    private String extractExternalUserId(APIGatewayProxyRequestEvent request) throws Exception {
+        String externalUserId = null;
         JsonNode node = getJsonBody(request);
-        if (node != null && node.hasNonNull(Constants.Query.USER_ID)) {
-            userId = node.get(Constants.Query.USER_ID).asText();
+        if (node != null && node.hasNonNull(Constants.Query.EXTERNAL_USER_ID)) {
+            externalUserId = node.get(Constants.Query.EXTERNAL_USER_ID).asText();
         }
-        if (userId == null || userId.isBlank()) {
-            userId = queryParam(request, Constants.Query.USER_ID);
+        if (externalUserId == null || externalUserId.isBlank()) {
+            externalUserId = queryParam(request, Constants.Query.EXTERNAL_USER_ID);
         }
-        return userId;
+        return externalUserId;
     }
 }
