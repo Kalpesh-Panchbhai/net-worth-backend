@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS incomes
         FOREIGN KEY (income_tag_id) REFERENCES income_tags (id)
             ON DELETE RESTRICT,
 
+    UNIQUE KEY uk_incomes_user_date (user_id, credited_date),
+
     KEY idx_incomes_user (user_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -90,6 +92,8 @@ CREATE TABLE IF NOT EXISTS accounts
     CONSTRAINT fk_accounts_user
         FOREIGN KEY (user_id) REFERENCES users (id)
             ON DELETE CASCADE,
+
+    UNIQUE KEY uk_accounts_user_name_type (user_id, name, type),
 
     KEY idx_accounts_user (user_id)
 ) ENGINE = InnoDB
