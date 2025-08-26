@@ -4,6 +4,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.api.EntityHandlerBase;
+import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +21,8 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
         switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE:
+                return create(request);
             case Constants.Actions.GET:
                 return listByUserId(request);
             default:
@@ -28,6 +31,35 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
                         String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOME_TAGS, action)
                 );
         }
+    }
+
+    private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
+        var json = getJsonBody(request);
+        if (json == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_TAG_USER_ID_REQUIRED);
+        }
+        Long userId = json.hasNonNull(Constants.Query.USER_ID) ? json.get(Constants.Query.USER_ID).asLong() : null;
+        String name = json.hasNonNull(Constants.Query.NAME) ? json.get(Constants.Query.NAME).asText() : null;
+        boolean isDefault = json.hasNonNull(Constants.Query.DEFAULT) && json.get(Constants.Query.DEFAULT).asBoolean();
+        if (userId == null || userId <= 0) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_TAG_USER_ID_REQUIRED);
+        }
+        if (name == null || name.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_TAG_NAME_REQUIRED);
+        }
+        // Duplicate check per user
+        if (repository.existsByUserIdAndName(userId, name)) {
+            log.warn(Constants.Logs.INCOME_TAG_NAME_DUPLICATE, userId, name);
+            return ApiGatewayResponses.error(
+                    Constants.Http.Status.CONFLICT,
+                    Constants.ErrorCodes.CONFLICT,
+                    Constants.Messages.INCOME_TAG_NAME_DUPLICATE
+            );
+        }
+        log.debug(Constants.Logs.INCOME_TAG_CREATE, userId, name, isDefault);
+        IncomeTag created = repository.create(userId, name, isDefault);
+        log.info(Constants.Logs.INCOME_TAG_CREATED, created.getId(), created.getUserId(), created.getName(), created.isDefault());
+        return created(created);
     }
 
     private APIGatewayProxyResponseEvent listByUserId(APIGatewayProxyRequestEvent request) throws Exception {

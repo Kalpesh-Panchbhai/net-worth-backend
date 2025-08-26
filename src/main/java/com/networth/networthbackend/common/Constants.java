@@ -41,6 +41,7 @@ public class Constants {
             public static final int NO_CONTENT = 204;
             public static final int BAD_REQUEST = 400;
             public static final int NOT_FOUND = 404;
+            public static final int CONFLICT = 409;
             public static final int INTERNAL_SERVER_ERROR = 500;
         }
     }
@@ -70,6 +71,9 @@ public class Constants {
         public static final String SELECT = "SELECT ";
         public static final String FROM = " FROM ";
         public static final String WHERE = " WHERE ";
+        public static final String UPDATE = "UPDATE ";
+        public static final String SET = " SET ";
+        public static final String AND = " AND ";
         public static final String LIMIT_1 = " LIMIT 1";
         public static final String INSERT_INTO = "INSERT INTO ";
         public static final String VALUES = " VALUES ";
@@ -114,6 +118,7 @@ public class Constants {
         public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
         public static final String VALIDATION_ERROR = "VALIDATION_ERROR";
         public static final String NOT_FOUND = "NOT_FOUND";
+        public static final String CONFLICT = "CONFLICT";
         public static final String ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND";
         public static final String ENTITY_NOT_SUPPORTED = "ENTITY_NOT_SUPPORTED";
         public static final String ACTION_REQUIRED = "ACTION_REQUIRED";
@@ -125,6 +130,8 @@ public class Constants {
         public static final String ENTITY = "entity";
         public static final String ACTION = "action";
         public static final String USER_ID = "userId";
+        public static final String NAME = "name";
+        public static final String DEFAULT = "default";
     }
 
     @UtilityClass
@@ -182,6 +189,11 @@ public class Constants {
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
         public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";
+
+        // Income Tags
+        public static final String INCOME_TAG_USER_ID_REQUIRED = "userId is required to create income tag";
+        public static final String INCOME_TAG_NAME_REQUIRED = "name is required to create income tag";
+        public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag with the same name already exists for this user";
     }
 
     @UtilityClass
@@ -202,5 +214,10 @@ public class Constants {
         // Income Tags
         public static final String INCOME_TAGS_LIST = "Listing income tags for userId={}";
         public static final String INCOME_TAGS_LIST_COUNT = "Income tags fetched: count={} for userId={}";
+        public static final String INCOME_TAG_CREATE = "Creating income tag for userId={}, name={}, default={}";
+        public static final String INCOME_TAG_CREATED = "Income tag created: id={}, userId={}, name={}, default={}";
+        public static final String INCOME_TAG_INSERT_AFFECTED = "Insert income_tags affected rows: {} for userId={}, name={}";
+        public static final String INCOME_TAG_CLEAR_DEFAULTS_AFFECTED = "Cleared defaults affected rows: {} for userId={}";
+        public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag name duplicate for userId={}, name={}";
     }
 }
