@@ -70,6 +70,33 @@
           "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
+    },
+    "/income-tags/{id}": {
+      "get": {
+        "summary": "List income tags for a user by internal user id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Internal user id (users.id)",
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of income tags",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseIncomeTagList" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
     }
   },
   "components": {
@@ -95,6 +122,26 @@
           "userId": { "type": "string" }
         },
         "required": ["userId"]
+      },
+      "IncomeTag": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" },
+          "default": { "type": "boolean" }
+        },
+        "required": ["id", "userId", "name", "default"]
+      },
+      "ApiResponseIncomeTagList": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/IncomeTag" }
+          }
+        }
       },
       "ApiError": {
         "type": "object",

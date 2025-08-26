@@ -198,5 +198,9 @@ public class Constants {
         public static final String USER_ENSURED = "User ensured: id={}, userId={}";
         public static final String USER_UPSERT_AFFECTED = "Upsert users affected rows: {} for userId={} ";
         public static final String USER_DELETE_AFFECTED = "Delete users affected rows: {} for id={}";
+
+        // Income Tags
+        public static final String INCOME_TAGS_LIST = "Listing income tags for userId={}";
+        public static final String INCOME_TAGS_LIST_COUNT = "Income tags fetched: count={} for userId={}";
     }
 }
