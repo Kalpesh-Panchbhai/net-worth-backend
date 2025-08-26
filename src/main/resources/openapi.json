@@ -27,6 +27,16 @@
           }
         },
         "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
+              }
+            }
+          },
           "200": {
             "description": "User ensured",
             "content": {

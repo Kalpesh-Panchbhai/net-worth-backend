@@ -130,6 +130,7 @@ public class Constants {
     @UtilityClass
     public static class Entities {
         public static final String USERS = "users";
+        public static final String INCOME_TAGS = "income-tags";
     }
 
     @UtilityClass
@@ -151,6 +152,14 @@ public class Constants {
         @UtilityClass
         public static class Driver {
             public static final String MYSQL = "com.mysql.cj.jdbc.Driver";
+        }
+        @UtilityClass
+        public static class IncomeTags {
+            public static final String TABLE = "income_tags";
+            public static final String COL_ID = "id";
+            public static final String COL_USER_ID = "user_id";
+            public static final String COL_NAME = "name";
+            public static final String COL_IS_DEFAULT = "is_default";
         }
     }
 

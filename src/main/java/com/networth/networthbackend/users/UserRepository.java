@@ -47,4 +47,16 @@ public class UserRepository extends JdbcRepository<User> {
         log.debug(Constants.Logs.USER_DELETE_AFFECTED, updated, id);
         return updated;
     }
+
+    public EnsureUserResult ensure(String userId) throws SQLException {
+        // First, check if exists to determine correct 200 vs 201 response
+        Optional<User> existing = findByUserId(userId);
+        if (existing.isPresent()) {
+            return EnsureUserResult.builder().user(existing.get()).created(false).build();
+        }
+        int updated = execute(SQL_UPSERT, ps -> ps.setString(1, userId));
+        log.debug(Constants.Logs.USER_UPSERT_AFFECTED, updated, userId);
+        User user = findByUserId(userId).orElseThrow(() -> new SQLException(Constants.Messages.USER_FETCH_AFTER_UPSERT_FAILED));
+        return EnsureUserResult.builder().user(user).created(true).build();
+    }
 }

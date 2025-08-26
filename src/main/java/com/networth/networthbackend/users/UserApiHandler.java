@@ -40,9 +40,10 @@ public class UserApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.USER_ID_REQUIRED);
         }
         log.debug(Constants.Logs.USER_ENSURE, userId);
-        User user = userRepository.createIfNotExists(userId);
+        EnsureUserResult result = userRepository.ensure(userId);
+        User user = result.getUser();
         log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getUserId());
-        return ok(user);
+        return result.isCreated() ? created(user) : ok(user);
     }
 
     private APIGatewayProxyResponseEvent getUser(APIGatewayProxyRequestEvent request) throws Exception {
