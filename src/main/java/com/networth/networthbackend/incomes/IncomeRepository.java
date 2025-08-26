@@ -55,6 +55,78 @@ public class IncomeRepository extends JdbcRepository<Income> {
         return affected;
     }
 
+    public java.util.Optional<Income> findById(long id) throws SQLException {
+        final String sql = Constants.SQL.SELECT
+                + String.join(Constants.SQL.COMMA_SPACE,
+                    Constants.DB.Incomes.COL_ID,
+                    Constants.DB.Incomes.COL_USER_ID,
+                    Constants.DB.Incomes.COL_INCOME_SOURCE_ID,
+                    Constants.DB.Incomes.COL_INCOME_TAG_ID,
+                    Constants.DB.Incomes.COL_NET_AMOUNT,
+                    Constants.DB.Incomes.COL_TAX_PAID,
+                    Constants.DB.Incomes.COL_CURRENCY,
+                    Constants.DB.Incomes.COL_CREDITED_DATE)
+                + Constants.SQL.FROM + Constants.DB.Incomes.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Incomes.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
+    }
+
+    public int updateById(long id,
+                          Long incomeSourceId,
+                          Long incomeTagId,
+                          BigDecimal netAmount,
+                          BigDecimal taxPaid,
+                          String currency,
+                          Instant creditedDate) throws SQLException {
+        StringBuilder set = new StringBuilder();
+        java.util.List<java.util.function.BiConsumer<java.sql.PreparedStatement, Integer>> binders = new java.util.ArrayList<>();
+
+        if (incomeSourceId != null) {
+            appendSet(set, Constants.DB.Incomes.COL_INCOME_SOURCE_ID);
+            binders.add((ps, idx) -> { try { ps.setLong(idx, incomeSourceId); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+        if (incomeTagId != null) {
+            appendSet(set, Constants.DB.Incomes.COL_INCOME_TAG_ID);
+            binders.add((ps, idx) -> { try { ps.setLong(idx, incomeTagId); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+        if (netAmount != null) {
+            appendSet(set, Constants.DB.Incomes.COL_NET_AMOUNT);
+            binders.add((ps, idx) -> { try { ps.setBigDecimal(idx, netAmount); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+        if (taxPaid != null) {
+            appendSet(set, Constants.DB.Incomes.COL_TAX_PAID);
+            binders.add((ps, idx) -> { try { ps.setBigDecimal(idx, taxPaid); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+        if (currency != null) {
+            appendSet(set, Constants.DB.Incomes.COL_CURRENCY);
+            binders.add((ps, idx) -> { try { ps.setString(idx, currency); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+        if (creditedDate != null) {
+            appendSet(set, Constants.DB.Incomes.COL_CREDITED_DATE);
+            binders.add((ps, idx) -> { try { ps.setTimestamp(idx, Timestamp.from(creditedDate)); } catch (SQLException e) { throw new RuntimeException(e); } });
+        }
+
+        if (binders.isEmpty()) return 0; // nothing to update
+
+        final String sql = Constants.SQL.UPDATE + Constants.DB.Incomes.TABLE
+                + Constants.SQL.SET + set
+                + Constants.SQL.WHERE + Constants.DB.Incomes.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+
+        return execute(sql, ps -> {
+            for (int i = 0; i < binders.size(); i++) {
+                binders.get(i).accept(ps, i + 1);
+            }
+            ps.setLong(binders.size() + 1, id);
+        });
+    }
+
+    private static void appendSet(StringBuilder set, String column) {
+        if (set.length() > 0) set.append(Constants.SQL.COMMA_SPACE);
+        set.append(column).append(" = ").append(Constants.SQL.PARAM);
+    }
+
     public Income create(long userId,
                          long incomeSourceId,
                          long incomeTagId,

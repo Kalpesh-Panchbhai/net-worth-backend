@@ -447,6 +447,49 @@
           }
         }
       },
+      "patch": {
+        "tags": [
+          "incomes"
+        ],
+        "summary": "Update an income by id (partial)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Income id"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIncomeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Income updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseIncome"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
       "delete": {
         "tags": [
           "incomes"
@@ -743,6 +786,18 @@
           "currency",
           "creditedDate"
         ]
+      },
+      "UpdateIncomeRequest": {
+        "type": "object",
+        "description": "Provide any subset of fields to update. At least one field is required.",
+        "properties": {
+          "incomeSourceId": { "type": "integer", "format": "int64" },
+          "incomeTagId": { "type": "integer", "format": "int64" },
+          "netAmount": { "type": "number" },
+          "taxPaid": { "type": "number" },
+          "currency": { "type": "string" },
+          "creditedDate": { "type": "string", "format": "date-time", "description": "UTC ISO 8601" }
+        }
       },
       "ApiResponseIncome": {
         "type": "object",

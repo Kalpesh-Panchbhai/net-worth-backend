@@ -239,6 +239,7 @@ public class Constants {
         public static final String INCOME_CURRENCY_REQUIRED = "currency is required";
         public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required (UTC ISO 8601)";
         public static final String INCOME_NOT_FOUND = "Income not found";
+        public static final String INCOME_UPDATE_NO_FIELDS = "At least one editable field must be provided";
     }
 
     @UtilityClass
@@ -287,5 +288,6 @@ public class Constants {
         public static final String INCOME_CREATED = "Income created: id={}, userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
         public static final String INCOME_INSERT_AFFECTED = "Insert incomes affected rows: {} for userId={}, sourceId={}, tagId={}";
         public static final String INCOME_DELETE_AFFECTED = "Delete incomes affected rows: {} for id={}";
+        public static final String INCOME_UPDATE_AFFECTED = "Update incomes affected rows: {} for id={}";
     }
 }

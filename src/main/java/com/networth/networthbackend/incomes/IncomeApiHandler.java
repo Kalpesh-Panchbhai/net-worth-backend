@@ -29,6 +29,8 @@ public class IncomeApiHandler extends EntityHandlerBase {
                 return listByUserId(request);
             case Constants.Actions.DELETE:
                 return delete(request);
+            case Constants.Actions.UPDATE:
+                return update(request);
             default:
                 return badRequest(
                         Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
@@ -109,5 +111,49 @@ public class IncomeApiHandler extends EntityHandlerBase {
             return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_NOT_FOUND);
         }
         return ApiGatewayResponses.noContent();
+    }
+
+    private APIGatewayProxyResponseEvent update(APIGatewayProxyRequestEvent request) throws Exception {
+        Long id = parsePathId(request);
+        if (id == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        var json = getJsonBody(request);
+        if (json == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
+        }
+        Long incomeSourceId = json.has(Constants.Query.INCOME_SOURCE_ID) && !json.get(Constants.Query.INCOME_SOURCE_ID).isNull()
+                ? json.get(Constants.Query.INCOME_SOURCE_ID).asLong() : null;
+        Long incomeTagId = json.has(Constants.Query.INCOME_TAG_ID) && !json.get(Constants.Query.INCOME_TAG_ID).isNull()
+                ? json.get(Constants.Query.INCOME_TAG_ID).asLong() : null;
+        java.math.BigDecimal netAmount = json.has(Constants.Query.NET_AMOUNT) && !json.get(Constants.Query.NET_AMOUNT).isNull()
+                ? json.get(Constants.Query.NET_AMOUNT).decimalValue() : null;
+        java.math.BigDecimal taxPaid = json.has(Constants.Query.TAX_PAID) && !json.get(Constants.Query.TAX_PAID).isNull()
+                ? json.get(Constants.Query.TAX_PAID).decimalValue() : null;
+        String currency = json.has(Constants.Query.CURRENCY) && !json.get(Constants.Query.CURRENCY).isNull()
+                ? json.get(Constants.Query.CURRENCY).asText() : null;
+        String creditedDateStr = json.has(Constants.Query.CREDITED_DATE) && !json.get(Constants.Query.CREDITED_DATE).isNull()
+                ? json.get(Constants.Query.CREDITED_DATE).asText() : null;
+
+        if (incomeSourceId == null && incomeTagId == null && netAmount == null && taxPaid == null && currency == null && creditedDateStr == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_UPDATE_NO_FIELDS);
+        }
+
+        java.time.Instant creditedDate = null;
+        if (creditedDateStr != null) {
+            try { creditedDate = java.time.Instant.parse(creditedDateStr); } catch (Exception e) {
+                return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
+            }
+        }
+
+        int affected = repository.updateById(id, incomeSourceId, incomeTagId, netAmount, taxPaid, currency, creditedDate);
+        if (affected == 0) {
+            // Either no fields or not found. Check existence to return 404 vs validation already handled
+            var maybe = repository.findById(id);
+            if (maybe.isEmpty()) return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_NOT_FOUND);
+        }
+        var updated = repository.findById(id).orElse(null);
+        if (updated == null) return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_NOT_FOUND);
+        return ok(updated);
     }
 }
