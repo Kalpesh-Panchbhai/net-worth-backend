@@ -132,6 +132,12 @@ public class Constants {
         public static final String USER_ID = "userId";
         public static final String NAME = "name";
         public static final String DEFAULT = "default";
+        public static final String INCOME_SOURCE_ID = "incomeSourceId";
+        public static final String INCOME_TAG_ID = "incomeTagId";
+        public static final String NET_AMOUNT = "netAmount";
+        public static final String TAX_PAID = "taxPaid";
+        public static final String CURRENCY = "currency";
+        public static final String CREDITED_DATE = "creditedDate";
     }
 
     @UtilityClass
@@ -139,6 +145,7 @@ public class Constants {
         public static final String USERS = "users";
         public static final String INCOME_TAGS = "income-tags";
         public static final String INCOME_SOURCES = "income-sources";
+        public static final String INCOMES = "incomes";
     }
 
     @UtilityClass
@@ -177,6 +184,18 @@ public class Constants {
             public static final String COL_NAME = "name";
             public static final String COL_IS_DEFAULT = "is_default";
         }
+        @UtilityClass
+        public static class Incomes {
+            public static final String TABLE = "incomes";
+            public static final String COL_ID = "id";
+            public static final String COL_USER_ID = "user_id";
+            public static final String COL_INCOME_SOURCE_ID = "income_source_id";
+            public static final String COL_INCOME_TAG_ID = "income_tag_id";
+            public static final String COL_NET_AMOUNT = "net_amount";
+            public static final String COL_TAX_PAID = "tax_paid";
+            public static final String COL_CURRENCY = "currency";
+            public static final String COL_CREDITED_DATE = "credited_date";
+        }
     }
 
     @UtilityClass
@@ -211,6 +230,14 @@ public class Constants {
         public static final String INCOME_SOURCE_NAME_REQUIRED = "name is required to create income source";
         public static final String INCOME_SOURCE_NAME_DUPLICATE = "Income source with the same name already exists for this user";
         public static final String INCOME_SOURCE_NOT_FOUND = "Income source not found";
+
+        // Incomes
+        public static final String INCOME_USER_ID_REQUIRED = "userId is required to create income";
+        public static final String INCOME_SOURCE_ID_REQUIRED = "incomeSourceId is required";
+        public static final String INCOME_TAG_ID_REQUIRED = "incomeTagId is required";
+        public static final String INCOME_NET_AMOUNT_REQUIRED = "netAmount is required";
+        public static final String INCOME_CURRENCY_REQUIRED = "currency is required";
+        public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required (UTC ISO 8601)";
     }
 
     @UtilityClass
@@ -251,5 +278,12 @@ public class Constants {
         public static final String INCOME_SOURCE_SET_DEFAULT = "Setting income source as default: sourceId={}";
         public static final String INCOME_SOURCE_SET_DEFAULT_AFFECTED = "Set source default affected rows: {} for sourceId={}";
         public static final String INCOME_SOURCE_SET_DEFAULT_DONE = "Income source set default done: sourceId={}, userId={}";
+
+        // Incomes
+        public static final String INCOMES_LIST = "Listing incomes for userId={}";
+        public static final String INCOMES_LIST_COUNT = "Incomes fetched: count={} for userId={}";
+        public static final String INCOME_CREATE = "Creating income for userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
+        public static final String INCOME_CREATED = "Income created: id={}, userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
+        public static final String INCOME_INSERT_AFFECTED = "Insert incomes affected rows: {} for userId={}, sourceId={}, tagId={}";
     }
 }
