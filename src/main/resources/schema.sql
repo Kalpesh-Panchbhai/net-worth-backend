@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS incomes
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+
 CREATE TABLE IF NOT EXISTS accounts
 (
     id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -155,6 +156,32 @@ CREATE TABLE IF NOT EXISTS watchlist_accounts
 
     KEY idx_watchlist_accounts_account (account_id),
     KEY idx_watchlist_accounts_watchlist (watchlist_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+-- Unified daily time-series without polymorphism (account_id + optional holding_id)
+-- Row with holding_id = 0 represents the account-level aggregate for that day
+CREATE TABLE IF NOT EXISTS account_holding_values_daily
+(
+    account_id        BIGINT UNSIGNED NOT NULL,
+    holding_id        BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    date              DATE            NOT NULL,
+    invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+    current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (account_id, holding_id, date),
+
+    CONSTRAINT fk_ahvd_account
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_ahvd_holding
+        FOREIGN KEY (holding_id) REFERENCES holdings (id)
+            ON DELETE CASCADE,
+
+    KEY idx_ahvd_account_date (account_id, date),
+    KEY idx_ahvd_holding_date (holding_id, date)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
