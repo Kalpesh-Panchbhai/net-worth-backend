@@ -138,6 +138,7 @@ public class Constants {
     public static class Entities {
         public static final String USERS = "users";
         public static final String INCOME_TAGS = "income-tags";
+        public static final String INCOME_SOURCES = "income-sources";
     }
 
     @UtilityClass
@@ -163,6 +164,14 @@ public class Constants {
         @UtilityClass
         public static class IncomeTags {
             public static final String TABLE = "income_tags";
+            public static final String COL_ID = "id";
+            public static final String COL_USER_ID = "user_id";
+            public static final String COL_NAME = "name";
+            public static final String COL_IS_DEFAULT = "is_default";
+        }
+        @UtilityClass
+        public static class IncomeSources {
+            public static final String TABLE = "income_sources";
             public static final String COL_ID = "id";
             public static final String COL_USER_ID = "user_id";
             public static final String COL_NAME = "name";
@@ -196,6 +205,12 @@ public class Constants {
         public static final String INCOME_TAG_NAME_REQUIRED = "name is required to create income tag";
         public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag with the same name already exists for this user";
         public static final String INCOME_TAG_NOT_FOUND = "Income tag not found";
+
+        // Income Sources
+        public static final String INCOME_SOURCE_USER_ID_REQUIRED = "userId is required to create income source";
+        public static final String INCOME_SOURCE_NAME_REQUIRED = "name is required to create income source";
+        public static final String INCOME_SOURCE_NAME_DUPLICATE = "Income source with the same name already exists for this user";
+        public static final String INCOME_SOURCE_NOT_FOUND = "Income source not found";
     }
 
     @UtilityClass
@@ -224,5 +239,17 @@ public class Constants {
         public static final String INCOME_TAG_SET_DEFAULT = "Setting income tag as default: tagId={}";
         public static final String INCOME_TAG_SET_DEFAULT_AFFECTED = "Set default affected rows: {} for tagId={}";
         public static final String INCOME_TAG_SET_DEFAULT_DONE = "Income tag set default done: tagId={}, userId={}";
+
+        // Income Sources
+        public static final String INCOME_SOURCES_LIST = "Listing income sources for userId={}";
+        public static final String INCOME_SOURCES_LIST_COUNT = "Income sources fetched: count={} for userId={}";
+        public static final String INCOME_SOURCE_CREATE = "Creating income source for userId={}, name={}, default={}";
+        public static final String INCOME_SOURCE_CREATED = "Income source created: id={}, userId={}, name={}, default={}";
+        public static final String INCOME_SOURCE_INSERT_AFFECTED = "Insert income_sources affected rows: {} for userId={}, name={}";
+        public static final String INCOME_SOURCE_CLEAR_DEFAULTS_AFFECTED = "Cleared source defaults affected rows: {} for userId={}";
+        public static final String INCOME_SOURCE_NAME_DUPLICATE = "Income source name duplicate for userId={}, name={}";
+        public static final String INCOME_SOURCE_SET_DEFAULT = "Setting income source as default: sourceId={}";
+        public static final String INCOME_SOURCE_SET_DEFAULT_AFFECTED = "Set source default affected rows: {} for sourceId={}";
+        public static final String INCOME_SOURCE_SET_DEFAULT_DONE = "Income source set default done: sourceId={}, userId={}";
     }
 }

@@ -16,6 +16,29 @@ CREATE TABLE IF NOT EXISTS users
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+-- Income Sources
+CREATE TABLE IF NOT EXISTS income_sources
+(
+    id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id    BIGINT UNSIGNED NOT NULL,
+    name       VARCHAR(191)    NOT NULL,
+    is_default TINYINT         NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+
+    CONSTRAINT fk_income_sources_user
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE CASCADE,
+
+    -- Prevent duplicate source names per user
+    UNIQUE KEY uk_income_sources_user_name (user_id, name),
+
+    -- Helpful indexes for scale
+    KEY idx_income_sources_user (user_id),
+    KEY idx_income_sources_user_default (user_id, is_default)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 -- Income Tags
 CREATE TABLE IF NOT EXISTS income_tags
 (
