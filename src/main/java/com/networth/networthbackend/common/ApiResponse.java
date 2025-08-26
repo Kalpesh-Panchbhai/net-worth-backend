@@ -10,7 +10,6 @@ import lombok.Value;
 public class ApiResponse<T> {
     boolean success;
     T data;
-    Object meta;
 
     public static <T> ApiResponse<T> of(T data) {
         return ApiResponse.<T>builder()

@@ -29,10 +29,56 @@ public class HttpServerRunner {
 
     public void start(int port) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/openapi.json", new OpenApiHandler());
+        server.createContext("/docs", new SwaggerUiHandler());
         server.createContext("/", new LambdaHttpHandler());
         server.setExecutor(null); // default executor
         log.info("HTTP server started on port {}", port);
         server.start();
+    }
+
+    private class OpenApiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            try (InputStream is = getClass().getResourceAsStream("/openapi.json")) {
+                if (is == null) {
+                    sendBytes(exchange, Constants.Http.Status.NOT_FOUND, "{\"error\":\"openapi.json not found\"}".getBytes(StandardCharsets.UTF_8), Constants.Http.ContentType.APPLICATION_JSON);
+                    return;
+                }
+                byte[] bytes = is.readAllBytes();
+                sendBytes(exchange, Constants.Http.Status.OK, bytes, Constants.Http.ContentType.APPLICATION_JSON);
+            } catch (Exception e) {
+                log.error("Error serving openapi.json", e);
+                sendBytes(exchange, Constants.Http.Status.INTERNAL_SERVER_ERROR, ("{\"" + Constants.Api.ERROR_FIELD + "\":\"" + e.getMessage() + "\"}").getBytes(StandardCharsets.UTF_8), Constants.Http.ContentType.APPLICATION_JSON);
+            }
+        }
+    }
+
+    private class SwaggerUiHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String html = """
+                    <!doctype html>
+                    <html>
+                    <head>
+                      <meta charset=\"utf-8\"/>
+                      <title>API Docs</title>
+                      <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css\" />
+                    </head>
+                    <body>
+                      <div id=\"swagger-ui\"></div>
+                      <script src=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js\"></script>
+                      <script>
+                        window.ui = SwaggerUIBundle({
+                          url: '/openapi.json',
+                          dom_id: '#swagger-ui'
+                        });
+                      </script>
+                    </body>
+                    </html>
+                    """;
+            sendBytes(exchange, Constants.Http.Status.OK, html.getBytes(StandardCharsets.UTF_8), "text/html; charset=UTF-8");
+        }
     }
 
     private class LambdaHttpHandler implements HttpHandler {
@@ -64,18 +110,11 @@ public class HttpServerRunner {
                     }
                 }
                 String respBody = response.getBody() != null ? response.getBody() : Constants.Api.EMPTY_JSON;
-                byte[] bytes = respBody.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(response.getStatusCode(), bytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(bytes);
-                }
+                sendBytes(exchange, response.getStatusCode(), respBody.getBytes(StandardCharsets.UTF_8), Constants.Http.ContentType.APPLICATION_JSON);
             } catch (Exception e) {
                 log.error("Error handling HTTP request", e);
                 byte[] bytes = ("{\"" + Constants.Api.ERROR_FIELD + "\":\"" + e.getMessage() + "\"}").getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(Constants.Http.Status.INTERNAL_SERVER_ERROR, bytes.length);
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(bytes);
-                }
+                sendBytes(exchange, Constants.Http.Status.INTERNAL_SERVER_ERROR, bytes, Constants.Http.ContentType.APPLICATION_JSON);
             }
         }
 
@@ -111,6 +150,18 @@ public class HttpServerRunner {
                 }
             }
             return map;
+        }
+    }
+
+    private void sendBytes(HttpExchange exchange, int status, byte[] bytes, String contentType) throws IOException {
+        Headers respHeaders = exchange.getResponseHeaders();
+        respHeaders.set(Constants.Http.Header.CONTENT_TYPE, contentType);
+        respHeaders.set(Constants.Http.Header.ACCESS_CONTROL_ALLOW_ORIGIN, Constants.Cors.ALLOW_ORIGIN);
+        respHeaders.set(Constants.Http.Header.ACCESS_CONTROL_ALLOW_HEADERS, Constants.Cors.ALLOWED_HEADERS);
+        respHeaders.set(Constants.Http.Header.ACCESS_CONTROL_ALLOW_METHODS, Constants.Cors.ALLOWED_METHODS);
+        exchange.sendResponseHeaders(status, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
         }
     }
 }

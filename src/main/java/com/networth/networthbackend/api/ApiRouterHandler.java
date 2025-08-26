@@ -46,7 +46,7 @@ public class ApiRouterHandler extends BaseApiHandler {
                     String.format(Constants.Messages.ENTITY_NOT_SUPPORTED_FMT, route.entity)
             );
         }
-        String action = route.action != null ? route.action : inferAction(method);
+        String action = inferAction(method);
         if (action == null) {
             return ApiGatewayResponses.error(
                     Constants.Http.Status.BAD_REQUEST,
@@ -67,27 +67,18 @@ public class ApiRouterHandler extends BaseApiHandler {
     }
 
     private Route parseRoute(APIGatewayProxyRequestEvent request) {
-        // Priority 1: path like /{entity}/{action}
+        // RESTful only: path must be /{entity}; action inferred from HTTP method
         String path = request.getPath();
-        if (path != null && !path.isBlank()) {
-            String p = path.startsWith(Constants.Http.PATH_SEPARATOR) ? path.substring(1) : path;
-            String[] parts = p.split(Constants.Http.PATH_SEPARATOR);
-            if (parts.length >= 1) {
-                String entity = parts[0];
-                String action = parts.length >= 2 ? parts[1] : null;
-                return new Route(entity, action);
-            }
+        if (path == null || path.isBlank()) return null;
+        String p = path.startsWith(Constants.Http.PATH_SEPARATOR) ? path.substring(1) : path;
+        String[] parts = p.split(Constants.Http.PATH_SEPARATOR);
+        if (parts.length == 1 && !parts[0].isBlank()) {
+            return new Route(parts[0]);
         }
-        // Priority 2: query params entity=&action=
-        Map<String, String> qs = request.getQueryStringParameters();
-        if (qs != null) {
-            String entity = qs.get(Constants.Query.ENTITY);
-            String action = qs.get(Constants.Query.ACTION);
-            if (entity != null) return new Route(entity, action);
-        }
+        // Any extra segments are not supported
         return null;
     }
 
-    private record Route(String entity, String action) {
+    private record Route(String entity) {
     }
 }
