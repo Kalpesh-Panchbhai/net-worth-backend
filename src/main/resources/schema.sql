@@ -1,6 +1,6 @@
 -- Schema for users and income_tags (scaled for 1M+ users)
 -- Notes:
--- - users: only internal PK (id) and external identifier (user_id), user_id unique
+-- - users: only internal PK (id) and external identifier (external_user_id), external_user_id unique
 -- - income_tags: multiple tags per user, name unique per user, no timestamps
 -- - Single default per user is enforced by the application (not via DB constraints)
 -- - Deleting a user cascades to income_tags; deleting a tag does not affect users
@@ -8,10 +8,10 @@
 -- Users
 CREATE TABLE IF NOT EXISTS users
 (
-    id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    user_id VARCHAR(191)    NOT NULL,
+    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    external_user_id VARCHAR(100)    NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_users_user_id (user_id)
+    UNIQUE KEY uk_users_external_user_id (external_user_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -26,10 +26,10 @@ CREATE TABLE IF NOT EXISTS incomes
     user_id          BIGINT UNSIGNED NOT NULL,
     income_source_id BIGINT UNSIGNED NOT NULL,
     income_tag_id    BIGINT UNSIGNED NOT NULL,
-    net_amount       DECIMAL         NOT NULL,
-    tax_paid         DECIMAL         NOT NULL DEFAULT 0,
-    currency         VARCHAR(16)     NOT NULL,
-    credited_date    TIMESTAMP       NOT NULL,
+    net_amount       DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+    tax_paid         DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+    currency         CHAR(3)         NOT NULL,
+    credited_date    DATETIME        NOT NULL,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_incomes_user
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS income_sources
 (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id    BIGINT UNSIGNED NOT NULL,
-    name       VARCHAR(191)    NOT NULL,
+    name       VARCHAR(100)    NOT NULL,
     is_default TINYINT         NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
 
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS income_tags
 (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id    BIGINT UNSIGNED NOT NULL,
-    name       VARCHAR(191)    NOT NULL,
+    name       VARCHAR(100)    NOT NULL,
     is_default TINYINT         NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
 
@@ -107,9 +107,9 @@ CREATE TABLE IF NOT EXISTS accounts
 (
     id       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id  BIGINT UNSIGNED NOT NULL,
-    name     VARCHAR(191)    NOT NULL,
-    type     VARCHAR(64)     NOT NULL,
-    currency CHAR(16)        NOT NULL,
+    name     VARCHAR(100)    NOT NULL,
+    type     VARCHAR(20)     NOT NULL,
+    currency CHAR(3)         NOT NULL,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_accounts_user
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS watchlists
 (
     id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id BIGINT UNSIGNED NOT NULL,
-    name    VARCHAR(191)    NOT NULL,
+    name    VARCHAR(100)    NOT NULL,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_watchlists_user
