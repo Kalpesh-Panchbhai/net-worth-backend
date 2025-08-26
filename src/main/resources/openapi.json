@@ -7,9 +7,14 @@
   "servers": [
     { "url": "http://localhost:8080" }
   ],
+  "tags": [
+    { "name": "users", "description": "User management" },
+    { "name": "income-tags", "description": "Income tag management" }
+  ],
   "paths": {
     "/income-tags": {
       "post": {
+        "tags": ["income-tags"],
         "summary": "Create an income tag",
         "description": "Creates an income tag. If `default` is true, any existing default tag for the same user will be unset so that only one tag is default per user (application-level enforcement).",
         "requestBody": {
@@ -42,6 +47,7 @@
     },
     "/users": {
       "post": {
+        "tags": ["users"],
         "summary": "Create or ensure a user exists",
         "requestBody": {
           "required": true,
@@ -86,6 +92,7 @@
     },
     "/users/{id}": {
       "delete": {
+        "tags": ["users"],
         "summary": "Delete a user by id",
         "parameters": [
           {
@@ -105,6 +112,7 @@
     },
     "/income-tags/{id}": {
       "get": {
+        "tags": ["income-tags"],
         "summary": "List income tags for a user by internal user id",
         "parameters": [
           {
