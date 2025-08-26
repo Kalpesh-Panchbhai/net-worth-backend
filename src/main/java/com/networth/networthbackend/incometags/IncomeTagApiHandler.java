@@ -25,6 +25,8 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
                 return create(request);
             case Constants.Actions.GET:
                 return listByUserId(request);
+            case Constants.Actions.UPDATE:
+                return setDefault(request);
             default:
                 return badRequest(
                         Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
@@ -36,7 +38,7 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
         var json = getJsonBody(request);
         if (json == null) {
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_TAG_USER_ID_REQUIRED);
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
         }
         Long userId = json.hasNonNull(Constants.Query.USER_ID) ? json.get(Constants.Query.USER_ID).asLong() : null;
         String name = json.hasNonNull(Constants.Query.NAME) ? json.get(Constants.Query.NAME).asText() : null;
@@ -63,19 +65,37 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
     }
 
     private APIGatewayProxyResponseEvent listByUserId(APIGatewayProxyRequestEvent request) throws Exception {
-        String idStr = pathParam(request, Constants.Path.ID);
-        if (idStr == null || idStr.isBlank()) {
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
-        }
-        long userId;
-        try {
-            userId = Long.parseLong(idStr);
-        } catch (NumberFormatException e) {
+        Long userId = parsePathId(request);
+        if (userId == null) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
         }
         log.debug(Constants.Logs.INCOME_TAGS_LIST, userId);
         List<IncomeTag> tags = repository.listByUserId(userId);
         log.info(Constants.Logs.INCOME_TAGS_LIST_COUNT, tags.size(), userId);
         return ok(tags);
+    }
+
+    private APIGatewayProxyResponseEvent setDefault(APIGatewayProxyRequestEvent request) throws Exception {
+        Long tagId = parsePathId(request);
+        if (tagId == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        log.debug(Constants.Logs.INCOME_TAG_SET_DEFAULT, tagId);
+        boolean ok = repository.setDefault(tagId);
+        if (!ok) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_TAG_NOT_FOUND);
+        }
+        return ApiGatewayResponses.noContent();
+    }
+
+    // ---------- Reusable helpers
+    private Long parsePathId(APIGatewayProxyRequestEvent request) {
+        String idStr = pathParam(request, Constants.Path.ID);
+        if (idStr == null || idStr.isBlank()) return null;
+        try {
+            return Long.parseLong(idStr);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

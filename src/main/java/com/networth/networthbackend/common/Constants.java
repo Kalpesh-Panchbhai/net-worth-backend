@@ -189,11 +189,13 @@ public class Constants {
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
         public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";
+        public static final String REQUEST_BODY_REQUIRED = "Request body is required";
 
         // Income Tags
         public static final String INCOME_TAG_USER_ID_REQUIRED = "userId is required to create income tag";
         public static final String INCOME_TAG_NAME_REQUIRED = "name is required to create income tag";
         public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag with the same name already exists for this user";
+        public static final String INCOME_TAG_NOT_FOUND = "Income tag not found";
     }
 
     @UtilityClass
@@ -219,5 +221,8 @@ public class Constants {
         public static final String INCOME_TAG_INSERT_AFFECTED = "Insert income_tags affected rows: {} for userId={}, name={}";
         public static final String INCOME_TAG_CLEAR_DEFAULTS_AFFECTED = "Cleared defaults affected rows: {} for userId={}";
         public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag name duplicate for userId={}, name={}";
+        public static final String INCOME_TAG_SET_DEFAULT = "Setting income tag as default: tagId={}";
+        public static final String INCOME_TAG_SET_DEFAULT_AFFECTED = "Set default affected rows: {} for tagId={}";
+        public static final String INCOME_TAG_SET_DEFAULT_DONE = "Income tag set default done: tagId={}, userId={}";
     }
 }
