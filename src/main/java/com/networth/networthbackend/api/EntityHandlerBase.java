@@ -39,6 +39,11 @@ public abstract class EntityHandlerBase implements EntityHandler {
         return request.getQueryStringParameters().get(name);
     }
 
+    protected String pathParam(APIGatewayProxyRequestEvent request, String name) {
+        if (request == null || request.getPathParameters() == null) return null;
+        return request.getPathParameters().get(name);
+    }
+
     @Override
     public abstract APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception;
 }

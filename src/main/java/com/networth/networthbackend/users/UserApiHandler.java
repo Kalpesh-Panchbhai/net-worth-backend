@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.networth.networthbackend.api.EntityHandlerBase;
+import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,6 +24,8 @@ public class UserApiHandler extends EntityHandlerBase {
                 return createOrEnsure(request);
             case Constants.Actions.GET:
                 return getUser(request);
+            case Constants.Actions.DELETE:
+                return deleteUser(request);
             default:
                 return badRequest(
                         Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
@@ -50,6 +53,24 @@ public class UserApiHandler extends EntityHandlerBase {
         return userRepository.findByUserId(userId)
                 .map(this::ok)
                 .orElseGet(() -> notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND));
+    }
+
+    private APIGatewayProxyResponseEvent deleteUser(APIGatewayProxyRequestEvent request) throws Exception {
+        String idStr = pathParam(request, Constants.Path.ID);
+        if (idStr == null || idStr.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        long id;
+        try {
+            id = Long.parseLong(idStr);
+        } catch (NumberFormatException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        int affected = userRepository.deleteById(id);
+        if (affected == 0) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND);
+        }
+        return ApiGatewayResponses.noContent();
     }
 
     private String extractUserId(APIGatewayProxyRequestEvent request) throws Exception {

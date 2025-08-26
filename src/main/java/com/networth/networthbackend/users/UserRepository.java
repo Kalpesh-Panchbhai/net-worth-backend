@@ -22,6 +22,10 @@ public class UserRepository extends JdbcRepository<User> {
             new String[]{Constants.DB.Users.COL_USER_ID}
     );
 
+    private static final String SQL_DELETE_BY_ID =
+            Constants.SQL.DELETE_FROM + Constants.DB.Users.TABLE +
+            Constants.SQL.WHERE + Constants.DB.Users.COL_ID + Constants.SQL.EQ_PARAM; // DELETE FROM users WHERE id = ?
+
     private static final RowMapper<User> MAPPER = rs ->
             User.builder()
                     .id(rs.getLong(Constants.DB.Users.COL_ID))
@@ -36,5 +40,11 @@ public class UserRepository extends JdbcRepository<User> {
         int updated = execute(SQL_UPSERT, ps -> ps.setString(1, userId));
         log.debug(Constants.Logs.USER_UPSERT_AFFECTED, updated, userId);
         return findByUserId(userId).orElseThrow(() -> new SQLException(Constants.Messages.USER_FETCH_AFTER_UPSERT_FAILED));
+    }
+
+    public int deleteById(long id) throws SQLException {
+        int updated = execute(SQL_DELETE_BY_ID, ps -> ps.setLong(1, id));
+        log.debug(Constants.Logs.USER_DELETE_AFFECTED, updated, id);
+        return updated;
     }
 }

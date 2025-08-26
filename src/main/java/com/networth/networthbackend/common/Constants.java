@@ -32,11 +32,13 @@ public class Constants {
         @UtilityClass
         public static class ContentType {
             public static final String APPLICATION_JSON = "application/json";
+            public static final String TEXT_HTML_UTF8 = "text/html; charset=UTF-8";
         }
         @UtilityClass
         public static class Status {
             public static final int OK = 200;
             public static final int CREATED = 201;
+            public static final int NO_CONTENT = 204;
             public static final int BAD_REQUEST = 400;
             public static final int NOT_FOUND = 404;
             public static final int INTERNAL_SERVER_ERROR = 500;
@@ -45,7 +47,7 @@ public class Constants {
 
     @UtilityClass
     public static class Cors {
-        public static final String ALLOWED_METHODS = "POST,GET"; // OPTIONS removed by design
+        public static final String ALLOWED_METHODS = "POST,GET,PUT,DELETE"; // OPTIONS removed by design
         public static final String ALLOWED_HEADERS = "*";
         public static final String ALLOW_ORIGIN = "*";
     }
@@ -54,10 +56,12 @@ public class Constants {
     public static class Api {
         public static final String ERROR_FIELD = "error";
         public static final String EMPTY_JSON = "{}";
+        public static final String EMPTY_BODY = "";
     }
 
     @UtilityClass
     public static class SQL {
+        public static final String DELETE_FROM = "DELETE FROM ";
         public static final String SPACE = " ";
         public static final String COMMA_SPACE = ", ";
         public static final String OPEN_PAREN = "(";
@@ -74,6 +78,35 @@ public class Constants {
         public static final String CLOSE = ")";
         public static final String PARAM = "?";
         public static final String EQ_PARAM = " = ?";
+    }
+
+    @UtilityClass
+    public static class Path {
+        public static final String ID = "id";
+    }
+
+    @UtilityClass
+    public static class Docs {
+        public static final String SWAGGER_UI_HTML = """
+                <!doctype html>
+                <html>
+                <head>
+                  <meta charset=\"utf-8\"/>
+                  <title>API Docs</title>
+                  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css\" />
+                </head>
+                <body>
+                  <div id=\"swagger-ui\"></div>
+                  <script src=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js\"></script>
+                  <script>
+                    window.ui = SwaggerUIBundle({
+                      url: '/openapi.json',
+                      dom_id: '#swagger-ui'
+                    });
+                  </script>
+                </body>
+                </html>
+                """;
     }
 
     @UtilityClass
@@ -139,6 +172,7 @@ public class Constants {
         public static final String USER_ID_REQUIRED = "userId is required in JSON body or as query param";
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
+        public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";
     }
 
     @UtilityClass
@@ -154,5 +188,6 @@ public class Constants {
         public static final String USER_ENSURE = "Ensuring user exists for userId={}";
         public static final String USER_ENSURED = "User ensured: id={}, userId={}";
         public static final String USER_UPSERT_AFFECTED = "Upsert users affected rows: {} for userId={} ";
+        public static final String USER_DELETE_AFFECTED = "Delete users affected rows: {} for id={}";
     }
 }

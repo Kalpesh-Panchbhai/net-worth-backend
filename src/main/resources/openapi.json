@@ -41,6 +41,25 @@
           "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
+    },
+    "/users/{id}": {
+      "delete": {
+        "summary": "Delete a user by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "User deleted" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
     }
   },
   "components": {

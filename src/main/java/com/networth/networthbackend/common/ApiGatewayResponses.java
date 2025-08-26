@@ -59,4 +59,8 @@ public class ApiGatewayResponses {
             return "{\"" + Constants.Api.ERROR_FIELD + "\":\"" + message.replace("\"", "'") + "\"}";
         }
     }
+
+    public static APIGatewayProxyResponseEvent noContent() {
+        return response(Constants.Http.Status.NO_CONTENT, Constants.Api.EMPTY_BODY);
+    }
 }

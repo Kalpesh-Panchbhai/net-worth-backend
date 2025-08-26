@@ -57,27 +57,8 @@ public class HttpServerRunner {
     private class SwaggerUiHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String html = """
-                    <!doctype html>
-                    <html>
-                    <head>
-                      <meta charset=\"utf-8\"/>
-                      <title>API Docs</title>
-                      <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css\" />
-                    </head>
-                    <body>
-                      <div id=\"swagger-ui\"></div>
-                      <script src=\"https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js\"></script>
-                      <script>
-                        window.ui = SwaggerUIBundle({
-                          url: '/openapi.json',
-                          dom_id: '#swagger-ui'
-                        });
-                      </script>
-                    </body>
-                    </html>
-                    """;
-            sendBytes(exchange, Constants.Http.Status.OK, html.getBytes(StandardCharsets.UTF_8), "text/html; charset=UTF-8");
+            String html = Constants.Docs.SWAGGER_UI_HTML;
+            sendBytes(exchange, Constants.Http.Status.OK, html.getBytes(StandardCharsets.UTF_8), Constants.Http.ContentType.TEXT_HTML_UTF8);
         }
     }
 

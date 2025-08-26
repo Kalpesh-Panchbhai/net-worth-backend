@@ -67,12 +67,20 @@ public class ApiRouterHandler extends BaseApiHandler {
     }
 
     private Route parseRoute(APIGatewayProxyRequestEvent request) {
-        // RESTful only: path must be /{entity}; action inferred from HTTP method
+        // RESTful only: path must be /{entity} or /{entity}/{id}; action inferred from HTTP method
         String path = request.getPath();
         if (path == null || path.isBlank()) return null;
         String p = path.startsWith(Constants.Http.PATH_SEPARATOR) ? path.substring(1) : path;
         String[] parts = p.split(Constants.Http.PATH_SEPARATOR);
         if (parts.length == 1 && !parts[0].isBlank()) {
+            return new Route(parts[0]);
+        }
+        if (parts.length == 2 && !parts[0].isBlank() && !parts[1].isBlank()) {
+            // attach path parameter `id` for handlers
+            Map<String, String> pathParams = request.getPathParameters();
+            if (pathParams == null) pathParams = new HashMap<>();
+            pathParams.put(Constants.Path.ID, parts[1]);
+            request.setPathParameters(pathParams);
             return new Route(parts[0]);
         }
         // Any extra segments are not supported
