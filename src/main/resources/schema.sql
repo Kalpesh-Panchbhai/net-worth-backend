@@ -192,7 +192,6 @@ CREATE TABLE IF NOT EXISTS account_metrics
     invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     last_day_value    DECIMAL(10, 4)  NOT NULL DEFAULT 0,
-    currency          CHAR(3)         NOT NULL,
 
     PRIMARY KEY (account_id),
 
@@ -209,7 +208,6 @@ CREATE TABLE IF NOT EXISTS holding_metrics
     invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     last_day_value    DECIMAL(10, 4)  NOT NULL DEFAULT 0,
-    currency          CHAR(3)         NOT NULL,
 
     PRIMARY KEY (holding_id),
 
@@ -226,7 +224,6 @@ CREATE TABLE IF NOT EXISTS watchlist_metrics
     invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     last_day_value    DECIMAL(10, 4)  NOT NULL DEFAULT 0,
-    currency          CHAR(3)         NOT NULL,
 
     PRIMARY KEY (watchlist_id),
 
