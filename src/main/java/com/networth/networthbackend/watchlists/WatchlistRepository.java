@@ -70,12 +70,12 @@ public class WatchlistRepository extends JdbcRepository<Watchlist> {
                 List<WatchlistSummary> list = new ArrayList<>();
                 while (rs.next()) {
                     WatchlistSummary s = WatchlistSummary.builder()
-                            .id(rs.getLong("id"))
-                            .userId(rs.getLong("user_id"))
-                            .name(rs.getString("name"))
-                            .currentDayValue(rs.getBigDecimal("current_day_value"))
-                            .previousDayValue(rs.getBigDecimal("previous_day_value"))
-                            .invested(rs.getBigDecimal("invested"))
+                            .id(rs.getLong(Constants.DB.Watchlists.COL_ID))
+                            .userId(rs.getLong(Constants.DB.Watchlists.COL_USER_ID))
+                            .name(rs.getString(Constants.DB.Watchlists.COL_NAME))
+                            .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
+                            .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
+                            .invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED))
                             .build();
                     list.add(s);
                 }

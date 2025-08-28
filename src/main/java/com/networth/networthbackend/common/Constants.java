@@ -263,6 +263,40 @@ public class Constants {
                     ORDER BY w.id
                     """;
         }
+
+        @UtilityClass
+        public static class Holdings {
+            public static final String TABLE = "holdings";
+            public static final String COL_ID = "id";
+            public static final String COL_ACCOUNT_ID = "account_id";
+            public static final String COL_NAME = "name";
+            public static final String COL_SYMBOL = "symbol";
+            public static final String COL_UNITS = "units";
+        }
+
+        @UtilityClass
+        public static class WatchlistAccounts {
+            public static final String TABLE = "watchlist_accounts";
+            public static final String COL_WATCHLIST_ID = "watchlist_id";
+            public static final String COL_ACCOUNT_ID = "account_id";
+        }
+
+        @UtilityClass
+        public static class AccountHoldingValuesDaily {
+            public static final String TABLE = "account_holding_values_daily";
+            public static final String COL_ACCOUNT_ID = "account_id";
+            public static final String COL_HOLDING_ID = "holding_id";
+            public static final String COL_DATE = "date";
+            public static final String COL_INVESTED = "invested";
+            public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
+        }
+
+        @UtilityClass
+        public static class Aliases {
+            public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
+            public static final String COL_PREVIOUS_DAY_VALUE = "previous_day_value";
+            public static final String COL_INVESTED = "invested";
+        }
     }
 
     @UtilityClass
