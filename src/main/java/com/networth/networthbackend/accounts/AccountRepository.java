@@ -168,4 +168,29 @@ public class AccountRepository extends JdbcRepository<Account> {
             }
         }
     }
+
+    public List<AccountSummary> listSummariesByWatchlistId(long watchlistId) throws SQLException {
+        final String sql = Constants.DB.Accounts.SQL_LIST_SUMMARIES_BY_WATCHLIST_ID;
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, watchlistId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<AccountSummary> list = new ArrayList<>();
+                while (rs.next()) {
+                    AccountSummary s = AccountSummary.builder()
+                            .id(rs.getLong(Constants.DB.Accounts.COL_ID))
+                            .userId(rs.getLong(Constants.DB.Accounts.COL_USER_ID))
+                            .name(rs.getString(Constants.DB.Accounts.COL_NAME))
+                            .type(rs.getString(Constants.DB.Accounts.COL_TYPE))
+                            .isActive(rs.getBoolean(Constants.DB.Accounts.COL_IS_ACTIVE))
+                            .currency(rs.getString(Constants.DB.Accounts.COL_CURRENCY))
+                            .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
+                            .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
+                            .invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED))
+                            .build();
+                    list.add(s);
+                }
+                return list;
+            }
+        }
+    }
 }

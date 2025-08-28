@@ -157,6 +157,7 @@ public class Constants {
         public static final String WATCHLISTS = "watchlists";
         public static final String ACCOUNTS = "accounts";
         public static final String HOLDINGS = "holdings";
+        public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
     }
 
     @UtilityClass
@@ -343,6 +344,47 @@ public class Constants {
                     LEFT JOIN prev   p ON p.account_id = a.id
                     LEFT JOIN latest l ON l.account_id = a.id
                     ORDER BY a.id
+                    """;
+            public static final String SQL_LIST_SUMMARIES_BY_WATCHLIST_ID = """
+                    WITH
+                      watch_accounts AS (
+                        SELECT a.*
+                        FROM accounts a
+                        JOIN watchlist_accounts wa
+                          ON wa.account_id = a.id
+                        WHERE wa.watchlist_id = ?
+                      ),
+                      daily_sums AS (
+                        SELECT avd.account_id,
+                               avd.date,
+                               SUM(avd.invested)          AS invested_sum,
+                               SUM(avd.current_day_value) AS value_sum
+                        FROM account_holding_values_daily avd
+                        WHERE avd.holding_id <> 0
+                          AND avd.account_id IN (SELECT id FROM watch_accounts)
+                        GROUP BY avd.account_id, avd.date
+                      ),
+                      ranked AS (
+                        SELECT ds.*,
+                               ROW_NUMBER() OVER (PARTITION BY ds.account_id ORDER BY ds.date DESC) AS rn
+                        FROM daily_sums ds
+                      )
+                    SELECT
+                      wa.id,
+                      wa.user_id,
+                      wa.name,
+                      wa.type,
+                      wa.is_active,
+                      wa.currency,
+                      COALESCE(l.value_sum, 0)    AS current_day_value,
+                      COALESCE(p.value_sum, 0)    AS previous_day_value,
+                      COALESCE(l.invested_sum, 0) AS invested
+                    FROM watch_accounts wa
+                    LEFT JOIN ranked l
+                      ON l.account_id = wa.id AND l.rn = 1
+                    LEFT JOIN ranked p
+                      ON p.account_id = wa.id AND p.rn = 2
+                    ORDER BY wa.id
                     """;
         }
 
@@ -537,6 +579,8 @@ public class Constants {
         public static final String ACCOUNT_UPDATE_AFFECTED = "Update accounts affected rows: {} for id={}";
         public static final String ACCOUNTS_LIST = "Listing accounts for userId={}";
         public static final String ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for userId={}";
+        public static final String WATCHLIST_ACCOUNTS_LIST = "Listing accounts for watchlistId={}";
+        public static final String WATCHLIST_ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for watchlistId={}";
 
         // Holdings
         public static final String HOLDING_CREATE = "Creating holding for accountId={}, name={}, symbol={}, units={}";

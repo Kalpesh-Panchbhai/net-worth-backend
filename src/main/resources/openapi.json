@@ -37,6 +37,10 @@
     {
       "name": "holdings",
       "description": "Holding management"
+    },
+    {
+      "name": "watchlist-accounts",
+      "description": "Accounts under a watchlist"
     }
   ],
   "paths": {
@@ -1025,6 +1029,19 @@
           "500": {
             "$ref": "#/components/responses/InternalError"
           }
+        }
+      }
+    },
+    "/watchlist-accounts/{id}": {
+      "get": {
+        "tags": ["watchlist-accounts"],
+        "summary": "List accounts for a watchlist by id",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" }, "description": "Watchlist id" } ],
+        "responses": {
+          "200": { "description": "List of accounts with current/previous day values and invested", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseAccountSummaryList" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
     }
