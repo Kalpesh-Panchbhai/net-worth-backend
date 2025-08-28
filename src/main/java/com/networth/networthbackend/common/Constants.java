@@ -160,6 +160,7 @@ public class Constants {
         public static final String ACCOUNTS = "accounts";
         public static final String HOLDINGS = "holdings";
         public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
+        public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
     }
 
     @UtilityClass
@@ -282,6 +283,25 @@ public class Constants {
                     LEFT JOIN li                    ON li.holding_id = h.id
                     WHERE w.user_id = ?
                     GROUP BY w.id, w.user_id, w.name
+                    ORDER BY w.id
+                    """;
+
+            public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
+                    SELECT
+                      w.id,
+                      w.name,
+                      w.user_id,
+                      COALESCE(SUM(CASE WHEN ahvd.date = CURRENT_DATE                 THEN ahvd.current_day_value END), 0) AS current_day_value,
+                      COALESCE(SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.current_day_value END), 0) AS previous_day_value,
+                      COALESCE(SUM(CASE WHEN ahvd.date = CURRENT_DATE                 THEN ahvd.invested            END), 0) AS invested
+                    FROM watchlist_accounts wa
+                    JOIN watchlists w
+                      ON w.id = wa.watchlist_id
+                    LEFT JOIN account_holding_values_daily ahvd
+                      ON ahvd.account_id = wa.account_id
+                     AND ahvd.date IN (CURRENT_DATE, DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+                    WHERE wa.account_id = ?
+                    GROUP BY w.id, w.name, w.user_id
                     ORDER BY w.id
                     """;
         }
@@ -574,6 +594,10 @@ public class Constants {
         public static final String WATCHLIST_DELETE_AFFECTED = "Delete watchlists affected rows: {} for id={}";
         public static final String WATCHLISTS_LIST = "Listing watchlists for userId={}";
         public static final String WATCHLISTS_LIST_COUNT = "Watchlists fetched: count={} for userId={}";
+
+        // Account-Watchlists
+        public static final String ACCOUNT_WATCHLISTS_LIST = "Listing watchlists for accountId={}";
+        public static final String ACCOUNT_WATCHLISTS_LIST_COUNT = "Watchlists fetched: count={} for accountId={}";
 
         // Accounts
         public static final String ACCOUNT_CREATE = "Creating account for userId={}, name={}, type={}, currency={}, isActive={}";

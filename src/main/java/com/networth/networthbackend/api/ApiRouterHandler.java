@@ -3,17 +3,18 @@ package com.networth.networthbackend.api;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.accounts.AccountApiHandler;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.BaseApiHandler;
 import com.networth.networthbackend.common.Constants;
-import com.networth.networthbackend.users.UserApiHandler;
-import com.networth.networthbackend.incometags.IncomeTagApiHandler;
-import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
-import com.networth.networthbackend.incomes.IncomeApiHandler;
-import com.networth.networthbackend.watchlists.WatchlistApiHandler;
-import com.networth.networthbackend.accounts.AccountApiHandler;
 import com.networth.networthbackend.holdings.HoldingApiHandler;
+import com.networth.networthbackend.incomes.IncomeApiHandler;
+import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
+import com.networth.networthbackend.incometags.IncomeTagApiHandler;
+import com.networth.networthbackend.users.UserApiHandler;
+import com.networth.networthbackend.watchlists.AccountWatchlistApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistAccountApiHandler;
+import com.networth.networthbackend.watchlists.WatchlistApiHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -35,6 +36,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.ACCOUNTS, new AccountApiHandler());
         registry.put(Constants.Entities.HOLDINGS, new HoldingApiHandler());
         registry.put(Constants.Entities.WATCHLIST_ACCOUNTS, new WatchlistAccountApiHandler());
+        registry.put(Constants.Entities.ACCOUNT_WATCHLISTS, new AccountWatchlistApiHandler());
     }
 
     @Override
@@ -45,27 +47,15 @@ public class ApiRouterHandler extends BaseApiHandler {
 
         Route route = parseRoute(request);
         if (route == null || route.entity == null) {
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.NOT_FOUND,
-                    Constants.ErrorCodes.ROUTE_NOT_FOUND,
-                    Constants.Messages.UNKNOWN_ROUTE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.NOT_FOUND, Constants.ErrorCodes.ROUTE_NOT_FOUND, Constants.Messages.UNKNOWN_ROUTE);
         }
         EntityHandler handler = registry.get(route.entity.toLowerCase(Locale.ROOT));
         if (handler == null) {
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.NOT_FOUND,
-                    Constants.ErrorCodes.ENTITY_NOT_SUPPORTED,
-                    String.format(Constants.Messages.ENTITY_NOT_SUPPORTED_FMT, route.entity)
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.NOT_FOUND, Constants.ErrorCodes.ENTITY_NOT_SUPPORTED, String.format(Constants.Messages.ENTITY_NOT_SUPPORTED_FMT, route.entity));
         }
         String action = inferAction(method);
         if (action == null) {
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.BAD_REQUEST,
-                    Constants.ErrorCodes.ACTION_REQUIRED,
-                    Constants.Messages.ACTION_COULD_NOT_BE_INFERRED
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.BAD_REQUEST, Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_COULD_NOT_BE_INFERRED);
         }
         log.debug(Constants.Logs.DISPATCH_ENTITY_ACTION, route.entity, action);
         return handler.handle(action, request, context);

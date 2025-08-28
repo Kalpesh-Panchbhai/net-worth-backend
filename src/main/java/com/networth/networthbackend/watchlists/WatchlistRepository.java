@@ -62,21 +62,28 @@ public class WatchlistRepository extends JdbcRepository<Watchlist> {
 
     public List<WatchlistSummary> listSummariesByUserId(long userId) throws SQLException {
         final String sql = Constants.DB.Watchlists.SQL_LIST_SUMMARIES_BY_USER_ID;
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, userId);
             ps.setLong(2, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<WatchlistSummary> list = new ArrayList<>();
                 while (rs.next()) {
-                    WatchlistSummary s = WatchlistSummary.builder()
-                            .id(rs.getLong(Constants.DB.Watchlists.COL_ID))
-                            .userId(rs.getLong(Constants.DB.Watchlists.COL_USER_ID))
-                            .name(rs.getString(Constants.DB.Watchlists.COL_NAME))
-                            .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
-                            .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
-                            .invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED))
-                            .build();
+                    WatchlistSummary s = WatchlistSummary.builder().id(rs.getLong(Constants.DB.Watchlists.COL_ID)).userId(rs.getLong(Constants.DB.Watchlists.COL_USER_ID)).name(rs.getString(Constants.DB.Watchlists.COL_NAME)).currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE)).previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE)).invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED)).build();
+                    list.add(s);
+                }
+                return list;
+            }
+        }
+    }
+
+    public List<WatchlistSummary> listSummariesByAccountId(long accountId) throws SQLException {
+        final String sql = Constants.DB.Watchlists.SQL_LIST_SUMMARIES_BY_ACCOUNT_ID;
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<WatchlistSummary> list = new ArrayList<>();
+                while (rs.next()) {
+                    WatchlistSummary s = WatchlistSummary.builder().id(rs.getLong(Constants.DB.Watchlists.COL_ID)).userId(rs.getLong(Constants.DB.Watchlists.COL_USER_ID)).name(rs.getString(Constants.DB.Watchlists.COL_NAME)).currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE)).previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE)).invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED)).build();
                     list.add(s);
                 }
                 return list;

@@ -41,6 +41,10 @@
     {
       "name": "watchlist-accounts",
       "description": "Accounts under a watchlist"
+    },
+    {
+      "name": "account-watchlists",
+      "description": "Watchlists that include an account"
     }
   ],
   "paths": {
@@ -86,6 +90,47 @@
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/account-watchlists/{id}": {
+      "get": {
+        "tags": [
+          "account-watchlists"
+        ],
+        "summary": "List watchlists that include an account by account id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Account id",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of watchlists with current/previous day values and invested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
