@@ -211,6 +211,57 @@ public class Constants {
             public static final String COL_ID = "id";
             public static final String COL_USER_ID = "user_id";
             public static final String COL_NAME = "name";
+
+            public static final String SQL_LIST_SUMMARIES_BY_USER_ID = """
+                    WITH
+                      wls AS (
+                        SELECT w.id
+                        FROM watchlists w
+                        WHERE w.user_id = ?
+                      ),
+                      wh AS (
+                        SELECT h.id AS holding_id
+                        FROM wls
+                        JOIN watchlist_accounts wa ON wa.watchlist_id = wls.id
+                        JOIN accounts a          ON a.id = wa.account_id
+                        JOIN holdings h          ON h.account_id = a.id
+                      ),
+                      hv AS (
+                        SELECT ahvd.holding_id,
+                               SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.current_day_value ELSE 0 END)                AS curr_val,
+                               SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.current_day_value ELSE 0 END) AS prev_val
+                        FROM account_holding_values_daily ahvd
+                        JOIN (SELECT DISTINCT holding_id FROM wh) d ON d.holding_id = ahvd.holding_id
+                        WHERE ahvd.date IN (CURRENT_DATE, DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+                        GROUP BY ahvd.holding_id
+                      ),
+                      li AS (
+                        SELECT t.holding_id, t.invested
+                        FROM (
+                          SELECT ahvd.holding_id, ahvd.invested,
+                                 ROW_NUMBER() OVER (PARTITION BY ahvd.holding_id ORDER BY ahvd.date DESC) AS rn
+                          FROM account_holding_values_daily ahvd
+                          JOIN (SELECT DISTINCT holding_id FROM wh) d ON d.holding_id = ahvd.holding_id
+                        ) t
+                        WHERE t.rn = 1
+                      )
+                    SELECT
+                      w.id,
+                      w.user_id,
+                      w.name,
+                      COALESCE(SUM(hv.curr_val), 0) AS current_day_value,
+                      COALESCE(SUM(hv.prev_val), 0) AS previous_day_value,
+                      COALESCE(SUM(li.invested), 0) AS invested
+                    FROM watchlists w
+                    LEFT JOIN watchlist_accounts wa ON wa.watchlist_id = w.id
+                    LEFT JOIN accounts a            ON a.id = wa.account_id
+                    LEFT JOIN holdings h            ON h.account_id = a.id
+                    LEFT JOIN hv                    ON hv.holding_id = h.id
+                    LEFT JOIN li                    ON li.holding_id = h.id
+                    WHERE w.user_id = ?
+                    GROUP BY w.id, w.user_id, w.name
+                    ORDER BY w.id
+                    """;
         }
     }
 
@@ -319,5 +370,7 @@ public class Constants {
         public static final String WATCHLIST_UPDATE_NAME = "Updating watchlist name: id={}, newName={}";
         public static final String WATCHLIST_UPDATE_NAME_AFFECTED = "Update watchlist name affected rows: {} for id={}";
         public static final String WATCHLIST_DELETE_AFFECTED = "Delete watchlists affected rows: {} for id={}";
+        public static final String WATCHLISTS_LIST = "Listing watchlists for userId={}";
+        public static final String WATCHLISTS_LIST_COUNT = "Watchlists fetched: count={} for userId={}";
     }
 }

@@ -8,6 +8,8 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 public class WatchlistApiHandler extends EntityHandlerBase {
 
@@ -21,6 +23,8 @@ public class WatchlistApiHandler extends EntityHandlerBase {
         switch (action.toLowerCase()) {
             case Constants.Actions.CREATE:
                 return create(request);
+            case Constants.Actions.GET:
+                return listByUserId(request);
             case Constants.Actions.DELETE:
                 return delete(request);
             case Constants.Actions.UPDATE:
@@ -31,6 +35,17 @@ public class WatchlistApiHandler extends EntityHandlerBase {
                         String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.WATCHLISTS, action)
                 );
         }
+    }
+
+    private APIGatewayProxyResponseEvent listByUserId(APIGatewayProxyRequestEvent request) throws Exception {
+        Long userId = parsePathId(request);
+        if (userId == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        log.debug(Constants.Logs.WATCHLISTS_LIST, userId);
+        List<WatchlistSummary> list = repository.listSummariesByUserId(userId);
+        log.info(Constants.Logs.WATCHLISTS_LIST_COUNT, list.size(), userId);
+        return ok(list);
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {

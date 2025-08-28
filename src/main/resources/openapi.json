@@ -561,6 +561,32 @@
       }
     },
     "/watchlists/{id}": {
+      "get": {
+        "tags": [ "watchlists" ],
+        "summary": "List watchlists for a user by internal user id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Internal user id (users.id)",
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of watchlists with current/previous day values and invested",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
       "patch": {
         "tags": [ "watchlists" ],
         "summary": "Update a watchlist name by id",
@@ -928,6 +954,28 @@
         "properties": {
           "success": { "type": "boolean" },
           "data": { "$ref": "#/components/schemas/Watchlist" }
+        }
+      },
+      "WatchlistSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" },
+          "currentDayValue": { "type": "number" },
+          "previousDayValue": { "type": "number" },
+          "invested": { "type": "number" }
+        },
+        "required": [ "id", "userId", "name", "currentDayValue", "previousDayValue", "invested" ]
+      },
+      "ApiResponseWatchlistSummaryList": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WatchlistSummary" }
+          }
         }
       },
       "CreateWatchlistRequest": {
