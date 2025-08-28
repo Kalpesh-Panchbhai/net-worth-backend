@@ -1034,42 +1034,114 @@
     },
     "/watchlist-accounts/{id}": {
       "get": {
-        "tags": ["watchlist-accounts"],
+        "tags": [
+          "watchlist-accounts"
+        ],
         "summary": "List accounts for a watchlist by id",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" }, "description": "Watchlist id" } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Watchlist id"
+          }
+        ],
         "responses": {
-          "200": { "description": "List of accounts with current/previous day values and invested", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseAccountSummaryList" } } } },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "200": {
+            "description": "List of accounts with current/previous day values and invested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAccountSummaryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     },
     "/watchlist-accounts": {
       "post": {
-        "tags": ["watchlist-accounts"],
-        "summary": "Link an account to a watchlist",
+        "tags": [
+          "watchlist-accounts"
+        ],
+        "summary": "Link an account to a watchlist or a watchlist to an account",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest" }, "examples": { "default": { "value": { "watchlistId": 1, "accountId": 2 } } } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "watchlistId": 1,
+                    "accountId": 2
+                  }
+                }
+              }
+            }
+          }
         },
         "responses": {
-          "201": { "description": "Linked" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "201": {
+            "description": "Linked"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "delete": {
-        "tags": ["watchlist-accounts"],
-        "summary": "Unlink an account from a watchlist",
+        "tags": [
+          "watchlist-accounts"
+        ],
+        "summary": "Unlink an account from a watchlist or a watchlist to an account",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest" }, "examples": { "default": { "value": { "watchlistId": 1, "accountId": 2 } } } } }
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "watchlistId": 1,
+                    "accountId": 2
+                  }
+                }
+              }
+            }
+          }
         },
         "responses": {
-          "204": { "description": "Deleted" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     }
@@ -1606,27 +1678,57 @@
       "ApiResponseHoldingSummaryList": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/HoldingSummary" } }
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoldingSummary"
+            }
+          }
         }
       },
       "CreateHoldingRequest": {
         "type": "object",
         "properties": {
-          "accountId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
-          "symbol": { "type": "string" },
-          "units": { "type": "number" }
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "units": {
+            "type": "number"
+          }
         },
-        "required": [ "accountId", "name", "symbol", "units" ]
+        "required": [
+          "accountId",
+          "name",
+          "symbol",
+          "units"
+        ]
       },
       "CreateWatchlistAccountLinkRequest": {
         "type": "object",
         "properties": {
-          "watchlistId": { "type": "integer", "format": "int64" },
-          "accountId": { "type": "integer", "format": "int64" }
+          "watchlistId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          }
         },
-        "required": [ "watchlistId", "accountId" ]
+        "required": [
+          "watchlistId",
+          "accountId"
+        ]
       },
       "AccountSummary": {
         "type": "object",
