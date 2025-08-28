@@ -1,5 +1,6 @@
 package com.networth.networthbackend.tools;
 
+import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 
 import java.math.BigDecimal;
@@ -201,7 +202,7 @@ public class SampleDataGenerator {
         if (single != null && !single.isBlank()) {
             return Collections.singletonList(single);
         }
-        int users = Integer.parseInt(cfg.getOrDefault("users", "25"));
+        int users = Integer.parseInt(cfg.getOrDefault("users", "1"));
         String prefix = cfg.getOrDefault("userPrefix", "demo-user-");
         List<String> gen = new ArrayList<>(users);
         for (int i = 1; i <= users; i++) gen.add(prefix + i);
@@ -216,7 +217,7 @@ public class SampleDataGenerator {
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 1; i <= total; i++) {
                 boolean isBroker = i <= brokerCount;
-                String type = isBroker ? "BROKER" : "NON_BROKER";
+                String type = isBroker ? Constants.Accounts.TYPE_BROKER : Constants.Accounts.TYPE_SAVINGS;
                 String name = (isBroker ? "Broker Acc " : "NonBroker Acc ") + i;
                 ps.setLong(1, userId);
                 ps.setString(2, name);
@@ -399,8 +400,8 @@ public class SampleDataGenerator {
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (long accountId : accountIds) {
                 ps.setLong(1, accountId);
-                ps.setString(2, "Account Aggregate");
-                ps.setString(3, "__ACCT__");
+                ps.setString(2, Constants.Accounts.AGG_HOLDING_NAME);
+                ps.setString(3, Constants.Accounts.AGG_HOLDING_SYMBOL);
                 ps.setBigDecimal(4, new BigDecimal("0.0000"));
                 ps.addBatch();
             }

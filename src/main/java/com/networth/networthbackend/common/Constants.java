@@ -141,6 +141,8 @@ public class Constants {
         public static final String TAX_PAID = "taxPaid";
         public static final String CURRENCY = "currency";
         public static final String CREDITED_DATE = "creditedDate";
+        public static final String TYPE = "type";
+        public static final String IS_ACTIVE = "isActive";
     }
 
     @UtilityClass
@@ -150,6 +152,19 @@ public class Constants {
         public static final String INCOME_SOURCES = "income-sources";
         public static final String INCOMES = "incomes";
         public static final String WATCHLISTS = "watchlists";
+        public static final String ACCOUNTS = "accounts";
+    }
+
+    @UtilityClass
+    public static class Accounts {
+        public static final String TYPE_BROKER = "BROKER";
+        public static final String TYPE_SAVINGS = "SAVINGS";
+        public static final String TYPE_CREDIT_CARD = "CREDIT_CARD";
+        public static final String TYPE_LOAN = "LOAN";
+        public static final String TYPE_OTHER = "OTHER";
+
+        public static final String AGG_HOLDING_NAME = "Account Aggregate";
+        public static final String AGG_HOLDING_SYMBOL = "__ACCT__";
     }
 
     @UtilityClass
@@ -265,6 +280,17 @@ public class Constants {
         }
 
         @UtilityClass
+        public static class Accounts {
+            public static final String TABLE = "accounts";
+            public static final String COL_ID = "id";
+            public static final String COL_USER_ID = "user_id";
+            public static final String COL_NAME = "name";
+            public static final String COL_TYPE = "type";
+            public static final String COL_IS_ACTIVE = "is_active";
+            public static final String COL_CURRENCY = "currency";
+        }
+
+        @UtilityClass
         public static class Holdings {
             public static final String TABLE = "holdings";
             public static final String COL_ID = "id";
@@ -347,6 +373,14 @@ public class Constants {
         public static final String WATCHLIST_NAME_REQUIRED = "name is required to create or update watchlist";
         public static final String WATCHLIST_NAME_DUPLICATE = "Watchlist with the same name already exists for this user";
         public static final String WATCHLIST_NOT_FOUND = "Watchlist not found";
+
+        // Accounts
+        public static final String ACCOUNT_USER_ID_REQUIRED = "userId is required to create account";
+        public static final String ACCOUNT_NAME_REQUIRED = "name is required to create account";
+        public static final String ACCOUNT_TYPE_REQUIRED = "type is required to create account";
+        public static final String ACCOUNT_CURRENCY_REQUIRED = "currency is required to create account";
+        public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists for this user";
+        public static final String ACCOUNT_NOT_FOUND = "Account not found";
     }
 
     @UtilityClass
@@ -406,5 +440,12 @@ public class Constants {
         public static final String WATCHLIST_DELETE_AFFECTED = "Delete watchlists affected rows: {} for id={}";
         public static final String WATCHLISTS_LIST = "Listing watchlists for userId={}";
         public static final String WATCHLISTS_LIST_COUNT = "Watchlists fetched: count={} for userId={}";
+
+        // Accounts
+        public static final String ACCOUNT_CREATE = "Creating account for userId={}, name={}, type={}, currency={}, isActive={}";
+        public static final String ACCOUNT_CREATED = "Account created: id={}, userId={}, name={}, type={}, currency={}, isActive={}";
+        public static final String ACCOUNT_INSERT_AFFECTED = "Insert accounts affected rows: {} for userId={}, name={}, type={}";
+        public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account name+type duplicate for userId={}, name={}, type={}";
+        public static final String ACCOUNT_DELETE_AFFECTED = "Delete accounts affected rows: {} for id={}";
     }
 }
