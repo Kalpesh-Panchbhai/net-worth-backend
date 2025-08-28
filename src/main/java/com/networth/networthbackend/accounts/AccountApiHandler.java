@@ -23,6 +23,8 @@ public class AccountApiHandler extends EntityHandlerBase {
                 return create(request);
             case Constants.Actions.DELETE:
                 return delete(request);
+            case Constants.Actions.UPDATE:
+                return update(request);
             default:
                 return badRequest(
                         Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
@@ -79,6 +81,46 @@ public class AccountApiHandler extends EntityHandlerBase {
             return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.ACCOUNT_NOT_FOUND);
         }
         return ApiGatewayResponses.noContent();
+    }
+
+    private APIGatewayProxyResponseEvent update(APIGatewayProxyRequestEvent request) throws Exception {
+        Long id = parsePathId(request);
+        if (id == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        var existingOpt = repository.findById(id);
+        if (existingOpt.isEmpty()) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.ACCOUNT_NOT_FOUND);
+        }
+        var json = getJsonBody(request);
+        if (json == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
+        }
+        String newName = json.hasNonNull(Constants.Query.NAME) ? json.get(Constants.Query.NAME).asText() : null;
+        Boolean newIsActive = json.hasNonNull(Constants.Query.IS_ACTIVE) ? json.get(Constants.Query.IS_ACTIVE).asBoolean() : null;
+        if ((newName == null || newName.isBlank()) && newIsActive == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_UPDATE_NO_FIELDS);
+        }
+        var existing = existingOpt.get();
+        // If name is provided and changed, ensure no duplicates for same (userId, type)
+        if (newName != null && !newName.isBlank() && !newName.equals(existing.getName())) {
+            if (repository.existsByUserIdAndNameAndTypeExceptId(existing.getUserId(), newName, existing.getType(), id)) {
+                log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, existing.getUserId(), newName, existing.getType());
+                return ApiGatewayResponses.error(
+                        Constants.Http.Status.CONFLICT,
+                        Constants.ErrorCodes.CONFLICT,
+                        Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE
+                );
+            }
+        }
+        log.debug(Constants.Logs.ACCOUNT_UPDATE, id, newName, newIsActive);
+        int affected = repository.updateNameAndIsActive(id, (newName != null && !newName.isBlank()) ? newName : null, newIsActive);
+        log.debug(Constants.Logs.ACCOUNT_UPDATE_AFFECTED, affected, id);
+        var updated = repository.findById(id).orElse(null);
+        if (updated == null) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.ACCOUNT_NOT_FOUND);
+        }
+        return ok(updated);
     }
 
     private Long parsePathId(APIGatewayProxyRequestEvent request) {

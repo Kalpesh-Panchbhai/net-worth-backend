@@ -678,6 +678,31 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "500": { "$ref": "#/components/responses/InternalError" }
         }
+      },
+      "patch": {
+        "tags": [ "accounts" ],
+        "summary": "Update an account (name and/or isActive)",
+        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" }, "description": "Account id" } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateAccountRequest" },
+              "examples": {
+                "nameOnly": { "value": { "name": "New Account Name" } },
+                "isActiveOnly": { "value": { "isActive": false } },
+                "both": { "value": { "name": "New Account Name", "isActive": true } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseAccount" } } } },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
       }
     }
   },
@@ -1057,6 +1082,14 @@
           "isActive": { "type": "boolean" }
         },
         "required": [ "userId", "name", "type", "currency" ]
+      },
+      "UpdateAccountRequest": {
+        "type": "object",
+        "description": "Provide any subset of fields to update. At least one field is required.",
+        "properties": {
+          "name": { "type": "string" },
+          "isActive": { "type": "boolean" }
+        }
       },
       "CreateWatchlistRequest": {
         "type": "object",

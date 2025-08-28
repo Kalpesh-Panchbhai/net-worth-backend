@@ -381,6 +381,7 @@ public class Constants {
         public static final String ACCOUNT_CURRENCY_REQUIRED = "currency is required to create account";
         public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists for this user";
         public static final String ACCOUNT_NOT_FOUND = "Account not found";
+        public static final String ACCOUNT_UPDATE_NO_FIELDS = "At least one editable field (name, isActive) must be provided";
     }
 
     @UtilityClass
@@ -447,5 +448,7 @@ public class Constants {
         public static final String ACCOUNT_INSERT_AFFECTED = "Insert accounts affected rows: {} for userId={}, name={}, type={}";
         public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account name+type duplicate for userId={}, name={}, type={}";
         public static final String ACCOUNT_DELETE_AFFECTED = "Delete accounts affected rows: {} for id={}";
+        public static final String ACCOUNT_UPDATE = "Updating account id={} with name={}, isActive={}";
+        public static final String ACCOUNT_UPDATE_AFFECTED = "Update accounts affected rows: {} for id={}";
     }
 }

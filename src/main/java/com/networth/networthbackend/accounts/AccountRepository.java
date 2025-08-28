@@ -7,6 +7,7 @@ import com.networth.networthbackend.db.Database;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
+import java.util.Optional;
 
 @Slf4j
 public class AccountRepository extends JdbcRepository<Account> {
@@ -20,6 +21,20 @@ public class AccountRepository extends JdbcRepository<Account> {
             .currency(rs.getString(Constants.DB.Accounts.COL_CURRENCY))
             .build();
 
+    public Optional<Account> findById(long id) throws SQLException {
+        final String sql = Constants.SQL.SELECT + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Accounts.COL_ID,
+                Constants.DB.Accounts.COL_USER_ID,
+                Constants.DB.Accounts.COL_NAME,
+                Constants.DB.Accounts.COL_TYPE,
+                Constants.DB.Accounts.COL_IS_ACTIVE,
+                Constants.DB.Accounts.COL_CURRENCY)
+                + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
+    }
+
     public boolean existsByUserIdAndNameAndType(long userId, String name, String type) throws SQLException {
         final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Accounts.COL_USER_ID + Constants.SQL.EQ_PARAM
@@ -30,6 +45,24 @@ public class AccountRepository extends JdbcRepository<Account> {
             ps.setLong(1, userId);
             ps.setString(2, name);
             ps.setString(3, type);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    public boolean existsByUserIdAndNameAndTypeExceptId(long userId, String name, String type, long excludeId) throws SQLException {
+        final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Accounts.COL_USER_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.AND + Constants.DB.Accounts.COL_NAME + Constants.SQL.EQ_PARAM
+                + Constants.SQL.AND + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM
+                + Constants.SQL.AND + Constants.DB.Accounts.COL_ID + " <> ?"
+                + Constants.SQL.LIMIT_1;
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            ps.setString(2, name);
+            ps.setString(3, type);
+            ps.setLong(4, excludeId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
@@ -85,5 +118,27 @@ public class AccountRepository extends JdbcRepository<Account> {
     public int deleteById(long id) throws SQLException {
         final String sql = Constants.SQL.DELETE_FROM + Constants.DB.Accounts.TABLE + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM;
         return execute(sql, ps -> ps.setLong(1, id));
+    }
+
+    public int updateNameAndIsActive(long id, String newNameNullable, Boolean isActiveNullable) throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        sb.append(Constants.SQL.UPDATE).append(Constants.DB.Accounts.TABLE).append(Constants.SQL.SET);
+        boolean first = true;
+        if (newNameNullable != null) {
+            sb.append(Constants.DB.Accounts.COL_NAME).append(Constants.SQL.EQ_PARAM);
+            first = false;
+        }
+        if (isActiveNullable != null) {
+            if (!first) sb.append(Constants.SQL.COMMA_SPACE);
+            sb.append(Constants.DB.Accounts.COL_IS_ACTIVE).append(Constants.SQL.EQ_PARAM);
+        }
+        sb.append(Constants.SQL.WHERE).append(Constants.DB.Accounts.COL_ID).append(Constants.SQL.EQ_PARAM);
+        final String sql = sb.toString();
+        return execute(sql, ps -> {
+            int idx = 1;
+            if (newNameNullable != null) ps.setString(idx++, newNameNullable);
+            if (isActiveNullable != null) ps.setBoolean(idx++, isActiveNullable);
+            ps.setLong(idx, id);
+        });
     }
 }
