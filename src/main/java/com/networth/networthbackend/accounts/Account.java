@@ -1,5 +1,6 @@
 package com.networth.networthbackend.accounts;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.networth.networthbackend.common.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -14,6 +15,7 @@ public class Account extends BaseEntity {
     private long userId;
     private String name;
     private String type;
+    @JsonProperty("isActive")
     private boolean isActive;
     private String currency;
 }

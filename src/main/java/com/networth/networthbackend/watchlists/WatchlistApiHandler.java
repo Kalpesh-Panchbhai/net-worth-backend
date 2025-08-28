@@ -20,21 +20,14 @@ public class WatchlistApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return create(request);
-            case Constants.Actions.GET:
-                return listByUserId(request);
-            case Constants.Actions.DELETE:
-                return delete(request);
-            case Constants.Actions.UPDATE:
-                return updateName(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.WATCHLISTS, action)
-                );
-        }
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
+            case Constants.Actions.GET -> listByUserId(request);
+            case Constants.Actions.DELETE -> delete(request);
+            case Constants.Actions.UPDATE -> updateName(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.WATCHLISTS, action));
+        };
     }
 
     private APIGatewayProxyResponseEvent listByUserId(APIGatewayProxyRequestEvent request) throws Exception {
@@ -63,11 +56,7 @@ public class WatchlistApiHandler extends EntityHandlerBase {
         }
         if (repository.existsByUserIdAndName(userId, name)) {
             log.warn(Constants.Logs.WATCHLIST_NAME_DUPLICATE, userId, name);
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.CONFLICT,
-                    Constants.ErrorCodes.CONFLICT,
-                    Constants.Messages.WATCHLIST_NAME_DUPLICATE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.WATCHLIST_NAME_DUPLICATE);
         }
         log.debug(Constants.Logs.WATCHLIST_CREATE, userId, name);
         Watchlist created = repository.create(userId, name);
@@ -112,11 +101,7 @@ public class WatchlistApiHandler extends EntityHandlerBase {
         }
         if (repository.existsByUserIdAndName(existing.getUserId(), newName)) {
             log.warn(Constants.Logs.WATCHLIST_NAME_DUPLICATE, existing.getUserId(), newName);
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.CONFLICT,
-                    Constants.ErrorCodes.CONFLICT,
-                    Constants.Messages.WATCHLIST_NAME_DUPLICATE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.WATCHLIST_NAME_DUPLICATE);
         }
         log.debug(Constants.Logs.WATCHLIST_UPDATE_NAME, id, newName);
         int affected = repository.updateName(id, newName);

@@ -20,19 +20,13 @@ public class IncomeSourceApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return create(request);
-            case Constants.Actions.GET:
-                return listByUserId(request);
-            case Constants.Actions.UPDATE:
-                return setDefault(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOME_SOURCES, action)
-                );
-        }
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
+            case Constants.Actions.GET -> listByUserId(request);
+            case Constants.Actions.UPDATE -> setDefault(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOME_SOURCES, action));
+        };
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
@@ -51,11 +45,7 @@ public class IncomeSourceApiHandler extends EntityHandlerBase {
         }
         if (repository.existsByUserIdAndName(userId, name)) {
             log.warn(Constants.Logs.INCOME_SOURCE_NAME_DUPLICATE, userId, name);
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.CONFLICT,
-                    Constants.ErrorCodes.CONFLICT,
-                    Constants.Messages.INCOME_SOURCE_NAME_DUPLICATE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_SOURCE_NAME_DUPLICATE);
         }
         log.debug(Constants.Logs.INCOME_SOURCE_CREATE, userId, name, isDefault);
         IncomeSource created = repository.create(userId, name, isDefault);

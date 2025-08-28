@@ -288,6 +288,58 @@ public class Constants {
             public static final String COL_TYPE = "type";
             public static final String COL_IS_ACTIVE = "is_active";
             public static final String COL_CURRENCY = "currency";
+            public static final String SQL_LIST_SUMMARIES_BY_USER_ID = """
+                    WITH
+                      my_accounts AS (
+                        SELECT a.*
+                        FROM accounts a
+                        JOIN users u ON u.id = a.user_id
+                        WHERE u.id = ?
+                      ),
+                      curr AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS current_day_value
+                        FROM account_holding_values_daily s
+                        JOIN my_accounts a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE
+                        GROUP BY s.account_id
+                      ),
+                      prev AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS previous_day_value
+                        FROM account_holding_values_daily s
+                        JOIN my_accounts a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
+                        GROUP BY s.account_id
+                      ),
+                      max_dates AS (
+                        SELECT s.account_id, MAX(s.date) AS max_date
+                        FROM account_holding_values_daily s
+                        JOIN my_accounts a ON a.id = s.account_id
+                        GROUP BY s.account_id
+                      ),
+                      latest AS (
+                        SELECT s.account_id, SUM(s.invested) AS invested
+                        FROM account_holding_values_daily s
+                        JOIN max_dates md
+                          ON md.account_id = s.account_id
+                         AND md.max_date  = s.date
+                        GROUP BY s.account_id
+                      )
+                    SELECT
+                      a.id,
+                      a.user_id,
+                      a.name,
+                      a.type,
+                      a.is_active,
+                      a.currency,
+                      COALESCE(c.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
+                      COALESCE(p.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
+                      COALESCE(l.invested,    CAST(0 AS DECIMAL(10,4))) AS invested
+                    FROM my_accounts a
+                    LEFT JOIN curr   c ON c.account_id = a.id
+                    LEFT JOIN prev   p ON p.account_id = a.id
+                    LEFT JOIN latest l ON l.account_id = a.id
+                    ORDER BY a.id
+                    """;
         }
 
         @UtilityClass
@@ -450,5 +502,7 @@ public class Constants {
         public static final String ACCOUNT_DELETE_AFFECTED = "Delete accounts affected rows: {} for id={}";
         public static final String ACCOUNT_UPDATE = "Updating account id={} with name={}, isActive={}";
         public static final String ACCOUNT_UPDATE_AFFECTED = "Update accounts affected rows: {} for id={}";
+        public static final String ACCOUNTS_LIST = "Listing accounts for userId={}";
+        public static final String ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for userId={}";
     }
 }

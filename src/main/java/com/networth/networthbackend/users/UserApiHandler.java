@@ -19,19 +19,12 @@ public class UserApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return createOrEnsure(request);
-            case Constants.Actions.GET:
-                return getUser(request);
-            case Constants.Actions.DELETE:
-                return deleteUser(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.USERS, action)
-                );
-        }
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> createOrEnsure(request);
+            case Constants.Actions.DELETE -> deleteUser(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.USERS, action));
+        };
     }
 
     private APIGatewayProxyResponseEvent createOrEnsure(APIGatewayProxyRequestEvent request) throws Exception {
@@ -44,16 +37,6 @@ public class UserApiHandler extends EntityHandlerBase {
         User user = result.getUser();
         log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getExternalUserId());
         return result.isCreated() ? created(user) : ok(user);
-    }
-
-    private APIGatewayProxyResponseEvent getUser(APIGatewayProxyRequestEvent request) throws Exception {
-        String externalUserId = extractExternalUserId(request);
-        if (externalUserId == null || externalUserId.isBlank()) {
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.EXTERNAL_USER_ID_REQUIRED);
-        }
-        return userRepository.findByExternalUserId(externalUserId)
-                .map(this::ok)
-                .orElseGet(() -> notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND));
     }
 
     private APIGatewayProxyResponseEvent deleteUser(APIGatewayProxyRequestEvent request) throws Exception {

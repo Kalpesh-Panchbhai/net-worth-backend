@@ -20,19 +20,13 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return create(request);
-            case Constants.Actions.GET:
-                return listByUserId(request);
-            case Constants.Actions.UPDATE:
-                return setDefault(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOME_TAGS, action)
-                );
-        }
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
+            case Constants.Actions.GET -> listByUserId(request);
+            case Constants.Actions.UPDATE -> setDefault(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOME_TAGS, action));
+        };
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
@@ -52,11 +46,7 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
         // Duplicate check per user
         if (repository.existsByUserIdAndName(userId, name)) {
             log.warn(Constants.Logs.INCOME_TAG_NAME_DUPLICATE, userId, name);
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.CONFLICT,
-                    Constants.ErrorCodes.CONFLICT,
-                    Constants.Messages.INCOME_TAG_NAME_DUPLICATE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_TAG_NAME_DUPLICATE);
         }
         log.debug(Constants.Logs.INCOME_TAG_CREATE, userId, name, isDefault);
         IncomeTag created = repository.create(userId, name, isDefault);

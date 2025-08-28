@@ -11,7 +11,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class WatchlistSummary extends SummaryMetrics {
-    private long id;
     private long userId;
     private String name;
 }

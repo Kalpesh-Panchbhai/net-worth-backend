@@ -18,19 +18,25 @@ public class AccountApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return create(request);
-            case Constants.Actions.DELETE:
-                return delete(request);
-            case Constants.Actions.UPDATE:
-                return update(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.ACCOUNTS, action)
-                );
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
+            case Constants.Actions.GET -> listByUserId(request);
+            case Constants.Actions.DELETE -> delete(request);
+            case Constants.Actions.UPDATE -> update(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.ACCOUNTS, action));
+        };
+    }
+
+    private APIGatewayProxyResponseEvent listByUserId(APIGatewayProxyRequestEvent request) throws Exception {
+        Long userId = parsePathId(request);
+        if (userId == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
         }
+        log.debug(Constants.Logs.ACCOUNTS_LIST, userId);
+        var list = repository.listSummariesByUserId(userId);
+        log.info(Constants.Logs.ACCOUNTS_LIST_COUNT, list.size(), userId);
+        return ok(list);
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
@@ -58,11 +64,7 @@ public class AccountApiHandler extends EntityHandlerBase {
         }
         if (repository.existsByUserIdAndNameAndType(userId, name, type)) {
             log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, userId, name, type);
-            return ApiGatewayResponses.error(
-                    Constants.Http.Status.CONFLICT,
-                    Constants.ErrorCodes.CONFLICT,
-                    Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
         }
         log.debug(Constants.Logs.ACCOUNT_CREATE, userId, name, type, currency, isActive);
         Account created = repository.create(userId, name, type, isActive, currency);
@@ -106,11 +108,7 @@ public class AccountApiHandler extends EntityHandlerBase {
         if (newName != null && !newName.isBlank() && !newName.equals(existing.getName())) {
             if (repository.existsByUserIdAndNameAndTypeExceptId(existing.getUserId(), newName, existing.getType(), id)) {
                 log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, existing.getUserId(), newName, existing.getType());
-                return ApiGatewayResponses.error(
-                        Constants.Http.Status.CONFLICT,
-                        Constants.ErrorCodes.CONFLICT,
-                        Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE
-                );
+                return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
             }
         }
         log.debug(Constants.Logs.ACCOUNT_UPDATE, id, newName, newIsActive);

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class SummaryMetrics {
+public class SummaryMetrics extends BaseEntity {
     private BigDecimal currentDayValue;
     private BigDecimal previousDayValue;
     private BigDecimal invested;

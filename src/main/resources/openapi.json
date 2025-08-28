@@ -668,6 +668,32 @@
       }
     },
     "/accounts/{id}": {
+      "get": {
+        "tags": [ "accounts" ],
+        "summary": "List accounts for a user by internal user id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Internal user id (users.id)",
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of accounts with current/previous day values and invested",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseAccountSummaryList" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
       "delete": {
         "tags": [ "accounts" ],
         "summary": "Delete an account by id",
@@ -1066,6 +1092,31 @@
         "properties": {
           "success": { "type": "boolean" },
           "data": { "$ref": "#/components/schemas/Account" }
+        }
+      },
+      "AccountSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "userId": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "currency": { "type": "string" },
+          "currentDayValue": { "type": "number" },
+          "previousDayValue": { "type": "number" },
+          "invested": { "type": "number" }
+        },
+        "required": [ "id", "userId", "name", "type", "isActive", "currency", "currentDayValue", "previousDayValue", "invested" ]
+      },
+      "ApiResponseAccountSummaryList": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AccountSummary" }
+          }
         }
       },
       "CreateAccountRequest": {

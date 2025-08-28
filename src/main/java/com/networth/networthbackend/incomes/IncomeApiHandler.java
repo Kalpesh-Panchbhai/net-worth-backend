@@ -22,21 +22,14 @@ public class IncomeApiHandler extends EntityHandlerBase {
         if (action == null) {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
-        switch (action.toLowerCase()) {
-            case Constants.Actions.CREATE:
-                return create(request);
-            case Constants.Actions.GET:
-                return listByUserId(request);
-            case Constants.Actions.DELETE:
-                return delete(request);
-            case Constants.Actions.UPDATE:
-                return update(request);
-            default:
-                return badRequest(
-                        Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
-                        String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOMES, action)
-                );
-        }
+        return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
+            case Constants.Actions.GET -> listByUserId(request);
+            case Constants.Actions.DELETE -> delete(request);
+            case Constants.Actions.UPDATE -> update(request);
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.INCOMES, action));
+        };
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
@@ -122,18 +115,12 @@ public class IncomeApiHandler extends EntityHandlerBase {
         if (json == null) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
         }
-        Long incomeSourceId = json.has(Constants.Query.INCOME_SOURCE_ID) && !json.get(Constants.Query.INCOME_SOURCE_ID).isNull()
-                ? json.get(Constants.Query.INCOME_SOURCE_ID).asLong() : null;
-        Long incomeTagId = json.has(Constants.Query.INCOME_TAG_ID) && !json.get(Constants.Query.INCOME_TAG_ID).isNull()
-                ? json.get(Constants.Query.INCOME_TAG_ID).asLong() : null;
-        java.math.BigDecimal netAmount = json.has(Constants.Query.NET_AMOUNT) && !json.get(Constants.Query.NET_AMOUNT).isNull()
-                ? json.get(Constants.Query.NET_AMOUNT).decimalValue() : null;
-        java.math.BigDecimal taxPaid = json.has(Constants.Query.TAX_PAID) && !json.get(Constants.Query.TAX_PAID).isNull()
-                ? json.get(Constants.Query.TAX_PAID).decimalValue() : null;
-        String currency = json.has(Constants.Query.CURRENCY) && !json.get(Constants.Query.CURRENCY).isNull()
-                ? json.get(Constants.Query.CURRENCY).asText() : null;
-        String creditedDateStr = json.has(Constants.Query.CREDITED_DATE) && !json.get(Constants.Query.CREDITED_DATE).isNull()
-                ? json.get(Constants.Query.CREDITED_DATE).asText() : null;
+        Long incomeSourceId = json.has(Constants.Query.INCOME_SOURCE_ID) && !json.get(Constants.Query.INCOME_SOURCE_ID).isNull() ? json.get(Constants.Query.INCOME_SOURCE_ID).asLong() : null;
+        Long incomeTagId = json.has(Constants.Query.INCOME_TAG_ID) && !json.get(Constants.Query.INCOME_TAG_ID).isNull() ? json.get(Constants.Query.INCOME_TAG_ID).asLong() : null;
+        java.math.BigDecimal netAmount = json.has(Constants.Query.NET_AMOUNT) && !json.get(Constants.Query.NET_AMOUNT).isNull() ? json.get(Constants.Query.NET_AMOUNT).decimalValue() : null;
+        java.math.BigDecimal taxPaid = json.has(Constants.Query.TAX_PAID) && !json.get(Constants.Query.TAX_PAID).isNull() ? json.get(Constants.Query.TAX_PAID).decimalValue() : null;
+        String currency = json.has(Constants.Query.CURRENCY) && !json.get(Constants.Query.CURRENCY).isNull() ? json.get(Constants.Query.CURRENCY).asText() : null;
+        String creditedDateStr = json.has(Constants.Query.CREDITED_DATE) && !json.get(Constants.Query.CREDITED_DATE).isNull() ? json.get(Constants.Query.CREDITED_DATE).asText() : null;
 
         if (incomeSourceId == null && incomeTagId == null && netAmount == null && taxPaid == null && currency == null && creditedDateStr == null) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_UPDATE_NO_FIELDS);
@@ -141,7 +128,9 @@ public class IncomeApiHandler extends EntityHandlerBase {
 
         java.time.Instant creditedDate = null;
         if (creditedDateStr != null) {
-            try { creditedDate = java.time.Instant.parse(creditedDateStr); } catch (Exception e) {
+            try {
+                creditedDate = java.time.Instant.parse(creditedDateStr);
+            } catch (Exception e) {
                 return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
             }
         }
