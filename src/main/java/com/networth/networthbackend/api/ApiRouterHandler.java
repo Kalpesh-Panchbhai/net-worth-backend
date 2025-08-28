@@ -12,6 +12,7 @@ import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistApiHandler;
 import com.networth.networthbackend.accounts.AccountApiHandler;
+import com.networth.networthbackend.holdings.HoldingApiHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -31,6 +32,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.INCOMES, new IncomeApiHandler());
         registry.put(Constants.Entities.WATCHLISTS, new WatchlistApiHandler());
         registry.put(Constants.Entities.ACCOUNTS, new AccountApiHandler());
+        registry.put(Constants.Entities.HOLDINGS, new HoldingApiHandler());
     }
 
     @Override

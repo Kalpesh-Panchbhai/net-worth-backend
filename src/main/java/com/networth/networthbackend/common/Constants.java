@@ -143,6 +143,9 @@ public class Constants {
         public static final String CREDITED_DATE = "creditedDate";
         public static final String TYPE = "type";
         public static final String IS_ACTIVE = "isActive";
+        public static final String ACCOUNT_ID = "accountId";
+        public static final String SYMBOL = "symbol";
+        public static final String UNITS = "units";
     }
 
     @UtilityClass
@@ -153,6 +156,7 @@ public class Constants {
         public static final String INCOMES = "incomes";
         public static final String WATCHLISTS = "watchlists";
         public static final String ACCOUNTS = "accounts";
+        public static final String HOLDINGS = "holdings";
     }
 
     @UtilityClass
@@ -350,6 +354,28 @@ public class Constants {
             public static final String COL_NAME = "name";
             public static final String COL_SYMBOL = "symbol";
             public static final String COL_UNITS = "units";
+            public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
+                    SELECT
+                      h.id,
+                      h.account_id,
+                      h.name,
+                      h.symbol,
+                      h.units,
+                      COALESCE(v_today.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
+                      COALESCE(v_yday.current_day_value,  CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
+                      COALESCE(v_today.invested,           CAST(0 AS DECIMAL(10,4))) AS invested
+                    FROM holdings h
+                    LEFT JOIN account_holding_values_daily v_today
+                      ON v_today.account_id = h.account_id
+                     AND v_today.holding_id = h.id
+                     AND v_today.date = CURRENT_DATE
+                    LEFT JOIN account_holding_values_daily v_yday
+                      ON v_yday.account_id = h.account_id
+                     AND v_yday.holding_id = h.id
+                     AND v_yday.date = CURRENT_DATE - INTERVAL 1 DAY
+                    WHERE h.account_id = ?
+                    ORDER BY h.id
+                    """;
         }
 
         @UtilityClass
@@ -434,6 +460,13 @@ public class Constants {
         public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists for this user";
         public static final String ACCOUNT_NOT_FOUND = "Account not found";
         public static final String ACCOUNT_UPDATE_NO_FIELDS = "At least one editable field (name, isActive) must be provided";
+
+        // Holdings
+        public static final String HOLDING_ACCOUNT_ID_REQUIRED = "accountId is required to create holding";
+        public static final String HOLDING_NAME_REQUIRED = "name is required to create holding";
+        public static final String HOLDING_SYMBOL_REQUIRED = "symbol is required to create holding";
+        public static final String HOLDING_UNITS_REQUIRED = "units is required to create holding";
+        public static final String HOLDING_NOT_FOUND = "Holding not found";
     }
 
     @UtilityClass
@@ -504,5 +537,13 @@ public class Constants {
         public static final String ACCOUNT_UPDATE_AFFECTED = "Update accounts affected rows: {} for id={}";
         public static final String ACCOUNTS_LIST = "Listing accounts for userId={}";
         public static final String ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for userId={}";
+
+        // Holdings
+        public static final String HOLDING_CREATE = "Creating holding for accountId={}, name={}, symbol={}, units={}";
+        public static final String HOLDING_CREATED = "Holding created: id={}, accountId={}, name={}, symbol={}, units={}";
+        public static final String HOLDING_INSERT_AFFECTED = "Insert holdings affected rows: {} for accountId={}, name={}, symbol={}";
+        public static final String HOLDING_DELETE_AFFECTED = "Delete holdings affected rows: {} for id={}";
+        public static final String HOLDINGS_LIST = "Listing holdings for accountId={}";
+        public static final String HOLDINGS_LIST_COUNT = "Holdings fetched: count={} for accountId={}";
     }
 }

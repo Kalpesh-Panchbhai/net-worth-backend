@@ -33,6 +33,10 @@
     {
       "name": "accounts",
       "description": "Account management"
+    },
+    {
+      "name": "holdings",
+      "description": "Holding management"
     }
   ],
   "paths": {
@@ -493,9 +497,15 @@
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "delete": {
@@ -540,10 +550,15 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateWatchlistRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateWatchlistRequest"
+              },
               "examples": {
                 "default": {
-                  "value": { "userId": 1, "name": "My Watchlist" }
+                  "value": {
+                    "userId": 1,
+                    "name": "My Watchlist"
+                  }
                 }
               }
             }
@@ -554,19 +569,29 @@
             "description": "Watchlist created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseWatchlist" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWatchlist"
+                }
               }
             }
           },
-          "409": { "$ref": "#/components/responses/Conflict" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     },
     "/watchlists/{id}": {
       "get": {
-        "tags": [ "watchlists" ],
+        "tags": [
+          "watchlists"
+        ],
         "summary": "List watchlists for a user by internal user id",
         "parameters": [
           {
@@ -574,7 +599,10 @@
             "in": "path",
             "required": true,
             "description": "Internal user id (users.id)",
-            "schema": { "type": "integer", "format": "int64" }
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -582,17 +610,27 @@
             "description": "List of watchlists with current/previous day values and invested",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "patch": {
-        "tags": [ "watchlists" ],
+        "tags": [
+          "watchlists"
+        ],
         "summary": "Update a watchlist name by id",
         "parameters": [
           {
@@ -600,76 +638,141 @@
             "in": "path",
             "required": true,
             "description": "Watchlist id",
-            "schema": { "type": "integer", "format": "int64" }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateWatchlistNameRequest" },
-              "examples": { "default": { "value": { "name": "Updated Name" } } }
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Watchlist updated",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseWatchlist" } } }
-          },
-          "409": { "$ref": "#/components/responses/Conflict" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
-        }
-      },
-      "delete": {
-        "tags": [ "watchlists" ],
-        "summary": "Delete a watchlist by id",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer", "format": "int64" }
-          }
         ],
-        "responses": {
-          "204": { "description": "Deleted" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
-        }
-      }
-    },
-    "/accounts": {
-      "post": {
-        "tags": [ "accounts" ],
-        "summary": "Create an account",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateAccountRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWatchlistNameRequest"
+              },
               "examples": {
                 "default": {
-                  "value": { "userId": 1, "name": "Broker Acc 1", "type": "BROKER", "currency": "INR", "isActive": true }
+                  "value": {
+                    "name": "Updated Name"
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Account created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseAccount" } } } },
-          "409": { "$ref": "#/components/responses/Conflict" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "200": {
+            "description": "Watchlist updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseWatchlist"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Delete a watchlist by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/accounts": {
+      "post": {
+        "tags": [
+          "accounts"
+        ],
+        "summary": "Create an account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "userId": 1,
+                    "name": "Broker Acc 1",
+                    "type": "BROKER",
+                    "currency": "INR",
+                    "isActive": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAccount"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     },
     "/accounts/{id}": {
       "get": {
-        "tags": [ "accounts" ],
+        "tags": [
+          "accounts"
+        ],
         "summary": "List accounts for a user by internal user id",
         "parameters": [
           {
@@ -677,7 +780,10 @@
             "in": "path",
             "required": true,
             "description": "Internal user id (users.id)",
-            "schema": { "type": "integer", "format": "int64" }
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           }
         ],
         "responses": {
@@ -685,49 +791,240 @@
             "description": "List of accounts with current/previous day values and invested",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseAccountSummaryList" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAccountSummaryList"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "delete": {
-        "tags": [ "accounts" ],
+        "tags": [
+          "accounts"
+        ],
         "summary": "Delete an account by id",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
-          "204": { "description": "Deleted" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "patch": {
-        "tags": [ "accounts" ],
+        "tags": [
+          "accounts"
+        ],
         "summary": "Update an account (name and/or isActive)",
-        "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" }, "description": "Account id" } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Account id"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateAccountRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAccountRequest"
+              },
               "examples": {
-                "nameOnly": { "value": { "name": "New Account Name" } },
-                "isActiveOnly": { "value": { "isActive": false } },
-                "both": { "value": { "name": "New Account Name", "isActive": true } }
+                "nameOnly": {
+                  "value": {
+                    "name": "New Account Name"
+                  }
+                },
+                "isActiveOnly": {
+                  "value": {
+                    "isActive": false
+                  }
+                },
+                "both": {
+                  "value": {
+                    "name": "New Account Name",
+                    "isActive": true
+                  }
+                }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Account updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseAccount" } } } },
-          "409": { "$ref": "#/components/responses/Conflict" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "200": {
+            "description": "Account updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAccount"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/holdings": {
+      "post": {
+        "tags": [
+          "holdings"
+        ],
+        "summary": "Create a holding",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHoldingRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "accountId": 1,
+                    "name": "TCS",
+                    "symbol": "TCS",
+                    "units": 10.5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Holding created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHolding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/holdings/{id}": {
+      "get": {
+        "tags": [
+          "holdings"
+        ],
+        "summary": "List holdings for an account by account id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "Account id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of holdings with current/previous day values and invested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHoldingSummaryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "holdings"
+        ],
+        "summary": "Delete a holding by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       }
     }
@@ -1000,12 +1297,28 @@
         "type": "object",
         "description": "Provide any subset of fields to update. At least one field is required.",
         "properties": {
-          "incomeSourceId": { "type": "integer", "format": "int64" },
-          "incomeTagId": { "type": "integer", "format": "int64" },
-          "netAmount": { "type": "number" },
-          "taxPaid": { "type": "number" },
-          "currency": { "type": "string" },
-          "creditedDate": { "type": "string", "format": "date-time", "description": "UTC ISO 8601" }
+          "incomeSourceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "incomeTagId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "netAmount": {
+            "type": "number"
+          },
+          "taxPaid": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "creditedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC ISO 8601"
+          }
         }
       },
       "ApiResponseIncome": {
@@ -1036,126 +1349,385 @@
       "Watchlist": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" }
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
         },
-        "required": [ "id", "userId", "name" ]
+        "required": [
+          "id",
+          "userId",
+          "name"
+        ]
       },
       "ApiResponseWatchlist": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/Watchlist" }
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Watchlist"
+          }
         }
       },
       "WatchlistSummary": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
-          "currentDayValue": { "type": "number" },
-          "previousDayValue": { "type": "number" },
-          "invested": { "type": "number" }
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currentDayValue": {
+            "type": "number"
+          },
+          "previousDayValue": {
+            "type": "number"
+          },
+          "invested": {
+            "type": "number"
+          }
         },
-        "required": [ "id", "userId", "name", "currentDayValue", "previousDayValue", "invested" ]
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "currentDayValue",
+          "previousDayValue",
+          "invested"
+        ]
       },
       "ApiResponseWatchlistSummaryList": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
           "data": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/WatchlistSummary" }
+            "items": {
+              "$ref": "#/components/schemas/WatchlistSummary"
+            }
           }
         }
       },
       "Account": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
           "type": {
             "type": "string",
             "description": "Account type",
-            "enum": ["BROKER", "SAVINGS", "CREDIT_CARD", "LOAN", "OTHER"]
+            "enum": [
+              "BROKER",
+              "SAVINGS",
+              "CREDIT_CARD",
+              "LOAN",
+              "OTHER"
+            ]
           },
-          "isActive": { "type": "boolean" },
-          "currency": { "type": "string" }
+          "isActive": {
+            "type": "boolean"
+          },
+          "currency": {
+            "type": "string"
+          }
         },
-        "required": [ "id", "userId", "name", "type", "isActive", "currency" ]
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "type",
+          "isActive",
+          "currency"
+        ]
       },
       "ApiResponseAccount": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
-          "data": { "$ref": "#/components/schemas/Account" }
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Account"
+          }
         }
+      },
+      "Holding": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "units": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "name",
+          "symbol",
+          "units"
+        ]
+      },
+      "HoldingSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "units": {
+            "type": "number"
+          },
+          "currentDayValue": {
+            "type": "number"
+          },
+          "previousDayValue": {
+            "type": "number"
+          },
+          "invested": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "accountId",
+          "name",
+          "symbol",
+          "units",
+          "currentDayValue",
+          "previousDayValue",
+          "invested"
+        ]
+      },
+      "ApiResponseHolding": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Holding"
+          }
+        }
+      },
+      "ApiResponseHoldingSummaryList": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoldingSummary"
+            }
+          }
+        }
+      },
+      "CreateHoldingRequest": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "units": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "accountId",
+          "name",
+          "symbol",
+          "units"
+        ]
       },
       "AccountSummary": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer", "format": "int64" },
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
-          "type": { "type": "string" },
-          "isActive": { "type": "boolean" },
-          "currency": { "type": "string" },
-          "currentDayValue": { "type": "number" },
-          "previousDayValue": { "type": "number" },
-          "invested": { "type": "number" }
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "currentDayValue": {
+            "type": "number"
+          },
+          "previousDayValue": {
+            "type": "number"
+          },
+          "invested": {
+            "type": "number"
+          }
         },
-        "required": [ "id", "userId", "name", "type", "isActive", "currency", "currentDayValue", "previousDayValue", "invested" ]
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "type",
+          "isActive",
+          "currency",
+          "currentDayValue",
+          "previousDayValue",
+          "invested"
+        ]
       },
       "ApiResponseAccountSummaryList": {
         "type": "object",
         "properties": {
-          "success": { "type": "boolean" },
+          "success": {
+            "type": "boolean"
+          },
           "data": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/AccountSummary" }
+            "items": {
+              "$ref": "#/components/schemas/AccountSummary"
+            }
           }
         }
       },
       "CreateAccountRequest": {
         "type": "object",
         "properties": {
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
           "type": {
             "type": "string",
             "description": "Account type",
-            "enum": ["BROKER", "SAVINGS", "CREDIT_CARD", "LOAN", "OTHER"]
+            "enum": [
+              "BROKER",
+              "SAVINGS",
+              "CREDIT_CARD",
+              "LOAN",
+              "OTHER"
+            ]
           },
-          "currency": { "type": "string" },
-          "isActive": { "type": "boolean" }
+          "currency": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
         },
-        "required": [ "userId", "name", "type", "currency" ]
+        "required": [
+          "userId",
+          "name",
+          "type",
+          "currency"
+        ]
       },
       "UpdateAccountRequest": {
         "type": "object",
         "description": "Provide any subset of fields to update. At least one field is required.",
         "properties": {
-          "name": { "type": "string" },
-          "isActive": { "type": "boolean" }
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
         }
       },
       "CreateWatchlistRequest": {
         "type": "object",
         "properties": {
-          "userId": { "type": "integer", "format": "int64" },
-          "name": { "type": "string" }
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          }
         },
-        "required": [ "userId", "name" ]
+        "required": [
+          "userId",
+          "name"
+        ]
       },
       "UpdateWatchlistNameRequest": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" }
+          "name": {
+            "type": "string"
+          }
         },
-        "required": [ "name" ]
+        "required": [
+          "name"
+        ]
       },
       "ApiError": {
         "type": "object",
