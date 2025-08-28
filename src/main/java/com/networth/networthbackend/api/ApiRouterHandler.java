@@ -10,6 +10,7 @@ import com.networth.networthbackend.users.UserApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
+import com.networth.networthbackend.watchlists.WatchlistApiHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -27,6 +28,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.INCOME_TAGS, new IncomeTagApiHandler());
         registry.put(Constants.Entities.INCOME_SOURCES, new IncomeSourceApiHandler());
         registry.put(Constants.Entities.INCOMES, new IncomeApiHandler());
+        registry.put(Constants.Entities.WATCHLISTS, new WatchlistApiHandler());
     }
 
     @Override

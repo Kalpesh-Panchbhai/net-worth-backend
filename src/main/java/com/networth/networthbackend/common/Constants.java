@@ -149,6 +149,7 @@ public class Constants {
         public static final String INCOME_TAGS = "income-tags";
         public static final String INCOME_SOURCES = "income-sources";
         public static final String INCOMES = "incomes";
+        public static final String WATCHLISTS = "watchlists";
     }
 
     @UtilityClass
@@ -203,6 +204,14 @@ public class Constants {
             public static final String COL_CURRENCY = "currency";
             public static final String COL_CREDITED_DATE = "credited_date";
         }
+
+        @UtilityClass
+        public static class Watchlists {
+            public static final String TABLE = "watchlists";
+            public static final String COL_ID = "id";
+            public static final String COL_USER_ID = "user_id";
+            public static final String COL_NAME = "name";
+        }
     }
 
     @UtilityClass
@@ -247,6 +256,12 @@ public class Constants {
         public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required (UTC ISO 8601)";
         public static final String INCOME_NOT_FOUND = "Income not found";
         public static final String INCOME_UPDATE_NO_FIELDS = "At least one editable field must be provided";
+
+        // Watchlists
+        public static final String WATCHLIST_USER_ID_REQUIRED = "userId is required to create watchlist";
+        public static final String WATCHLIST_NAME_REQUIRED = "name is required to create or update watchlist";
+        public static final String WATCHLIST_NAME_DUPLICATE = "Watchlist with the same name already exists for this user";
+        public static final String WATCHLIST_NOT_FOUND = "Watchlist not found";
     }
 
     @UtilityClass
@@ -295,5 +310,14 @@ public class Constants {
         public static final String INCOME_CREATED = "Income created: id={}, userId={}, sourceId={}, tagId={}, amount={}, tax={}, currency={}, creditedDate={}";
         public static final String INCOME_INSERT_AFFECTED = "Insert incomes affected rows: {} for userId={}, sourceId={}, tagId={}";
         public static final String INCOME_DELETE_AFFECTED = "Delete incomes affected rows: {} for id={}";
+
+        // Watchlists
+        public static final String WATCHLIST_CREATE = "Creating watchlist for userId={}, name={}";
+        public static final String WATCHLIST_CREATED = "Watchlist created: id={}, userId={}, name={}";
+        public static final String WATCHLIST_INSERT_AFFECTED = "Insert watchlists affected rows: {} for userId={}, name={}";
+        public static final String WATCHLIST_NAME_DUPLICATE = "Watchlist name duplicate for userId={}, name={}";
+        public static final String WATCHLIST_UPDATE_NAME = "Updating watchlist name: id={}, newName={}";
+        public static final String WATCHLIST_UPDATE_NAME_AFFECTED = "Update watchlist name affected rows: {} for id={}";
+        public static final String WATCHLIST_DELETE_AFFECTED = "Delete watchlists affected rows: {} for id={}";
     }
 }
