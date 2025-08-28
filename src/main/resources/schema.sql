@@ -79,7 +79,6 @@ CREATE TABLE IF NOT EXISTS incomes
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS accounts
 (
     id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -160,8 +159,6 @@ CREATE TABLE IF NOT EXISTS watchlist_accounts
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
--- Unified daily time-series without polymorphism (account_id + optional holding_id)
--- Row with holding_id = 0 represents the account-level aggregate for that day
 CREATE TABLE IF NOT EXISTS account_holding_values_daily
 (
     account_id        BIGINT UNSIGNED NOT NULL,
