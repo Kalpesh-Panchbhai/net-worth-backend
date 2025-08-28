@@ -80,6 +80,7 @@ public class Constants {
         public static final String AND = " AND ";
         public static final String LIMIT_1 = " LIMIT 1";
         public static final String INSERT_INTO = "INSERT INTO ";
+        public static final String INSERT_IGNORE_INTO = "INSERT IGNORE INTO ";
         public static final String VALUES = " VALUES ";
         public static final String ON_DUPLICATE_KEY_UPDATE = " ON DUPLICATE KEY UPDATE ";
         public static final String EQ_VALUES_OPEN = " = VALUES(";
@@ -146,6 +147,7 @@ public class Constants {
         public static final String ACCOUNT_ID = "accountId";
         public static final String SYMBOL = "symbol";
         public static final String UNITS = "units";
+        public static final String WATCHLIST_ID = "watchlistId";
     }
 
     @UtilityClass
@@ -509,6 +511,10 @@ public class Constants {
         public static final String HOLDING_SYMBOL_REQUIRED = "symbol is required to create holding";
         public static final String HOLDING_UNITS_REQUIRED = "units is required to create holding";
         public static final String HOLDING_NOT_FOUND = "Holding not found";
+
+        // Watchlist-Accounts
+        public static final String WATCHLIST_ID_REQUIRED = "watchlistId is required";
+        public static final String WATCHLIST_ACCOUNT_ID_REQUIRED = "accountId is required";
     }
 
     @UtilityClass
@@ -589,5 +595,10 @@ public class Constants {
         public static final String HOLDING_DELETE_AFFECTED = "Delete holdings affected rows: {} for id={}";
         public static final String HOLDINGS_LIST = "Listing holdings for accountId={}";
         public static final String HOLDINGS_LIST_COUNT = "Holdings fetched: count={} for accountId={}";
+
+        // Watchlist-Accounts
+        public static final String WATCHLIST_ACCOUNT_LINK = "Linking accountId={} to watchlistId={}";
+        public static final String WATCHLIST_ACCOUNT_LINK_AFFECTED = "Insert watchlist_accounts affected rows: {} for watchlistId={}, accountId={}";
+        public static final String WATCHLIST_ACCOUNT_UNLINK_AFFECTED = "Delete watchlist_accounts affected rows: {} for watchlistId={}, accountId={}";
     }
 }

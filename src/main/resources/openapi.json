@@ -1044,6 +1044,34 @@
           "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
+    },
+    "/watchlist-accounts": {
+      "post": {
+        "tags": ["watchlist-accounts"],
+        "summary": "Link an account to a watchlist",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest" }, "examples": { "default": { "value": { "watchlistId": 1, "accountId": 2 } } } } }
+        },
+        "responses": {
+          "201": { "description": "Linked" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "tags": ["watchlist-accounts"],
+        "summary": "Unlink an account from a watchlist",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateWatchlistAccountLinkRequest" }, "examples": { "default": { "value": { "watchlistId": 1, "accountId": 2 } } } } }
+        },
+        "responses": {
+          "204": { "description": "Deleted" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
     }
   },
   "components": {
@@ -1578,40 +1606,27 @@
       "ApiResponseHoldingSummaryList": {
         "type": "object",
         "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/HoldingSummary"
-            }
-          }
+          "success": { "type": "boolean" },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/HoldingSummary" } }
         }
       },
       "CreateHoldingRequest": {
         "type": "object",
         "properties": {
-          "accountId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "name": {
-            "type": "string"
-          },
-          "symbol": {
-            "type": "string"
-          },
-          "units": {
-            "type": "number"
-          }
+          "accountId": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" },
+          "symbol": { "type": "string" },
+          "units": { "type": "number" }
         },
-        "required": [
-          "accountId",
-          "name",
-          "symbol",
-          "units"
-        ]
+        "required": [ "accountId", "name", "symbol", "units" ]
+      },
+      "CreateWatchlistAccountLinkRequest": {
+        "type": "object",
+        "properties": {
+          "watchlistId": { "type": "integer", "format": "int64" },
+          "accountId": { "type": "integer", "format": "int64" }
+        },
+        "required": [ "watchlistId", "accountId" ]
       },
       "AccountSummary": {
         "type": "object",
