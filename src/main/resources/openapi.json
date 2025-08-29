@@ -988,10 +988,16 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateHoldingRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateHoldingRequest"
+              },
               "examples": {
                 "default": {
-                  "value": { "accountId": 1, "name": "TCS", "symbol": "TCS" }
+                  "value": {
+                    "accountId": 1,
+                    "name": "TCS",
+                    "symbol": "TCS"
+                  }
                 }
               }
             }
