@@ -121,7 +121,6 @@ CREATE TABLE IF NOT EXISTS holdings
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
--- Unified transactions table for both account and holding events
 CREATE TABLE IF NOT EXISTS transactions
 (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
