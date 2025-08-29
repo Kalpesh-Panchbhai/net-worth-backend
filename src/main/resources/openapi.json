@@ -1210,6 +1210,35 @@
       }
     },
     "/transactions": {
+      "post": {
+        "tags": ["transactions"],
+        "summary": "Create a transaction (date-only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateTransactionRequest" },
+              "examples": {
+                "default": {
+                  "value": { "accountId": 123, "holdingId": 456, "txnDate": "2025-08-29", "invested": 1.00, "value": 10.25 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transaction created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponseTransaction" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
       "get": {
         "tags": [
           "transactions"
@@ -1590,6 +1619,47 @@
           },
           "value": {
             "type": "number"
+          }
+        }
+      },
+      "CreateTransactionRequest": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "holdingId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "txnDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "invested": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "accountId",
+          "holdingId",
+          "txnDate",
+          "invested",
+          "value"
+        ]
+      },
+      "ApiResponseTransaction": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Transaction"
           }
         }
       },

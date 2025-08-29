@@ -8,6 +8,9 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 @Slf4j
 public class TransactionApiHandler extends EntityHandlerBase {
 
@@ -19,10 +22,46 @@ public class TransactionApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.ACTION_REQUIRED, Constants.Messages.ACTION_REQUIRED);
         }
         return switch (action.toLowerCase()) {
+            case Constants.Actions.CREATE -> create(request);
             case Constants.Actions.GET -> list(request);
             case Constants.Actions.DELETE -> delete(request);
-            default -> badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.TRANSACTIONS, action));
+            default ->
+                    badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.TRANSACTIONS, action));
         };
+    }
+
+    private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
+        var json = getJsonBody(request);
+        if (json == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
+        }
+        Long accountId = json.hasNonNull(Constants.Query.ACCOUNT_ID) ? json.get(Constants.Query.ACCOUNT_ID).asLong() : null;
+        Long holdingId = json.hasNonNull(Constants.Query.HOLDING_ID) ? json.get(Constants.Query.HOLDING_ID).asLong() : null;
+        String txnDateStr = json.hasNonNull(Constants.Query.TXN_DATE) ? json.get(Constants.Query.TXN_DATE).asText() : null;
+        BigDecimal invested = json.hasNonNull(Constants.Query.INVESTED) ? json.get(Constants.Query.INVESTED).decimalValue() : null;
+        BigDecimal value = json.hasNonNull(Constants.Query.VALUE) ? json.get(Constants.Query.VALUE).decimalValue() : null;
+
+        if (accountId == null || accountId <= 0)
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_ACCOUNT_ID_REQUIRED);
+        if (holdingId == null || holdingId < 0)
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_HOLDING_ID_REQUIRED);
+        if (txnDateStr == null || txnDateStr.isBlank())
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
+        if (invested == null)
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_INVESTED_REQUIRED);
+        if (value == null)
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_VALUE_REQUIRED);
+
+        LocalDate txnDate;
+        try {
+            txnDate = LocalDate.parse(txnDateStr);
+        } catch (Exception e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
+        }
+        log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value);
+        Transaction created = repository.create(accountId, holdingId, txnDate, invested, value);
+        log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value);
+        return created(created);
     }
 
     private APIGatewayProxyResponseEvent list(APIGatewayProxyRequestEvent request) throws Exception {

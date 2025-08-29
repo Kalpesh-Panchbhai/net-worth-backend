@@ -146,6 +146,9 @@ public class Constants {
         public static final String IS_ACTIVE = "isActive";
         public static final String ACCOUNT_ID = "accountId";
         public static final String HOLDING_ID = "holdingId";
+        public static final String TXN_DATE = "txnDate";
+        public static final String INVESTED = "invested";
+        public static final String VALUE = "value";
         public static final String SYMBOL = "symbol";
         public static final String UNITS = "units";
         public static final String WATCHLIST_ID = "watchlistId";
@@ -552,11 +555,11 @@ public class Constants {
         // Transactions
         public static final String TRANSACTION_FILTER_REQUIRED = "Either accountId or holdingId is required";
         public static final String TRANSACTION_NOT_FOUND = "Transaction not found";
-
-        // Transactions
-        public static final String TRANSACTIONS_LIST = "Listing transactions for {}={}";
-        public static final String TRANSACTIONS_LIST_COUNT = "Transactions fetched: count={} for {}={}";
-        public static final String TRANSACTION_DELETE_AFFECTED = "Delete transactions affected rows: {} for id={}";
+        public static final String TRANSACTION_ACCOUNT_ID_REQUIRED = "accountId is required";
+        public static final String TRANSACTION_HOLDING_ID_REQUIRED = "holdingId is required";
+        public static final String TRANSACTION_DATE_REQUIRED = "txnDate is required (YYYY-MM-DD)";
+        public static final String TRANSACTION_INVESTED_REQUIRED = "invested is required";
+        public static final String TRANSACTION_VALUE_REQUIRED = "value is required";
     }
 
     @UtilityClass
@@ -651,6 +654,8 @@ public class Constants {
         public static final String TRANSACTIONS_LIST = "Listing transactions for {}={}";
         public static final String TRANSACTIONS_LIST_COUNT = "Transactions fetched: count={} for {}={}";
         public static final String TRANSACTION_DELETE_AFFECTED = "Delete transactions affected rows: {} for id={}";
+        public static final String TRANSACTION_CREATE = "Creating transaction: accountId={}, holdingId={}, date={}, invested={}, value={}";
+        public static final String TRANSACTION_CREATED = "Transaction created: id={}, accountId={}, holdingId={}, date={}, invested={}, value={}";
     }
 
 }

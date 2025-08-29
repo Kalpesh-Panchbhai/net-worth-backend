@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,5 +48,17 @@ public abstract class JdbcRepository<T> {
             if (binder != null) binder.accept(ps);
             return ps.executeUpdate();
         }
+    }
+
+    protected long executeAndReturnGeneratedId(String sql, SQLConsumer<PreparedStatement> binder) throws SQLException {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            if (binder != null) binder.accept(ps);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) return rs.getLong(1);
+            }
+        }
+        throw new SQLException("No generated ID returned");
     }
 }

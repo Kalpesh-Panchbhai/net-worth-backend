@@ -4,8 +4,11 @@ import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.common.JdbcRepository;
 import com.networth.networthbackend.common.RowMapper;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.List;
 
 public class TransactionRepository extends JdbcRepository<Transaction> {
@@ -18,6 +21,31 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
             .invested(rs.getBigDecimal(Constants.DB.Transactions.COL_INVESTED))
             .value(rs.getBigDecimal(Constants.DB.Transactions.COL_VALUE))
             .build();
+
+    public Transaction create(long accountId, long holdingId, LocalDate txnDate, BigDecimal invested, BigDecimal value) throws SQLException {
+        final String sql = Constants.SQL.INSERT_INTO + Constants.DB.Transactions.TABLE +
+                " (" + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Transactions.COL_ACCOUNT_ID,
+                Constants.DB.Transactions.COL_HOLDING_ID,
+                Constants.DB.Transactions.COL_TXN_DATE,
+                Constants.DB.Transactions.COL_INVESTED,
+                Constants.DB.Transactions.COL_VALUE) + ") VALUES (?,?,?,?,?)";
+        long id = executeAndReturnGeneratedId(sql, ps -> {
+            ps.setLong(1, accountId);
+            ps.setLong(2, holdingId);
+            ps.setDate(3, Date.valueOf(txnDate));
+            ps.setBigDecimal(4, invested);
+            ps.setBigDecimal(5, value);
+        });
+        return Transaction.builder()
+                .id(id)
+                .accountId(accountId)
+                .holdingId(holdingId)
+                .txnDate(txnDate)
+                .invested(invested)
+                .value(value)
+                .build();
+    }
 
     public List<Transaction> listByAccountId(long accountId) throws SQLException {
         final String sql = Constants.SQL.SELECT
