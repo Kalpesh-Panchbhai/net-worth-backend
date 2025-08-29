@@ -100,16 +100,14 @@ public class AccountRepository extends JdbcRepository<Account> {
                         + String.join(Constants.SQL.COMMA_SPACE,
                         Constants.DB.Holdings.COL_ACCOUNT_ID,
                         Constants.DB.Holdings.COL_NAME,
-                        Constants.DB.Holdings.COL_SYMBOL,
-                        Constants.DB.Holdings.COL_UNITS)
+                        Constants.DB.Holdings.COL_SYMBOL)
                         + Constants.SQL.CLOSE_PAREN + Constants.SQL.VALUES + Constants.SQL.OPEN_PAREN
-                        + String.join(Constants.SQL.COMMA_SPACE, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM)
+                        + String.join(Constants.SQL.COMMA_SPACE, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM)
                         + Constants.SQL.CLOSE_PAREN;
                 try (PreparedStatement psH = conn.prepareStatement(holdingSql)) {
                     psH.setLong(1, id);
                     psH.setString(2, Constants.Accounts.AGG_HOLDING_NAME);
                     psH.setString(3, Constants.Accounts.AGG_HOLDING_SYMBOL);
-                    psH.setBigDecimal(4, new java.math.BigDecimal("0.0000"));
                     psH.executeUpdate();
                 }
             }

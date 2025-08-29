@@ -106,7 +106,6 @@ CREATE TABLE IF NOT EXISTS holdings
     account_id BIGINT UNSIGNED NOT NULL,
     name       VARCHAR(100)    NOT NULL,
     symbol     VARCHAR(50)     NOT NULL,
-    units      DECIMAL(10, 4)  NOT NULL DEFAULT 0, -- fractional quantities supported
     PRIMARY KEY (id),
 
     CONSTRAINT fk_holdings_account
@@ -114,7 +113,6 @@ CREATE TABLE IF NOT EXISTS holdings
             ON DELETE CASCADE,
 
     UNIQUE KEY uk_holdings_account_symbol (account_id, symbol),
-
     KEY idx_holdings_account (account_id)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

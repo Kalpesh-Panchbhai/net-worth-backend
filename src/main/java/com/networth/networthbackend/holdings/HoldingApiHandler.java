@@ -8,7 +8,6 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Slf4j
@@ -37,14 +36,12 @@ public class HoldingApiHandler extends EntityHandlerBase {
         Long accountId = json.hasNonNull(Constants.Query.ACCOUNT_ID) ? json.get(Constants.Query.ACCOUNT_ID).asLong() : null;
         String name = json.hasNonNull(Constants.Query.NAME) ? json.get(Constants.Query.NAME).asText() : null;
         String symbol = json.hasNonNull(Constants.Query.SYMBOL) ? json.get(Constants.Query.SYMBOL).asText() : null;
-        BigDecimal units = json.hasNonNull(Constants.Query.UNITS) ? json.get(Constants.Query.UNITS).decimalValue() : null;
         if (accountId == null || accountId <= 0) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_ACCOUNT_ID_REQUIRED);
         if (name == null || name.isBlank()) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_NAME_REQUIRED);
         if (symbol == null || symbol.isBlank()) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_SYMBOL_REQUIRED);
-        if (units == null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_UNITS_REQUIRED);
-        log.debug(Constants.Logs.HOLDING_CREATE, accountId, name, symbol, units);
-        Holding created = repository.create(accountId, name, symbol, units);
-        log.info(Constants.Logs.HOLDING_CREATED, created.getId(), created.getAccountId(), created.getName(), created.getSymbol(), created.getUnits());
+        log.debug(Constants.Logs.HOLDING_CREATE, accountId, name, symbol);
+        Holding created = repository.create(accountId, name, symbol);
+        log.info(Constants.Logs.HOLDING_CREATED, created.getId(), created.getAccountId(), created.getName(), created.getSymbol());
         return created(created);
     }
 

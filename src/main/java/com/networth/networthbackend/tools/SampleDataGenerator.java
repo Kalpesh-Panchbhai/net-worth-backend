@@ -168,11 +168,7 @@ public class SampleDataGenerator {
 
     private static long ensureUser(Connection conn, String externalUserId, boolean verbose) throws SQLException {
         // Try select
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT " + Constants.DB.Users.COL_ID +
-                        " FROM " + Constants.DB.Users.TABLE +
-                        " WHERE " + Constants.DB.Users.COL_EXTERNAL_USER_ID + " = ?" +
-                        Constants.SQL.LIMIT_1)) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT " + Constants.DB.Users.COL_ID + " FROM " + Constants.DB.Users.TABLE + " WHERE " + Constants.DB.Users.COL_EXTERNAL_USER_ID + " = ?" + Constants.SQL.LIMIT_1)) {
             ps.setString(1, externalUserId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -183,10 +179,7 @@ public class SampleDataGenerator {
             }
         }
         // Insert
-        try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO " + Constants.DB.Users.TABLE +
-                        " (" + Constants.DB.Users.COL_EXTERNAL_USER_ID + ") VALUES (?)",
-                Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO " + Constants.DB.Users.TABLE + " (" + Constants.DB.Users.COL_EXTERNAL_USER_ID + ") VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, externalUserId);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -198,11 +191,7 @@ public class SampleDataGenerator {
             }
         }
         // Fallback select (in case of race)
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT " + Constants.DB.Users.COL_ID +
-                        " FROM " + Constants.DB.Users.TABLE +
-                        " WHERE " + Constants.DB.Users.COL_EXTERNAL_USER_ID + " = ?" +
-                        Constants.SQL.LIMIT_1)) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT " + Constants.DB.Users.COL_ID + " FROM " + Constants.DB.Users.TABLE + " WHERE " + Constants.DB.Users.COL_EXTERNAL_USER_ID + " = ?" + Constants.SQL.LIMIT_1)) {
             ps.setString(1, externalUserId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getLong(1);
@@ -238,14 +227,7 @@ public class SampleDataGenerator {
 
     private static List<Long> createAccounts(Connection conn, long userId, int total, int brokerCount, String currency, boolean commitPerBatch, boolean verbose) throws SQLException {
         List<Long> ids = new ArrayList<>(total);
-        String sql = "INSERT INTO " + Constants.DB.Accounts.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.Accounts.COL_USER_ID,
-                Constants.DB.Accounts.COL_NAME,
-                Constants.DB.Accounts.COL_TYPE,
-                Constants.DB.Accounts.COL_IS_ACTIVE,
-                Constants.DB.Accounts.COL_CURRENCY)
-                + ") VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Accounts.TABLE + " (" + String.join(", ", Constants.DB.Accounts.COL_USER_ID, Constants.DB.Accounts.COL_NAME, Constants.DB.Accounts.COL_TYPE, Constants.DB.Accounts.COL_IS_ACTIVE, Constants.DB.Accounts.COL_CURRENCY) + ") VALUES (?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 1; i <= total; i++) {
                 boolean isBroker = i <= brokerCount;
@@ -278,13 +260,7 @@ public class SampleDataGenerator {
 
     private static Map<Long, List<Long>> createHoldingsForBrokerAccounts(Connection conn, List<Long> brokerAccountIds, int holdingsPerBroker, boolean commitPerBatch, boolean verbose) throws SQLException {
         Map<Long, List<Long>> accountHoldings = new LinkedHashMap<>();
-        String sql = "INSERT INTO " + Constants.DB.Holdings.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.Holdings.COL_ACCOUNT_ID,
-                Constants.DB.Holdings.COL_NAME,
-                Constants.DB.Holdings.COL_SYMBOL,
-                Constants.DB.Holdings.COL_UNITS)
-                + ") VALUES (?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Holdings.TABLE + " (" + String.join(", ", Constants.DB.Holdings.COL_ACCOUNT_ID, Constants.DB.Holdings.COL_NAME, Constants.DB.Holdings.COL_SYMBOL) + ") VALUES (?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             long totalRows = 0;
             for (long accountId : brokerAccountIds) {
@@ -292,11 +268,9 @@ public class SampleDataGenerator {
                 for (int h = 1; h <= holdingsPerBroker; h++) {
                     String name = "Holding " + h + " (A" + accountId + ")";
                     String symbol = "SYM" + h + "A" + accountId;
-                    BigDecimal units = new BigDecimal("100.0000");
                     ps.setLong(1, accountId);
                     ps.setString(2, name);
                     ps.setString(3, symbol);
-                    ps.setBigDecimal(4, units);
                     ps.addBatch();
                 }
                 long tBatch = System.nanoTime();
@@ -320,11 +294,7 @@ public class SampleDataGenerator {
 
     private static List<Long> createWatchlists(Connection conn, long userId, int count, boolean commitPerBatch, boolean verbose) throws SQLException {
         List<Long> ids = new ArrayList<>(count);
-        String sql = "INSERT INTO " + Constants.DB.Watchlists.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.Watchlists.COL_USER_ID,
-                Constants.DB.Watchlists.COL_NAME)
-                + ") VALUES (?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Watchlists.TABLE + " (" + String.join(", ", Constants.DB.Watchlists.COL_USER_ID, Constants.DB.Watchlists.COL_NAME) + ") VALUES (?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 1; i <= count; i++) {
                 ps.setLong(1, userId);
@@ -346,11 +316,7 @@ public class SampleDataGenerator {
     }
 
     private static void attachAccountsToWatchlists(Connection conn, List<Long> watchlistIds, List<Long> accountIds, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = Constants.SQL.INSERT_IGNORE_INTO + Constants.DB.WatchlistAccounts.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.WatchlistAccounts.COL_WATCHLIST_ID,
-                Constants.DB.WatchlistAccounts.COL_ACCOUNT_ID)
-                + ") VALUES (?,?)";
+        String sql = Constants.SQL.INSERT_IGNORE_INTO + Constants.DB.WatchlistAccounts.TABLE + " (" + String.join(", ", Constants.DB.WatchlistAccounts.COL_WATCHLIST_ID, Constants.DB.WatchlistAccounts.COL_ACCOUNT_ID) + ") VALUES (?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             long totalRows = 0;
             for (long wId : watchlistIds) {
@@ -372,14 +338,7 @@ public class SampleDataGenerator {
     }
 
     private static void generateHoldingDaily(Connection conn, Map<Long, List<Long>> accountHoldings, LocalDate startDate, LocalDate endDate, String currency, long seed, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID,
-                Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID,
-                Constants.DB.AccountHoldingValuesDaily.COL_DATE,
-                Constants.DB.AccountHoldingValuesDaily.COL_INVESTED,
-                Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE)
-                + ") VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE) + ") VALUES (?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int pending = 0;
             long total = 0;
@@ -429,14 +388,7 @@ public class SampleDataGenerator {
 
     // --- Transactions (unified table) ---
     private static void generateSampleTransactions(Connection conn, Map<Long, List<Long>> brokerAccountHoldings, Map<Long, Long> nonBrokerAggHolding, LocalDate endDate, int countPerHolding, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.Transactions.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.Transactions.COL_ACCOUNT_ID,
-                Constants.DB.Transactions.COL_HOLDING_ID,
-                Constants.DB.Transactions.COL_TXN_DATE,
-                Constants.DB.Transactions.COL_INVESTED,
-                Constants.DB.Transactions.COL_VALUE)
-                + ") VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Transactions.TABLE + " (" + String.join(", ", Constants.DB.Transactions.COL_ACCOUNT_ID, Constants.DB.Transactions.COL_HOLDING_ID, Constants.DB.Transactions.COL_TXN_DATE, Constants.DB.Transactions.COL_INVESTED, Constants.DB.Transactions.COL_VALUE) + ") VALUES (?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int pending = 0;
             long total = 0;
@@ -506,9 +458,7 @@ public class SampleDataGenerator {
 
     // --- Income tags & sources & incomes ---
     private static List<Long> createIncomeTags(Connection conn, long userId, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.IncomeTags.TABLE + " ("
-                + String.join(", ", Constants.DB.IncomeTags.COL_USER_ID, Constants.DB.IncomeTags.COL_NAME, Constants.DB.IncomeTags.COL_IS_DEFAULT)
-                + ") VALUES (?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.IncomeTags.TABLE + " (" + String.join(", ", Constants.DB.IncomeTags.COL_USER_ID, Constants.DB.IncomeTags.COL_NAME, Constants.DB.IncomeTags.COL_IS_DEFAULT) + ") VALUES (?,?,?)";
         List<Long> ids = new ArrayList<>(2);
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             String[] names = {"Salary", "Bonus"};
@@ -520,16 +470,16 @@ public class SampleDataGenerator {
             }
             ps.executeBatch();
             if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
-            try (ResultSet rs = ps.getGeneratedKeys()) { while (rs.next()) ids.add(rs.getLong(1)); }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                while (rs.next()) ids.add(rs.getLong(1));
+            }
         }
         if (verbose) System.out.printf("[income_tags] Inserted: %d\n", ids.size());
         return ids;
     }
 
     private static List<Long> createIncomeSources(Connection conn, long userId, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.IncomeSources.TABLE + " ("
-                + String.join(", ", Constants.DB.IncomeSources.COL_USER_ID, Constants.DB.IncomeSources.COL_NAME)
-                + ") VALUES (?,?)";
+        String sql = "INSERT INTO " + Constants.DB.IncomeSources.TABLE + " (" + String.join(", ", Constants.DB.IncomeSources.COL_USER_ID, Constants.DB.IncomeSources.COL_NAME) + ") VALUES (?,?)";
         List<Long> ids = new ArrayList<>(2);
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             String[] names = {"Company", "Freelance"};
@@ -540,7 +490,9 @@ public class SampleDataGenerator {
             }
             ps.executeBatch();
             if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
-            try (ResultSet rs = ps.getGeneratedKeys()) { while (rs.next()) ids.add(rs.getLong(1)); }
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                while (rs.next()) ids.add(rs.getLong(1));
+            }
         }
         if (verbose) System.out.printf("[income_sources] Inserted: %d\n", ids.size());
         return ids;
@@ -548,16 +500,7 @@ public class SampleDataGenerator {
 
     private static void generateSampleIncomes(Connection conn, long userId, List<Long> incomeSourceIds, List<Long> incomeTagIds, String currency, LocalDate endDate, int totalCount, boolean commitPerBatch, boolean verbose) throws SQLException {
         if (incomeSourceIds.isEmpty() || incomeTagIds.isEmpty()) return;
-        String sql = "INSERT INTO " + Constants.DB.Incomes.TABLE + " ("
-                + String.join(", ",
-                Constants.DB.Incomes.COL_USER_ID,
-                Constants.DB.Incomes.COL_INCOME_SOURCE_ID,
-                Constants.DB.Incomes.COL_INCOME_TAG_ID,
-                Constants.DB.Incomes.COL_NET_AMOUNT,
-                Constants.DB.Incomes.COL_TAX_PAID,
-                Constants.DB.Incomes.COL_CURRENCY,
-                Constants.DB.Incomes.COL_CREDITED_DATE)
-                + ") VALUES (?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Incomes.TABLE + " (" + String.join(", ", Constants.DB.Incomes.COL_USER_ID, Constants.DB.Incomes.COL_INCOME_SOURCE_ID, Constants.DB.Incomes.COL_INCOME_TAG_ID, Constants.DB.Incomes.COL_NET_AMOUNT, Constants.DB.Incomes.COL_TAX_PAID, Constants.DB.Incomes.COL_CURRENCY, Constants.DB.Incomes.COL_CREDITED_DATE) + ") VALUES (?,?,?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int perGroup = totalCount / 2; // 5 per tag/source
             // first pair
@@ -606,13 +549,12 @@ public class SampleDataGenerator {
     private static Map<Long, Long> createAggregateHoldingForAccounts(Connection conn, List<Long> accountIds, boolean commitPerBatch, boolean verbose) throws SQLException {
         Map<Long, Long> map = new LinkedHashMap<>();
         if (accountIds.isEmpty()) return map;
-        String sql = "INSERT INTO holdings (account_id, name, symbol, units) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO holdings (account_id, name, symbol) VALUES (?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (long accountId : accountIds) {
                 ps.setLong(1, accountId);
                 ps.setString(2, Constants.Accounts.AGG_HOLDING_NAME);
                 ps.setString(3, Constants.Accounts.AGG_HOLDING_SYMBOL);
-                ps.setBigDecimal(4, new BigDecimal("0.0000"));
                 ps.addBatch();
             }
             long tBatch = System.nanoTime();

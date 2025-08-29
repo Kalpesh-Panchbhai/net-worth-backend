@@ -4,8 +4,6 @@ import com.networth.networthbackend.common.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.math.BigDecimal;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,5 +14,4 @@ public class Holding extends BaseEntity {
     private long accountId;
     private String name;
     private String symbol;
-    private BigDecimal units;
 }

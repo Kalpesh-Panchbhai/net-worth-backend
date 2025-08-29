@@ -988,17 +988,10 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateHoldingRequest"
-              },
+              "schema": { "$ref": "#/components/schemas/CreateHoldingRequest" },
               "examples": {
                 "default": {
-                  "value": {
-                    "accountId": 1,
-                    "name": "TCS",
-                    "symbol": "TCS",
-                    "units": 10.5
-                  }
+                  "value": { "accountId": 1, "name": "TCS", "symbol": "TCS" }
                 }
               }
             }
@@ -1044,7 +1037,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of holdings with current/previous day values and invested",
+            "description": "List of holdings with units from latest transaction value and current/previous day values and invested",
             "content": {
               "application/json": {
                 "schema": {
@@ -1932,17 +1925,13 @@
           },
           "symbol": {
             "type": "string"
-          },
-          "units": {
-            "type": "number"
           }
         },
         "required": [
           "id",
           "accountId",
           "name",
-          "symbol",
-          "units"
+          "symbol"
         ]
       },
       "HoldingSummary": {
@@ -1962,9 +1951,6 @@
           "symbol": {
             "type": "string"
           },
-          "units": {
-            "type": "number"
-          },
           "currentDayValue": {
             "type": "number"
           },
@@ -1980,7 +1966,6 @@
           "accountId",
           "name",
           "symbol",
-          "units",
           "currentDayValue",
           "previousDayValue",
           "invested"
