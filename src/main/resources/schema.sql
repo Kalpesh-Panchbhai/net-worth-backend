@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+
 CREATE TABLE IF NOT EXISTS income_sources
 (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -116,6 +117,31 @@ CREATE TABLE IF NOT EXISTS holdings
     UNIQUE KEY uk_holdings_account_symbol (account_id, symbol),
 
     KEY idx_holdings_account (account_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+-- Unified transactions table for both account and holding events
+CREATE TABLE IF NOT EXISTS transactions
+(
+    id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    account_id BIGINT UNSIGNED NOT NULL,
+    holding_id BIGINT UNSIGNED NOT NULL,
+    txn_date   DATE            NOT NULL,
+    invested   DECIMAL(10, 4)  NOT NULL,
+    value      DECIMAL(10, 4)  NOT NULL,
+    PRIMARY KEY (id),
+
+    CONSTRAINT fk_transactions_account
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_transactions_holding
+        FOREIGN KEY (holding_id) REFERENCES holdings (id)
+            ON DELETE CASCADE,
+
+    KEY idx_tx_account_time (account_id, txn_date),
+    UNIQUE KEY uk_tx_holding_date (holding_id, txn_date)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
