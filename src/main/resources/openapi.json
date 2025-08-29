@@ -1211,16 +1211,26 @@
     },
     "/transactions": {
       "post": {
-        "tags": ["transactions"],
+        "tags": [
+          "transactions"
+        ],
         "summary": "Create a transaction (date-only)",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateTransactionRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionRequest"
+              },
               "examples": {
                 "default": {
-                  "value": { "accountId": 123, "holdingId": 456, "txnDate": "2025-08-29", "invested": 1.00, "value": 10.25 }
+                  "value": {
+                    "accountId": 123,
+                    "holdingId": 456,
+                    "txnDate": "2025-08-29",
+                    "invested": 1.00,
+                    "value": 10.25
+                  }
                 }
               }
             }
@@ -1231,12 +1241,18 @@
             "description": "Transaction created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseTransaction" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTransaction"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "500": { "$ref": "#/components/responses/InternalError" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
         }
       },
       "get": {

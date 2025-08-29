@@ -113,6 +113,14 @@ public class SampleDataGenerator {
                     if (verbose)
                         System.out.printf("[user=%s] Inserted watchlists: %d and memberships: %d in %s%n", externalUserId, watchlistIds.size(), (watchlistIds.size() * accountIds.size()), fmtMs(t));
 
+                    // Income Tags & Sources (2 each), and Incomes (10 total: 5 per tag/source)
+                    t = System.nanoTime();
+                    List<Long> incomeTagIds = createIncomeTags(conn, userId, commitPerBatch, verbose);
+                    List<Long> incomeSourceIds = createIncomeSources(conn, userId, commitPerBatch, verbose);
+                    generateSampleIncomes(conn, userId, incomeSourceIds, incomeTagIds, currency, endDate, 10, commitPerBatch, verbose);
+                    if (verbose)
+                        System.out.printf("[user=%s] Inserted income tags=%d, sources=%d, incomes=%d in %s%n", externalUserId, incomeTagIds.size(), incomeSourceIds.size(), 10, fmtMs(t));
+
                     // Time-series
                     t = System.nanoTime();
                     generateAccountDailyForNonBroker(conn, nonBrokerAccountIds, nonBrokerAggHolding, startDate, endDate, currency, seed + (idx * 1000L), batchSize, commitPerBatch, verbose);
@@ -494,6 +502,90 @@ public class SampleDataGenerator {
 
     private static long daysBetween(LocalDate start, LocalDate end) {
         return java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1;
+    }
+
+    // --- Income tags & sources & incomes ---
+    private static List<Long> createIncomeTags(Connection conn, long userId, boolean commitPerBatch, boolean verbose) throws SQLException {
+        String sql = "INSERT INTO " + Constants.DB.IncomeTags.TABLE + " ("
+                + String.join(", ", Constants.DB.IncomeTags.COL_USER_ID, Constants.DB.IncomeTags.COL_NAME, Constants.DB.IncomeTags.COL_IS_DEFAULT)
+                + ") VALUES (?,?,?)";
+        List<Long> ids = new ArrayList<>(2);
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            String[] names = {"Salary", "Bonus"};
+            for (int i = 0; i < names.length; i++) {
+                ps.setLong(1, userId);
+                ps.setString(2, names[i]);
+                ps.setBoolean(3, i == 0); // first default
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+            try (ResultSet rs = ps.getGeneratedKeys()) { while (rs.next()) ids.add(rs.getLong(1)); }
+        }
+        if (verbose) System.out.printf("[income_tags] Inserted: %d\n", ids.size());
+        return ids;
+    }
+
+    private static List<Long> createIncomeSources(Connection conn, long userId, boolean commitPerBatch, boolean verbose) throws SQLException {
+        String sql = "INSERT INTO " + Constants.DB.IncomeSources.TABLE + " ("
+                + String.join(", ", Constants.DB.IncomeSources.COL_USER_ID, Constants.DB.IncomeSources.COL_NAME)
+                + ") VALUES (?,?)";
+        List<Long> ids = new ArrayList<>(2);
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            String[] names = {"Company", "Freelance"};
+            for (String name : names) {
+                ps.setLong(1, userId);
+                ps.setString(2, name);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+            try (ResultSet rs = ps.getGeneratedKeys()) { while (rs.next()) ids.add(rs.getLong(1)); }
+        }
+        if (verbose) System.out.printf("[income_sources] Inserted: %d\n", ids.size());
+        return ids;
+    }
+
+    private static void generateSampleIncomes(Connection conn, long userId, List<Long> incomeSourceIds, List<Long> incomeTagIds, String currency, LocalDate endDate, int totalCount, boolean commitPerBatch, boolean verbose) throws SQLException {
+        if (incomeSourceIds.isEmpty() || incomeTagIds.isEmpty()) return;
+        String sql = "INSERT INTO " + Constants.DB.Incomes.TABLE + " ("
+                + String.join(", ",
+                Constants.DB.Incomes.COL_USER_ID,
+                Constants.DB.Incomes.COL_INCOME_SOURCE_ID,
+                Constants.DB.Incomes.COL_INCOME_TAG_ID,
+                Constants.DB.Incomes.COL_NET_AMOUNT,
+                Constants.DB.Incomes.COL_TAX_PAID,
+                Constants.DB.Incomes.COL_CURRENCY,
+                Constants.DB.Incomes.COL_CREDITED_DATE)
+                + ") VALUES (?,?,?,?,?,?,?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int perGroup = totalCount / 2; // 5 per tag/source
+            // first pair
+            for (int i = 0; i < perGroup; i++) {
+                ps.setLong(1, userId);
+                ps.setLong(2, incomeSourceIds.get(0));
+                ps.setLong(3, incomeTagIds.get(0));
+                ps.setBigDecimal(4, new BigDecimal("1000.00").add(new BigDecimal(i)));
+                ps.setBigDecimal(5, new BigDecimal("100.00"));
+                ps.setString(6, currency);
+                ps.setDate(7, Date.valueOf(endDate.minusDays(i)));
+                ps.addBatch();
+            }
+            // second pair
+            for (int i = 0; i < perGroup; i++) {
+                ps.setLong(1, userId);
+                ps.setLong(2, incomeSourceIds.get(1));
+                ps.setLong(3, incomeTagIds.get(1));
+                ps.setBigDecimal(4, new BigDecimal("2000.00").add(new BigDecimal(i)));
+                ps.setBigDecimal(5, new BigDecimal("200.00"));
+                ps.setString(6, currency);
+                ps.setDate(7, Date.valueOf(endDate.minusDays(perGroup + i)));
+                ps.addBatch();
+            }
+            ps.executeBatch();
+            if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+        }
+        if (verbose) System.out.printf("[incomes] Inserted: %d\n", totalCount);
     }
 
     // --- Args parser ---
