@@ -1,5 +1,6 @@
 package com.networth.networthbackend.incometags;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.networth.networthbackend.common.BaseEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,5 +18,6 @@ import lombok.experimental.SuperBuilder;
 public class IncomeTag extends BaseEntity {
     private long userId;
     private String name;
+    @JsonProperty("isDefault")
     private boolean isDefault;
 }

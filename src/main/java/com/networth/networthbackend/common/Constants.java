@@ -136,6 +136,7 @@ public class Constants {
         public static final String EXTERNAL_USER_ID = "externalUserId";
         public static final String NAME = "name";
         public static final String DEFAULT = "default";
+        public static final String IS_DEFAULT = "isDefault";
         public static final String INCOME_SOURCE_ID = "incomeSourceId";
         public static final String INCOME_TAG_ID = "incomeTagId";
         public static final String NET_AMOUNT = "netAmount";

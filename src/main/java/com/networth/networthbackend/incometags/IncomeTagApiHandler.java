@@ -36,7 +36,7 @@ public class IncomeTagApiHandler extends EntityHandlerBase {
         }
         Long userId = json.hasNonNull(Constants.Query.USER_ID) ? json.get(Constants.Query.USER_ID).asLong() : null;
         String name = json.hasNonNull(Constants.Query.NAME) ? json.get(Constants.Query.NAME).asText() : null;
-        boolean isDefault = json.hasNonNull(Constants.Query.DEFAULT) && json.get(Constants.Query.DEFAULT).asBoolean();
+        boolean isDefault = json.hasNonNull(Constants.Query.IS_DEFAULT) && json.get(Constants.Query.IS_DEFAULT).asBoolean();
         if (userId == null || userId <= 0) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_TAG_USER_ID_REQUIRED);
         }

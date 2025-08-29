@@ -148,7 +148,7 @@
           "income-sources"
         ],
         "summary": "Create an income source",
-        "description": "Creates an income source. If `default` is true, any existing default source for the same user will be unset so that only one source is default per user (application-level enforcement).",
+        "description": "Creates an income source. If `isDefault` is true, any existing default source for the same user will be unset so that only one source is default per user (application-level enforcement).",
         "requestBody": {
           "required": true,
           "content": {
@@ -161,7 +161,7 @@
                   "value": {
                     "userId": 1,
                     "name": "Company",
-                    "default": false
+                    "isDefault": false
                   }
                 }
               }
@@ -197,7 +197,7 @@
           "income-tags"
         ],
         "summary": "Create an income tag",
-        "description": "Creates an income tag. If `default` is true, any existing default tag for the same user will be unset so that only one tag is default per user (application-level enforcement).",
+        "description": "Creates an income tag. If `isDefault` is true, any existing default tag for the same user will be unset so that only one tag is default per user (application-level enforcement).",
         "requestBody": {
           "required": true,
           "content": {
@@ -210,7 +210,7 @@
                   "value": {
                     "userId": 1,
                     "name": "Salary",
-                    "default": false
+                    "isDefault": false
                   }
                 }
               }
@@ -1418,7 +1418,7 @@
           "name": {
             "type": "string"
           },
-          "default": {
+          "isDefault": {
             "type": "boolean"
           }
         },
@@ -1440,7 +1440,7 @@
       },
       "IncomeTag": {
         "type": "object",
-        "description": "Income tag for a user. Only one tag per user can have `default=true`.",
+        "description": "Income tag for a user. Only one tag per user can have `isDefault=true`.",
         "properties": {
           "id": {
             "type": "integer",
@@ -1453,7 +1453,7 @@
           "name": {
             "type": "string"
           },
-          "default": {
+          "isDefault": {
             "type": "boolean"
           }
         },
@@ -1461,7 +1461,7 @@
           "id",
           "userId",
           "name",
-          "default"
+          "isDefault"
         ]
       },
       "ApiResponseIncomeTag": {
@@ -1516,7 +1516,7 @@
       },
       "IncomeSource": {
         "type": "object",
-        "description": "Income source for a user. Only one source per user can have `default=true`.",
+        "description": "Income source for a user. Only one source per user can have `isDefault=true`.",
         "properties": {
           "id": {
             "type": "integer",
@@ -1529,7 +1529,7 @@
           "name": {
             "type": "string"
           },
-          "default": {
+          "isDefault": {
             "type": "boolean"
           }
         },
@@ -1537,7 +1537,7 @@
           "id",
           "userId",
           "name",
-          "default"
+          "isDefault"
         ]
       },
       "CreateIncomeSourceRequest": {
@@ -1550,7 +1550,7 @@
           "name": {
             "type": "string"
           },
-          "default": {
+          "isDefault": {
             "type": "boolean"
           }
         },
