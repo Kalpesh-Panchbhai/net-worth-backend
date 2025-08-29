@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS income_sources
 (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -58,7 +57,7 @@ CREATE TABLE IF NOT EXISTS incomes
     net_amount       DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     tax_paid         DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     currency         CHAR(3)         NOT NULL,
-    credited_date    DATETIME        NOT NULL,
+    credited_date    DATE            NOT NULL,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_incomes_user
@@ -139,7 +138,7 @@ CREATE TABLE IF NOT EXISTS transactions
         FOREIGN KEY (holding_id) REFERENCES holdings (id)
             ON DELETE CASCADE,
 
-    KEY idx_tx_account_time (account_id, txn_date),
+    KEY idx_tx_account_date (account_id, txn_date),
     UNIQUE KEY uk_tx_holding_date (holding_id, txn_date)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4

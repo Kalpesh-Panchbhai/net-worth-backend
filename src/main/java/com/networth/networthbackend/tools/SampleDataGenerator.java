@@ -125,6 +125,12 @@ public class SampleDataGenerator {
                     if (verbose)
                         System.out.printf("[user=%s] Inserted holding daily rows (expected): %d x %d = %d in %s%n", externalUserId, holdings, nbDays, (holdings * nbDays), fmtMs(t));
 
+                    // Transactions: create 10 per holding (including aggregate holdings for non-broker accounts)
+                    t = System.nanoTime();
+                    generateSampleTransactions(conn, accountHoldings, nonBrokerAggHolding, endDate, 10, batchSize, commitPerBatch, verbose);
+                    if (verbose)
+                        System.out.printf("[user=%s] Inserted sample transactions: %d holdings x %d each in %s%n", externalUserId, (holdings + nonBrokerAggHolding.size()), 10, fmtMs(t));
+
                     if (verbose) {
                         System.out.printf("[user=%s] Done. userId=%d, accounts=%d (broker=%d, non-broker=%d), watchlists=%d, days=%d, totalTime=%s%n", externalUserId, userId, accountIds.size(), brokerAccountIds.size(), nonBrokerAccountIds.size(), watchlistIds.size(), days, fmtMs(tUser));
                     }
@@ -372,6 +378,72 @@ public class SampleDataGenerator {
         int c = 0;
         for (List<Long> l : accountHoldings.values()) c += l.size();
         return c;
+    }
+
+    // --- Transactions (unified table) ---
+    private static void generateSampleTransactions(Connection conn, Map<Long, List<Long>> brokerAccountHoldings, Map<Long, Long> nonBrokerAggHolding, LocalDate endDate, int countPerHolding, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
+        String sql = "INSERT INTO transactions (account_id, holding_id, txn_date, invested, value) VALUES (?,?,?,?,?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int pending = 0;
+            long total = 0;
+            // Broker holdings
+            for (Map.Entry<Long, List<Long>> e : brokerAccountHoldings.entrySet()) {
+                long accountId = e.getKey();
+                for (long holdingId : e.getValue()) {
+                    for (int i = countPerHolding - 1; i >= 0; i--) {
+                        LocalDate d = endDate.minusDays(i);
+                        ps.setLong(1, accountId);
+                        ps.setLong(2, holdingId);
+                        ps.setDate(3, Date.valueOf(d));
+                        ps.setBigDecimal(4, BigDecimal.valueOf(1)); // invested
+                        ps.setBigDecimal(5, BigDecimal.valueOf(i + 1)); // value grows
+                        ps.addBatch();
+                        pending++;
+                        if (pending >= batchSize) {
+                            long tBatch = System.nanoTime();
+                            ps.executeBatch();
+                            if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+                            total += pending;
+                            if (verbose)
+                                System.out.printf("[transactions] Batch inserted: +%d rows (total=%d) in %s%n", pending, total, fmtMs(tBatch));
+                            pending = 0;
+                        }
+                    }
+                }
+            }
+            // Non-broker aggregate holdings (one per non-broker account)
+            for (Map.Entry<Long, Long> e : nonBrokerAggHolding.entrySet()) {
+                long accountId = e.getKey();
+                long holdingId = e.getValue();
+                for (int i = countPerHolding - 1; i >= 0; i--) {
+                    LocalDate d = endDate.minusDays(i);
+                    ps.setLong(1, accountId);
+                    ps.setLong(2, holdingId);
+                    ps.setDate(3, Date.valueOf(d));
+                    ps.setBigDecimal(4, BigDecimal.valueOf(1));
+                    ps.setBigDecimal(5, BigDecimal.valueOf(i + 1));
+                    ps.addBatch();
+                    pending++;
+                    if (pending >= batchSize) {
+                        long tBatch = System.nanoTime();
+                        ps.executeBatch();
+                        if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+                        total += pending;
+                        if (verbose)
+                            System.out.printf("[transactions] Batch inserted: +%d rows (total=%d) in %s%n", pending, total, fmtMs(tBatch));
+                        pending = 0;
+                    }
+                }
+            }
+            if (pending > 0) {
+                long tBatch = System.nanoTime();
+                ps.executeBatch();
+                if (commitPerBatch && !conn.getAutoCommit()) conn.commit();
+                total += pending;
+                if (verbose)
+                    System.out.printf("[transactions] Batch inserted: +%d rows (total=%d) in %s%n", pending, total, fmtMs(tBatch));
+            }
+        }
     }
 
     private static long daysBetween(LocalDate start, LocalDate end) {

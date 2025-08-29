@@ -1,15 +1,11 @@
 package com.networth.networthbackend.incomes;
 
 import com.networth.networthbackend.common.BaseEntity;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
@@ -24,5 +20,5 @@ public class Income extends BaseEntity {
     private BigDecimal netAmount;
     private BigDecimal taxPaid;
     private String currency;
-    private Instant creditedDate; // UTC
+    private LocalDate creditedDate; // date-only
 }

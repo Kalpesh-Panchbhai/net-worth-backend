@@ -9,7 +9,7 @@ import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -62,9 +62,9 @@ public class IncomeApiHandler extends EntityHandlerBase {
         if (creditedDateStr == null || creditedDateStr.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
         }
-        Instant creditedDate;
+        LocalDate creditedDate;
         try {
-            creditedDate = Instant.parse(creditedDateStr);
+            creditedDate = LocalDate.parse(creditedDateStr);
         } catch (Exception e) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
         }
@@ -126,10 +126,10 @@ public class IncomeApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_UPDATE_NO_FIELDS);
         }
 
-        java.time.Instant creditedDate = null;
+        java.time.LocalDate creditedDate = null;
         if (creditedDateStr != null) {
             try {
-                creditedDate = java.time.Instant.parse(creditedDateStr);
+                creditedDate = java.time.LocalDate.parse(creditedDateStr);
             } catch (Exception e) {
                 return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
             }

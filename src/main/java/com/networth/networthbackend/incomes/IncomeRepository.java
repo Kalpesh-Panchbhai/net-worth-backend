@@ -12,8 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -27,7 +27,7 @@ public class IncomeRepository extends JdbcRepository<Income> {
             .netAmount(rs.getBigDecimal(Constants.DB.Incomes.COL_NET_AMOUNT))
             .taxPaid(rs.getBigDecimal(Constants.DB.Incomes.COL_TAX_PAID))
             .currency(rs.getString(Constants.DB.Incomes.COL_CURRENCY))
-            .creditedDate(rs.getTimestamp(Constants.DB.Incomes.COL_CREDITED_DATE).toInstant())
+            .creditedDate(rs.getDate(Constants.DB.Incomes.COL_CREDITED_DATE).toLocalDate())
             .build();
 
     public List<Income> listByUserId(long userId) throws SQLException {
@@ -78,7 +78,7 @@ public class IncomeRepository extends JdbcRepository<Income> {
                           BigDecimal netAmount,
                           BigDecimal taxPaid,
                           String currency,
-                          Instant creditedDate) throws SQLException {
+                          LocalDate creditedDate) throws SQLException {
         StringBuilder set = new StringBuilder();
         java.util.List<java.util.function.BiConsumer<java.sql.PreparedStatement, Integer>> binders = new java.util.ArrayList<>();
 
@@ -104,7 +104,7 @@ public class IncomeRepository extends JdbcRepository<Income> {
         }
         if (creditedDate != null) {
             appendSet(set, Constants.DB.Incomes.COL_CREDITED_DATE);
-            binders.add((ps, idx) -> { try { ps.setTimestamp(idx, Timestamp.from(creditedDate)); } catch (SQLException e) { throw new RuntimeException(e); } });
+            binders.add((ps, idx) -> { try { ps.setDate(idx, Date.valueOf(creditedDate)); } catch (SQLException e) { throw new RuntimeException(e); } });
         }
 
         if (binders.isEmpty()) return 0; // nothing to update
@@ -133,7 +133,7 @@ public class IncomeRepository extends JdbcRepository<Income> {
                          BigDecimal netAmount,
                          BigDecimal taxPaid,
                          String currency,
-                         Instant creditedDate) throws SQLException {
+                         LocalDate creditedDate) throws SQLException {
         final String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Incomes.TABLE
                 + Constants.SQL.OPEN_PAREN
                 + String.join(Constants.SQL.COMMA_SPACE,
@@ -164,7 +164,7 @@ public class IncomeRepository extends JdbcRepository<Income> {
             ps.setBigDecimal(4, netAmount);
             ps.setBigDecimal(5, taxPaid);
             ps.setString(6, currency);
-            ps.setTimestamp(7, Timestamp.from(creditedDate));
+            ps.setDate(7, Date.valueOf(creditedDate));
             int affected = ps.executeUpdate();
             log.debug(Constants.Logs.INCOME_INSERT_AFFECTED, affected, userId, incomeSourceId, incomeTagId);
             try (ResultSet rs = ps.getGeneratedKeys()) {
