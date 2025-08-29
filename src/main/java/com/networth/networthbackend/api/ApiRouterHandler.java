@@ -37,6 +37,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.HOLDINGS, new HoldingApiHandler());
         registry.put(Constants.Entities.WATCHLIST_ACCOUNTS, new WatchlistAccountApiHandler());
         registry.put(Constants.Entities.ACCOUNT_WATCHLISTS, new AccountWatchlistApiHandler());
+        registry.put(Constants.Entities.TRANSACTIONS, new com.networth.networthbackend.transactions.TransactionApiHandler());
     }
 
     @Override

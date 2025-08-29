@@ -145,6 +145,7 @@ public class Constants {
         public static final String TYPE = "type";
         public static final String IS_ACTIVE = "isActive";
         public static final String ACCOUNT_ID = "accountId";
+        public static final String HOLDING_ID = "holdingId";
         public static final String SYMBOL = "symbol";
         public static final String UNITS = "units";
         public static final String WATCHLIST_ID = "watchlistId";
@@ -161,6 +162,7 @@ public class Constants {
         public static final String HOLDINGS = "holdings";
         public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
         public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
+        public static final String TRANSACTIONS = "transactions";
     }
 
     @UtilityClass
@@ -460,6 +462,17 @@ public class Constants {
         }
 
         @UtilityClass
+        public static class Transactions {
+            public static final String TABLE = "transactions";
+            public static final String COL_ID = "id";
+            public static final String COL_ACCOUNT_ID = "account_id";
+            public static final String COL_HOLDING_ID = "holding_id";
+            public static final String COL_TXN_DATE = "txn_date";
+            public static final String COL_INVESTED = "invested";
+            public static final String COL_VALUE = "value";
+        }
+
+        @UtilityClass
         public static class Aliases {
             public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
             public static final String COL_PREVIOUS_DAY_VALUE = "previous_day_value";
@@ -535,6 +548,15 @@ public class Constants {
         // Watchlist-Accounts
         public static final String WATCHLIST_ID_REQUIRED = "watchlistId is required";
         public static final String WATCHLIST_ACCOUNT_ID_REQUIRED = "accountId is required";
+
+        // Transactions
+        public static final String TRANSACTION_FILTER_REQUIRED = "Either accountId or holdingId is required";
+        public static final String TRANSACTION_NOT_FOUND = "Transaction not found";
+
+        // Transactions
+        public static final String TRANSACTIONS_LIST = "Listing transactions for {}={}";
+        public static final String TRANSACTIONS_LIST_COUNT = "Transactions fetched: count={} for {}={}";
+        public static final String TRANSACTION_DELETE_AFFECTED = "Delete transactions affected rows: {} for id={}";
     }
 
     @UtilityClass
@@ -624,5 +646,11 @@ public class Constants {
         public static final String WATCHLIST_ACCOUNT_LINK = "Linking accountId={} to watchlistId={}";
         public static final String WATCHLIST_ACCOUNT_LINK_AFFECTED = "Insert watchlist_accounts affected rows: {} for watchlistId={}, accountId={}";
         public static final String WATCHLIST_ACCOUNT_UNLINK_AFFECTED = "Delete watchlist_accounts affected rows: {} for watchlistId={}, accountId={}";
+
+        // Transactions
+        public static final String TRANSACTIONS_LIST = "Listing transactions for {}={}";
+        public static final String TRANSACTIONS_LIST_COUNT = "Transactions fetched: count={} for {}={}";
+        public static final String TRANSACTION_DELETE_AFFECTED = "Delete transactions affected rows: {} for id={}";
     }
+
 }

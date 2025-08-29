@@ -45,6 +45,10 @@
     {
       "name": "account-watchlists",
       "description": "Watchlists that include an account"
+    },
+    {
+      "name": "transactions",
+      "description": "Transactions listing & deletion"
     }
   ],
   "paths": {
@@ -53,7 +57,7 @@
         "tags": [
           "incomes"
         ],
-        "summary": "Create an income (UTC)",
+        "summary": "Create an income (date-only)",
         "requestBody": {
           "required": true,
           "content": {
@@ -70,7 +74,7 @@
                     "netAmount": 1000.5,
                     "taxPaid": 100.25,
                     "currency": "INR",
-                    "creditedDate": "2025-08-26T09:00:00Z"
+                    "creditedDate": "2025-08-26"
                   }
                 }
               }
@@ -578,7 +582,22 @@
             "description": "Deleted"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Transaction not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -1189,6 +1208,137 @@
           }
         }
       }
+    },
+    "/transactions": {
+      "get": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "List transactions by accountId or holdingId",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 123
+          },
+          {
+            "name": "holdingId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 456
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTransactionList"
+                },
+                "examples": {
+                  "byAccountId": {
+                    "summary": "Transactions for accountId=123",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "accountId": 123,
+                          "holdingId": 1001,
+                          "txnDate": "2025-08-20",
+                          "invested": 100.00,
+                          "value": 120.00
+                        },
+                        {
+                          "id": 2,
+                          "accountId": 123,
+                          "holdingId": 1002,
+                          "txnDate": "2025-08-19",
+                          "invested": 50.00,
+                          "value": 60.00
+                        }
+                      ]
+                    }
+                  },
+                  "byHoldingId": {
+                    "summary": "Transactions for holdingId=456",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 10,
+                          "accountId": 789,
+                          "holdingId": 456,
+                          "txnDate": "2025-08-29",
+                          "invested": 1.00,
+                          "value": 10.00
+                        },
+                        {
+                          "id": 11,
+                          "accountId": 789,
+                          "holdingId": 456,
+                          "txnDate": "2025-08-28",
+                          "invested": 1.00,
+                          "value": 9.50
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/transactions/{id}": {
+      "delete": {
+        "tags": [
+          "transactions"
+        ],
+        "summary": "Delete a transaction by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1401,8 +1551,8 @@
           },
           "creditedDate": {
             "type": "string",
-            "format": "date-time",
-            "description": "UTC ISO 8601"
+            "format": "date",
+            "description": "Date-only (YYYY-MM-DD)"
           }
         },
         "required": [
@@ -1415,6 +1565,47 @@
           "currency",
           "creditedDate"
         ]
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "holdingId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "txnDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "invested": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseTransactionList": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          }
+        }
       },
       "CreateIncomeRequest": {
         "type": "object",
