@@ -7,12 +7,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.watchlists.WatchlistRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class UserApiHandler extends EntityHandlerBase {
 
     private final UserRepository userRepository = new UserRepository();
+    private final WatchlistRepository watchlistRepository = new WatchlistRepository();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -35,6 +37,13 @@ public class UserApiHandler extends EntityHandlerBase {
         log.debug(Constants.Logs.USER_ENSURE, externalUserId);
         EnsureUserResult result = userRepository.ensure(externalUserId);
         User user = result.getUser();
+        if (result.isCreated()) {
+            // Create default watchlist "All" for every newly created user (idempotent against races)
+            boolean exists = watchlistRepository.existsByUserIdAndName(user.getId(), "All");
+            if (!exists) {
+                watchlistRepository.create(user.getId(), "All");
+            }
+        }
         log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getExternalUserId());
         return result.isCreated() ? created(user) : ok(user);
     }
