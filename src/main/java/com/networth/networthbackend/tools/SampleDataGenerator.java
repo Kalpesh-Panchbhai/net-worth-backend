@@ -219,7 +219,7 @@ public class SampleDataGenerator {
         int users = Integer.parseInt(cfg.getOrDefault("users", "1"));
         String prefix = cfg.getOrDefault("userPrefix", "demo-user-");
         List<String> gen = new ArrayList<>(users);
-        for (int i = 1; i <= users; i++) gen.add(prefix + i);
+        for (int i = 1; i <= users; i++) gen.add("Ve43CSFGNFgps5eGk3avtSOClgA3");
         return gen;
     }
 
