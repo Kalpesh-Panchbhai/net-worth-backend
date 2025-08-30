@@ -569,6 +569,7 @@ public class Constants {
         public static final String HOLDING_SYMBOL_REQUIRED = "symbol is required to create holding";
         public static final String HOLDING_UNITS_REQUIRED = "units is required to create holding";
         public static final String HOLDING_NOT_FOUND = "Holding not found";
+        public static final String HOLDING_SYMBOL_DUPLICATE = "Holding with the same symbol already exists for this account";
 
         // Watchlist-Accounts
         public static final String WATCHLIST_ID_REQUIRED = "watchlistId is required";
@@ -666,6 +667,7 @@ public class Constants {
         public static final String HOLDING_DELETE_AFFECTED = "Delete holdings affected rows: {} for id={}";
         public static final String HOLDINGS_LIST = "Listing holdings for accountId={}";
         public static final String HOLDINGS_LIST_COUNT = "Holdings fetched: count={} for accountId={}";
+        public static final String HOLDING_SYMBOL_DUPLICATE = "Holding symbol duplicate for accountId={}, symbol={}";
 
         // Watchlist-Accounts
         public static final String WATCHLIST_ACCOUNT_LINK = "Linking accountId={} to watchlistId={}";

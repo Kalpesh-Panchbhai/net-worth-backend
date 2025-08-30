@@ -12,6 +12,20 @@ import java.util.List;
 @Slf4j
 public class HoldingRepository extends JdbcRepository<Holding> {
 
+    public boolean existsByAccountIdAndSymbol(long accountId, String symbol) throws SQLException {
+        final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Holdings.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Holdings.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.AND + Constants.DB.Holdings.COL_SYMBOL + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setString(2, symbol);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     public Holding create(long accountId, String name, String symbol) throws SQLException {
         // units column removed from holdings; keep param for backward API compatibility but ignore in insert
         final String sql = Constants.SQL.INSERT_INTO + Constants.DB.Holdings.TABLE + Constants.SQL.OPEN_PAREN
@@ -67,3 +81,4 @@ public class HoldingRepository extends JdbcRepository<Holding> {
         }
     }
 }
+

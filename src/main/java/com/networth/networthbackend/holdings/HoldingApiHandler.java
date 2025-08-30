@@ -39,6 +39,10 @@ public class HoldingApiHandler extends EntityHandlerBase {
         if (accountId == null || accountId <= 0) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_ACCOUNT_ID_REQUIRED);
         if (name == null || name.isBlank()) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_NAME_REQUIRED);
         if (symbol == null || symbol.isBlank()) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.HOLDING_SYMBOL_REQUIRED);
+        if (repository.existsByAccountIdAndSymbol(accountId, symbol)) {
+            log.warn(Constants.Logs.HOLDING_SYMBOL_DUPLICATE, accountId, symbol);
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.HOLDING_SYMBOL_DUPLICATE);
+        }
         log.debug(Constants.Logs.HOLDING_CREATE, accountId, name, symbol);
         Holding created = repository.create(accountId, name, symbol);
         log.info(Constants.Logs.HOLDING_CREATED, created.getId(), created.getAccountId(), created.getName(), created.getSymbol());
