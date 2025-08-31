@@ -544,7 +544,8 @@ public class Constants {
         public static final String INCOME_TAG_ID_REQUIRED = "incomeTagId is required";
         public static final String INCOME_NET_AMOUNT_REQUIRED = "netAmount is required";
         public static final String INCOME_CURRENCY_REQUIRED = "currency is required";
-        public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required (UTC ISO 8601)";
+        public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required 'YYYY-MM-DD' format";
+        public static final String INCOME_DUPLICATE = "Income for the same date, source and tag already exists.";
         public static final String INCOME_NOT_FOUND = "Income not found";
         public static final String INCOME_UPDATE_NO_FIELDS = "At least one editable field must be provided";
 

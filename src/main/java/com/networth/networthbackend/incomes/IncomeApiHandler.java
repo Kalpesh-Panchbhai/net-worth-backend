@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -69,7 +70,12 @@ public class IncomeApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
         }
         log.debug(Constants.Logs.INCOME_CREATE, userId, sourceId, tagId, netAmount, taxPaid, currency, creditedDate);
-        var created = repository.create(userId, sourceId, tagId, netAmount, taxPaid, currency, creditedDate);
+        Income created;
+        try {
+            created = repository.create(userId, sourceId, tagId, netAmount, taxPaid, currency, creditedDate);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_DUPLICATE);
+        }
         return created(created);
     }
 

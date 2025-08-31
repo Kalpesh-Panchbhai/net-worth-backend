@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS incomes
         FOREIGN KEY (income_tag_id) REFERENCES income_tags (id)
             ON DELETE RESTRICT,
 
-    UNIQUE KEY uk_incomes_user_date (user_id, credited_date),
+    UNIQUE KEY uk_incomes_user_date_source_tag (user_id, credited_date, income_source_id, income_tag_id),
 
     KEY idx_incomes_user (user_id)
 ) ENGINE = InnoDB

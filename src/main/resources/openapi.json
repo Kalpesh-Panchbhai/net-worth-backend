@@ -92,6 +92,24 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "duplicateComposite": {
+                    "value": {
+                      "code": "CONFLICT",
+                      "message": "Income for the same date, source and tag already exists."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
             "$ref": "#/components/responses/BadRequest"
           },
