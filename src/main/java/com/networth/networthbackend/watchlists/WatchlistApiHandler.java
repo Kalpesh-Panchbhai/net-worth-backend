@@ -102,12 +102,14 @@ public class WatchlistApiHandler extends EntityHandlerBase {
             // No change, return current state
             return ok(existing);
         }
-        if (repository.existsByUserIdAndName(existing.getUserId(), newName)) {
+        log.debug(Constants.Logs.WATCHLIST_UPDATE_NAME, id, newName);
+        int affected;
+        try {
+            affected = repository.updateName(id, newName);
+        } catch (SQLIntegrityConstraintViolationException e) {
             log.warn(Constants.Logs.WATCHLIST_NAME_DUPLICATE, existing.getUserId(), newName);
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.WATCHLIST_NAME_DUPLICATE);
         }
-        log.debug(Constants.Logs.WATCHLIST_UPDATE_NAME, id, newName);
-        int affected = repository.updateName(id, newName);
         log.debug(Constants.Logs.WATCHLIST_UPDATE_NAME_AFFECTED, affected, id);
         var updated = repository.findById(id).orElse(null);
         if (updated == null) {
