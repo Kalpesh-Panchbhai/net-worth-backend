@@ -461,10 +461,36 @@
             "description": "Default set"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Income tag not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Income tag not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -546,10 +572,36 @@
             "description": "Default set"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Income source not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Income source not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
