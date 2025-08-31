@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 @Slf4j
@@ -43,12 +44,15 @@ public class IncomeSourceApiHandler extends EntityHandlerBase {
         if (name == null || name.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_SOURCE_NAME_REQUIRED);
         }
-        if (repository.existsByUserIdAndName(userId, name)) {
+        log.debug(Constants.Logs.INCOME_SOURCE_CREATE, userId, name, isDefault);
+        IncomeSource created;
+        try {
+            created = repository.create(userId, name, isDefault);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            // Duplicate (userId, name) per unique key uk_income_sources_user_name
             log.warn(Constants.Logs.INCOME_SOURCE_NAME_DUPLICATE, userId, name);
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_SOURCE_NAME_DUPLICATE);
         }
-        log.debug(Constants.Logs.INCOME_SOURCE_CREATE, userId, name, isDefault);
-        IncomeSource created = repository.create(userId, name, isDefault);
         log.info(Constants.Logs.INCOME_SOURCE_CREATED, created.getId(), created.getUserId(), created.getName(), created.isDefault());
         return created(created);
     }

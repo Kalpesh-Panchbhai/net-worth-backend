@@ -529,13 +529,13 @@ public class Constants {
         // Income Tags
         public static final String INCOME_TAG_USER_ID_REQUIRED = "userId is required to create income tag";
         public static final String INCOME_TAG_NAME_REQUIRED = "name is required to create income tag";
-        public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag with the same name already exists for this user";
+        public static final String INCOME_TAG_NAME_DUPLICATE = "Income tag with the same name already exists.";
         public static final String INCOME_TAG_NOT_FOUND = "Income tag not found";
 
         // Income Sources
         public static final String INCOME_SOURCE_USER_ID_REQUIRED = "userId is required to create income source";
         public static final String INCOME_SOURCE_NAME_REQUIRED = "name is required to create income source";
-        public static final String INCOME_SOURCE_NAME_DUPLICATE = "Income source with the same name already exists for this user";
+        public static final String INCOME_SOURCE_NAME_DUPLICATE = "Income source with the same name already exists.";
         public static final String INCOME_SOURCE_NOT_FOUND = "Income source not found";
 
         // Incomes
