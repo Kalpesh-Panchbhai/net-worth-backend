@@ -82,9 +82,6 @@ public class Constants {
         public static final String INSERT_INTO = "INSERT INTO ";
         public static final String INSERT_IGNORE_INTO = "INSERT IGNORE INTO ";
         public static final String VALUES = " VALUES ";
-        public static final String ON_DUPLICATE_KEY_UPDATE = " ON DUPLICATE KEY UPDATE ";
-        public static final String EQ_VALUES_OPEN = " = VALUES(";
-        public static final String CLOSE = ")";
         public static final String PARAM = "?";
         public static final String EQ_PARAM = " = ?";
     }
@@ -135,7 +132,6 @@ public class Constants {
         public static final String USER_ID = "userId";
         public static final String EXTERNAL_USER_ID = "externalUserId";
         public static final String NAME = "name";
-        public static final String DEFAULT = "default";
         public static final String IS_DEFAULT = "isDefault";
         public static final String INCOME_SOURCE_ID = "incomeSourceId";
         public static final String INCOME_TAG_ID = "incomeTagId";
@@ -151,7 +147,6 @@ public class Constants {
         public static final String INVESTED = "invested";
         public static final String VALUE = "value";
         public static final String SYMBOL = "symbol";
-        public static final String UNITS = "units";
         public static final String WATCHLIST_ID = "watchlistId";
     }
 
@@ -173,10 +168,6 @@ public class Constants {
     public static class Accounts {
         public static final String TYPE_BROKER = "BROKER";
         public static final String TYPE_SAVINGS = "SAVINGS";
-        public static final String TYPE_CREDIT_CARD = "CREDIT_CARD";
-        public static final String TYPE_LOAN = "LOAN";
-        public static final String TYPE_OTHER = "OTHER";
-
         public static final String AGG_HOLDING_NAME = "Account Aggregate";
         public static final String AGG_HOLDING_SYMBOL = "__ACCT__";
     }
@@ -569,7 +560,6 @@ public class Constants {
         public static final String HOLDING_ACCOUNT_ID_REQUIRED = "accountId is required to create holding";
         public static final String HOLDING_NAME_REQUIRED = "name is required to create holding";
         public static final String HOLDING_SYMBOL_REQUIRED = "symbol is required to create holding";
-        public static final String HOLDING_UNITS_REQUIRED = "units is required to create holding";
         public static final String HOLDING_NOT_FOUND = "Holding not found";
         public static final String HOLDING_SYMBOL_DUPLICATE = "Holding with the same symbol already exists for this account";
 
