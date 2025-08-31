@@ -520,7 +520,7 @@ public class Constants {
         public static final String ACTION_NOT_SUPPORTED_FMT = "Unsupported action for %s: %s";
 
         // Users
-        public static final String EXTERNAL_USER_ID_REQUIRED = "externalUserId is required in JSON body or as query param";
+        public static final String EXTERNAL_USER_ID_REQUIRED = "externalUserId is required in JSON body";
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
         public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";

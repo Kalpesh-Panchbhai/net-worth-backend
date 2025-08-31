@@ -38,11 +38,7 @@ public class UserApiHandler extends EntityHandlerBase {
         EnsureUserResult result = userRepository.ensure(externalUserId);
         User user = result.getUser();
         if (result.isCreated()) {
-            // Create default watchlist "All" for every newly created user (idempotent against races)
-            boolean exists = watchlistRepository.existsByUserIdAndName(user.getId(), "All");
-            if (!exists) {
-                watchlistRepository.create(user.getId(), "All");
-            }
+            watchlistRepository.create(user.getId(), "All");
         }
         log.info(Constants.Logs.USER_ENSURED, user.getId(), user.getExternalUserId());
         return result.isCreated() ? created(user) : ok(user);
@@ -71,9 +67,6 @@ public class UserApiHandler extends EntityHandlerBase {
         JsonNode node = getJsonBody(request);
         if (node != null && node.hasNonNull(Constants.Query.EXTERNAL_USER_ID)) {
             externalUserId = node.get(Constants.Query.EXTERNAL_USER_ID).asText();
-        }
-        if (externalUserId == null || externalUserId.isBlank()) {
-            externalUserId = queryParam(request, Constants.Query.EXTERNAL_USER_ID);
         }
         return externalUserId;
     }

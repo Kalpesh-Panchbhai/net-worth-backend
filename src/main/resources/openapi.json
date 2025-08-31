@@ -246,6 +246,7 @@
           "users"
         ],
         "summary": "Create or ensure a user exists",
+        "description": "Ensures a user exists for the given externalUserId using an idempotent insert (INSERT IGNORE). Returns 201 when a new user is created, or 200 when the user already exists. On first creation, a default watchlist named 'All' is created for the user.",
         "requestBody": {
           "required": true,
           "content": {
@@ -275,7 +276,7 @@
             }
           },
           "200": {
-            "description": "User ensured",
+            "description": "User already existed (ensured)",
             "content": {
               "application/json": {
                 "schema": {
