@@ -111,7 +111,20 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingFilter": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Filter by accountId or holdingId is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -1717,8 +1730,46 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "duplicateDate": {
+                    "value": {
+                      "code": "CONFLICT",
+                      "message": "Transaction with the same date already exists."
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingAccountId": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "accountId is required to create transaction" }
+                  },
+                  "missingHoldingId": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "holdingId is required to create transaction" }
+                  },
+                  "missingDate": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "txnDate is required 'YYYY-MM-DD' format" }
+                  },
+                  "missingInvested": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "invested is required to create transaction" }
+                  },
+                  "missingValue": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "value is required to create transaction" }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -1844,10 +1895,36 @@
             "description": "Deleted"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Transaction not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

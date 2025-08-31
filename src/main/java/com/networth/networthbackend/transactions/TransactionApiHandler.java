@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -59,7 +60,12 @@ public class TransactionApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
         }
         log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value);
-        Transaction created = repository.create(accountId, holdingId, txnDate, invested, value);
+        Transaction created;
+        try {
+            created = repository.create(accountId, holdingId, txnDate, invested, value);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.TRANSACTION_DUPLICATE);
+        }
         log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value);
         return created(created);
     }

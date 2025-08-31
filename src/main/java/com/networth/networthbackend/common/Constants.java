@@ -582,9 +582,10 @@ public class Constants {
         public static final String TRANSACTION_NOT_FOUND = "Transaction not found";
         public static final String TRANSACTION_ACCOUNT_ID_REQUIRED = "accountId is required";
         public static final String TRANSACTION_HOLDING_ID_REQUIRED = "holdingId is required";
-        public static final String TRANSACTION_DATE_REQUIRED = "txnDate is required (YYYY-MM-DD)";
+        public static final String TRANSACTION_DATE_REQUIRED = "txnDate is required 'YYYY-MM-DD' format";
         public static final String TRANSACTION_INVESTED_REQUIRED = "invested is required";
         public static final String TRANSACTION_VALUE_REQUIRED = "value is required";
+        public static final String TRANSACTION_DUPLICATE = "Transaction with the same date already exists.";
     }
 
     @UtilityClass
