@@ -1706,13 +1706,34 @@
                 "$ref": "#/components/schemas/CreateTransactionRequest"
               },
               "examples": {
-                "default": {
+                "setValue": {
+                  "summary": "Set absolute balance value",
                   "value": {
                     "accountId": 123,
                     "holdingId": 456,
                     "txnDate": "2025-08-29",
-                    "invested": 1.00,
-                    "value": 10.25
+                    "invested": 100.00,
+                    "value": 105.50
+                  }
+                },
+                "valueDelta": {
+                  "summary": "Adjust balance using valueDelta",
+                  "value": {
+                    "accountId": 123,
+                    "holdingId": 456,
+                    "txnDate": "2025-08-30",
+                    "invested": 100.00,
+                    "valueDelta": -4.50
+                  }
+                },
+                "investedDelta": {
+                  "summary": "Adjust invested using investedDelta (with absolute value)",
+                  "value": {
+                    "accountId": 123,
+                    "holdingId": 456,
+                    "txnDate": "2025-08-31",
+                    "investedDelta": 25.00,
+                    "value": 110.00
                   }
                 }
               }
@@ -1761,11 +1782,8 @@
                   "missingDate": {
                     "value": { "code": "VALIDATION_ERROR", "message": "txnDate is required 'YYYY-MM-DD' format" }
                   },
-                  "missingInvested": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "invested is required to create transaction" }
-                  },
-                  "missingValue": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "value is required to create transaction" }
+                  "invalidPairing": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "Provide either both (value, invested) or both (valueDelta, investedDelta)" }
                   }
                 }
               }
@@ -2201,18 +2219,33 @@
             "format": "date"
           },
           "invested": {
-            "type": "number"
+            "type": "number",
+            "format": "decimal",
+            "default": 0
+          },
+          "investedDelta": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Delta to be applied over previous invested to compute new invested. Provide either invested or investedDelta."
           },
           "value": {
-            "type": "number"
+            "type": "number",
+            "format": "decimal",
+            "description": "Absolute end-of-day balance value. Provide either value or valueDelta."
+          },
+          "valueDelta": {
+            "type": "number",
+            "format": "decimal",
+            "description": "Delta to be applied over previous balance to compute new value. Provide either value or valueDelta."
           }
         },
         "required": [
           "accountId",
-          "holdingId",
-          "txnDate",
-          "invested",
-          "value"
+          "txnDate"
+        ],
+        "oneOf": [
+          { "required": ["value", "invested"] },
+          { "required": ["valueDelta", "investedDelta"] }
         ]
       },
       "ApiResponseTransaction": {

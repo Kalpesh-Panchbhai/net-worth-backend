@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public class TransactionRepository extends JdbcRepository<Transaction> {
 
@@ -75,6 +76,38 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
                 + Constants.SQL.WHERE + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM
                 + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC";
         return queryList(sql, ps -> ps.setLong(1, holdingId), MAPPER);
+    }
+
+    public Optional<Transaction> findLatestByHoldingId(long holdingId) throws SQLException {
+        final String sql = Constants.SQL.SELECT
+                + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Transactions.COL_ID,
+                Constants.DB.Transactions.COL_ACCOUNT_ID,
+                Constants.DB.Transactions.COL_HOLDING_ID,
+                Constants.DB.Transactions.COL_TXN_DATE,
+                Constants.DB.Transactions.COL_INVESTED,
+                Constants.DB.Transactions.COL_VALUE)
+                + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM
+                + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC, " + Constants.DB.Transactions.COL_ID + " DESC"
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, holdingId), MAPPER);
+    }
+
+    public Optional<Transaction> findLatestByAccountId(long accountId) throws SQLException {
+        final String sql = Constants.SQL.SELECT
+                + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Transactions.COL_ID,
+                Constants.DB.Transactions.COL_ACCOUNT_ID,
+                Constants.DB.Transactions.COL_HOLDING_ID,
+                Constants.DB.Transactions.COL_TXN_DATE,
+                Constants.DB.Transactions.COL_INVESTED,
+                Constants.DB.Transactions.COL_VALUE)
+                + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM
+                + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC, " + Constants.DB.Transactions.COL_ID + " DESC"
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, accountId), MAPPER);
     }
 
     public int deleteById(long id) throws SQLException {

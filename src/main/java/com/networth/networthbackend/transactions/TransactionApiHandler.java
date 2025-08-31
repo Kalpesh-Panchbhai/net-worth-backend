@@ -41,6 +41,8 @@ public class TransactionApiHandler extends EntityHandlerBase {
         String txnDateStr = json.hasNonNull(Constants.Query.TXN_DATE) ? json.get(Constants.Query.TXN_DATE).asText() : null;
         BigDecimal invested = json.hasNonNull(Constants.Query.INVESTED) ? json.get(Constants.Query.INVESTED).decimalValue() : null;
         BigDecimal value = json.hasNonNull(Constants.Query.VALUE) ? json.get(Constants.Query.VALUE).decimalValue() : null;
+        BigDecimal valueDelta = json.hasNonNull("valueDelta") ? json.get("valueDelta").decimalValue() : null;
+        BigDecimal investedDelta = json.hasNonNull("investedDelta") ? json.get("investedDelta").decimalValue() : null;
 
         if (accountId == null || accountId <= 0)
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_ACCOUNT_ID_REQUIRED);
@@ -48,16 +50,31 @@ public class TransactionApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_HOLDING_ID_REQUIRED);
         if (txnDateStr == null || txnDateStr.isBlank())
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
-        if (invested == null)
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_INVESTED_REQUIRED);
-        if (value == null)
-            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_VALUE_REQUIRED);
+        boolean hasAbs = (value != null) && (invested != null);
+        boolean hasDelta = (valueDelta != null) && (investedDelta != null);
+        if (hasAbs == hasDelta) {
+            // Either neither provided, or both kinds mixed/provided
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_ABSOLUTE_OR_DELTAS_REQUIRED);
+        }
 
         LocalDate txnDate;
         try {
             txnDate = LocalDate.parse(txnDateStr);
         } catch (Exception e) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
+        }
+        // If using deltas, compute both from latest
+        if (hasDelta) {
+            java.util.Optional<Transaction> latestOpt;
+            if (holdingId != null && holdingId > 0) {
+                latestOpt = repository.findLatestByHoldingId(holdingId);
+            } else {
+                latestOpt = repository.findLatestByAccountId(accountId);
+            }
+            BigDecimal prevVal = latestOpt.map(Transaction::getValue).orElse(BigDecimal.ZERO);
+            BigDecimal prevInv = latestOpt.map(Transaction::getInvested).orElse(BigDecimal.ZERO);
+            value = prevVal.add(valueDelta);
+            invested = prevInv.add(investedDelta);
         }
         log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value);
         Transaction created;
