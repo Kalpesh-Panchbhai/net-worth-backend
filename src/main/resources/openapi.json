@@ -1598,7 +1598,26 @@
             "description": "Linked"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingWatchlistId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "watchlistId is required to link"
+                    }
+                  },
+                  "missingAccountId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "accountId is required to link"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -1633,7 +1652,26 @@
             "description": "Deleted"
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingWatchlistId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "watchlistId is required to unlink"
+                    }
+                  },
+                  "missingAccountId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "accountId is required to unlink"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
