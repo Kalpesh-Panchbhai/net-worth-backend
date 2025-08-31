@@ -554,6 +554,7 @@ public class Constants {
         public static final String WATCHLIST_NAME_REQUIRED = "name is required to create or update watchlist";
         public static final String WATCHLIST_NAME_DUPLICATE = "Watchlist with the same name already exists.";
         public static final String WATCHLIST_NOT_FOUND = "Watchlist not found";
+        public static final String WATCHLIST_NAME_ALL = "All";
 
         // Accounts
         public static final String ACCOUNT_USER_ID_REQUIRED = "userId is required to create account";

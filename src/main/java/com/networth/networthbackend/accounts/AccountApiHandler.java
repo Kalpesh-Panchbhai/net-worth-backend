@@ -6,13 +6,18 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.watchlists.WatchlistAccountRepository;
+import com.networth.networthbackend.watchlists.WatchlistRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+
 @Slf4j
 public class AccountApiHandler extends EntityHandlerBase {
 
     private final AccountRepository repository = new AccountRepository();
+    private final WatchlistRepository watchlistRepository = new WatchlistRepository();
+    private final WatchlistAccountRepository watchlistAccountRepository = new WatchlistAccountRepository();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -72,6 +77,12 @@ public class AccountApiHandler extends EntityHandlerBase {
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
         }
         log.info(Constants.Logs.ACCOUNT_CREATED, created.getId(), created.getUserId(), created.getName(), created.getType(), created.getCurrency(), created.isActive());
+
+        var wlOpt = watchlistRepository.findByUserIdAndName(created.getUserId(), Constants.Messages.WATCHLIST_NAME_ALL);
+        long watchlistId = wlOpt.get().getId();
+        if (watchlistId > 0) {
+            watchlistAccountRepository.link(watchlistId, created.getId());
+        }
         return created(created);
     }
 

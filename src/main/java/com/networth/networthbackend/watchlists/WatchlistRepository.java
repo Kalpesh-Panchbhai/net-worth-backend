@@ -21,15 +21,12 @@ public class WatchlistRepository extends JdbcRepository<Watchlist> {
         return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
     }
 
-    public boolean existsByUserIdAndName(long userId, String name) throws SQLException {
-        final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Watchlists.TABLE + Constants.SQL.WHERE + Constants.DB.Watchlists.COL_USER_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Watchlists.COL_NAME + Constants.SQL.EQ_PARAM + Constants.SQL.LIMIT_1;
-        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+    public Optional<Watchlist> findByUserIdAndName(long userId, String name) throws SQLException {
+        final String sql = Constants.SQL.SELECT + String.join(Constants.SQL.COMMA_SPACE, Constants.DB.Watchlists.COL_ID, Constants.DB.Watchlists.COL_USER_ID, Constants.DB.Watchlists.COL_NAME) + Constants.SQL.FROM + Constants.DB.Watchlists.TABLE + Constants.SQL.WHERE + Constants.DB.Watchlists.COL_USER_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Watchlists.COL_NAME + Constants.SQL.EQ_PARAM + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> {
             ps.setLong(1, userId);
             ps.setString(2, name);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
+        }, MAPPER);
     }
 
     public Watchlist create(long userId, String name) throws SQLException {
