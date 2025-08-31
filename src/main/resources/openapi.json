@@ -703,10 +703,36 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Income not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Income not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -734,7 +760,7 @@
             "description": "Deleted"
           },
           "404": {
-            "description": "Transaction not found",
+            "description": "Income not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -744,7 +770,7 @@
                   "default": {
                     "value": {
                       "code": "NOT_FOUND",
-                      "message": "Transaction not found"
+                      "message": "Income not found"
                     }
                   }
                 }
@@ -752,7 +778,20 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
