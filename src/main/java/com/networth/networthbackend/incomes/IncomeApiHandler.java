@@ -141,7 +141,13 @@ public class IncomeApiHandler extends EntityHandlerBase {
             }
         }
 
-        int affected = repository.updateById(id, incomeSourceId, incomeTagId, netAmount, taxPaid, currency, creditedDate);
+        int affected;
+        try {
+            affected = repository.updateById(id, incomeSourceId, incomeTagId, netAmount, taxPaid, currency, creditedDate);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            // Duplicate composite key (user_id, credited_date, income_source_id, income_tag_id)
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_DUPLICATE);
+        }
         if (affected == 0) {
             // Either no fields or not found. Check existence to return 404 vs validation already handled
             var maybe = repository.findById(id);
