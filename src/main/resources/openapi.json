@@ -479,7 +479,9 @@
             "description": "Income tag not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -495,7 +497,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -590,7 +594,9 @@
             "description": "Income source not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -606,7 +612,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -703,7 +711,9 @@
             "description": "Conflict",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "duplicateComposite": {
                     "value": {
@@ -719,7 +729,9 @@
             "description": "Income not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -735,7 +747,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -794,7 +808,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -851,7 +867,9 @@
             "description": "Conflict",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "duplicateName": {
                     "value": {
@@ -958,7 +976,9 @@
             "description": "Conflict",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "duplicateName": {
                     "value": {
@@ -974,7 +994,9 @@
             "description": "Watchlist not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -990,7 +1012,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -1031,7 +1055,9 @@
             "description": "Watchlist not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -1047,7 +1073,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -1104,7 +1132,22 @@
             }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "duplicateNameType": {
+                    "value": {
+                      "code": "CONFLICT",
+                      "message": "Account with the same name and type already exists."
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
@@ -1173,10 +1216,40 @@
             "description": "Deleted"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Account not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -1240,13 +1313,58 @@
             }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "duplicateNameType": {
+                    "value": {
+                      "code": "CONFLICT",
+                      "message": "Account with the same name and type already exists."
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "NOT_FOUND",
+                      "message": "Account not found"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "missingPathId": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Path parameter 'id' is required"
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"

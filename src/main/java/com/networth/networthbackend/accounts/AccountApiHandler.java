@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 @Slf4j
 public class AccountApiHandler extends EntityHandlerBase {
 
@@ -62,12 +63,14 @@ public class AccountApiHandler extends EntityHandlerBase {
         if (currency == null || currency.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_CURRENCY_REQUIRED);
         }
-        if (repository.existsByUserIdAndNameAndType(userId, name, type)) {
+        log.debug(Constants.Logs.ACCOUNT_CREATE, userId, name, type, currency, isActive);
+        Account created;
+        try {
+            created = repository.create(userId, name, type, isActive, currency);
+        } catch (SQLIntegrityConstraintViolationException e) {
             log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, userId, name, type);
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
         }
-        log.debug(Constants.Logs.ACCOUNT_CREATE, userId, name, type, currency, isActive);
-        Account created = repository.create(userId, name, type, isActive, currency);
         log.info(Constants.Logs.ACCOUNT_CREATED, created.getId(), created.getUserId(), created.getName(), created.getType(), created.getCurrency(), created.isActive());
         return created(created);
     }
@@ -104,15 +107,14 @@ public class AccountApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_UPDATE_NO_FIELDS);
         }
         var existing = existingOpt.get();
-        // If name is provided and changed, ensure no duplicates for same (userId, type)
-        if (newName != null && !newName.isBlank() && !newName.equals(existing.getName())) {
-            if (repository.existsByUserIdAndNameAndTypeExceptId(existing.getUserId(), newName, existing.getType(), id)) {
-                log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, existing.getUserId(), newName, existing.getType());
-                return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
-            }
-        }
         log.debug(Constants.Logs.ACCOUNT_UPDATE, id, newName, newIsActive);
-        int affected = repository.updateNameAndIsActive(id, (newName != null && !newName.isBlank()) ? newName : null, newIsActive);
+        int affected;
+        try {
+            affected = repository.updateNameAndIsActive(id, (newName != null && !newName.isBlank()) ? newName : null, newIsActive);
+        } catch (SQLIntegrityConstraintViolationException e) {
+            log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, existing.getUserId(), (newName != null && !newName.isBlank()) ? newName : existing.getName(), existing.getType());
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);
+        }
         log.debug(Constants.Logs.ACCOUNT_UPDATE_AFFECTED, affected, id);
         var updated = repository.findById(id).orElse(null);
         if (updated == null) {

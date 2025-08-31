@@ -560,7 +560,7 @@ public class Constants {
         public static final String ACCOUNT_NAME_REQUIRED = "name is required to create account";
         public static final String ACCOUNT_TYPE_REQUIRED = "type is required to create account";
         public static final String ACCOUNT_CURRENCY_REQUIRED = "currency is required to create account";
-        public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists for this user";
+        public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists.";
         public static final String ACCOUNT_NOT_FOUND = "Account not found";
         public static final String ACCOUNT_UPDATE_NO_FIELDS = "At least one editable field (name, isActive) must be provided";
 
