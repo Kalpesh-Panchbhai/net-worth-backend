@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
 @Slf4j
@@ -54,12 +55,14 @@ public class WatchlistApiHandler extends EntityHandlerBase {
         if (name == null || name.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.WATCHLIST_NAME_REQUIRED);
         }
-        if (repository.existsByUserIdAndName(userId, name)) {
+        log.debug(Constants.Logs.WATCHLIST_CREATE, userId, name);
+        Watchlist created;
+        try {
+            created = repository.create(userId, name);
+        } catch (SQLIntegrityConstraintViolationException e) {
             log.warn(Constants.Logs.WATCHLIST_NAME_DUPLICATE, userId, name);
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.WATCHLIST_NAME_DUPLICATE);
         }
-        log.debug(Constants.Logs.WATCHLIST_CREATE, userId, name);
-        Watchlist created = repository.create(userId, name);
         log.info(Constants.Logs.WATCHLIST_CREATED, created.getId(), created.getUserId(), created.getName());
         return created(created);
     }
