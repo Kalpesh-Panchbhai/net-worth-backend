@@ -1712,7 +1712,8 @@
                     "holdingId": 456,
                     "txnDate": "2025-08-29",
                     "invested": 1.00,
-                    "value": 10.25
+                    "value": 10.25,
+                    "mode": "add"
                   }
                 }
               }
@@ -1766,6 +1767,12 @@
                   },
                   "missingValue": {
                     "value": { "code": "VALIDATION_ERROR", "message": "value is required to create transaction" }
+                  },
+                  "missingMode": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "mode is required and must be either 'add' or 'update'" }
+                  },
+                  "invalidMode": {
+                    "value": { "code": "VALIDATION_ERROR", "message": "mode must be either 'add' or 'update'" }
                   }
                 }
               }
@@ -2205,6 +2212,11 @@
           },
           "value": {
             "type": "number"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["add", "update"],
+            "description": "add => add to latest invested/value; update => create as-is"
           }
         },
         "required": [
@@ -2212,7 +2224,8 @@
           "holdingId",
           "txnDate",
           "invested",
-          "value"
+          "value",
+          "mode"
         ]
       },
       "ApiResponseTransaction": {

@@ -41,6 +41,7 @@ public class TransactionApiHandler extends EntityHandlerBase {
         String txnDateStr = json.hasNonNull(Constants.Query.TXN_DATE) ? json.get(Constants.Query.TXN_DATE).asText() : null;
         BigDecimal invested = json.hasNonNull(Constants.Query.INVESTED) ? json.get(Constants.Query.INVESTED).decimalValue() : null;
         BigDecimal value = json.hasNonNull(Constants.Query.VALUE) ? json.get(Constants.Query.VALUE).decimalValue() : null;
+        String mode = json.hasNonNull(Constants.Query.MODE) ? json.get(Constants.Query.MODE).asText() : null;
 
         if (accountId == null || accountId <= 0)
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_ACCOUNT_ID_REQUIRED);
@@ -52,6 +53,11 @@ public class TransactionApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_INVESTED_REQUIRED);
         if (value == null)
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_VALUE_REQUIRED);
+        if (mode == null || mode.isBlank())
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_MODE_REQUIRED);
+        String m = mode.toLowerCase();
+        if (!m.equals("add") && !m.equals("update"))
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_MODE_INVALID);
 
         LocalDate txnDate;
         try {
@@ -62,7 +68,17 @@ public class TransactionApiHandler extends EntityHandlerBase {
         log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value);
         Transaction created;
         try {
-            created = repository.create(accountId, holdingId, txnDate, invested, value);
+            BigDecimal effInvested = invested;
+            BigDecimal effValue = value;
+            if (m.equals("add")) {
+                var latestOpt = repository.findLatestByHoldingId(holdingId);
+                if (latestOpt.isPresent()) {
+                    var latest = latestOpt.get();
+                    effInvested = effInvested.add(latest.getInvested());
+                    effValue = effValue.add(latest.getValue());
+                }
+            }
+            created = repository.create(accountId, holdingId, txnDate, effInvested, effValue);
         } catch (SQLIntegrityConstraintViolationException e) {
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.TRANSACTION_DUPLICATE);
         }

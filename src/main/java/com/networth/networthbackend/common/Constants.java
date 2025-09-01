@@ -148,6 +148,7 @@ public class Constants {
         public static final String VALUE = "value";
         public static final String SYMBOL = "symbol";
         public static final String WATCHLIST_ID = "watchlistId";
+        public static final String MODE = "mode";
     }
 
     @UtilityClass
@@ -576,6 +577,8 @@ public class Constants {
         public static final String TRANSACTION_INVESTED_REQUIRED = "invested is required";
         public static final String TRANSACTION_VALUE_REQUIRED = "value is required";
         public static final String TRANSACTION_DUPLICATE = "Transaction with the same date already exists.";
+        public static final String TRANSACTION_MODE_REQUIRED = "mode is required and must be either 'add' or 'update'";
+        public static final String TRANSACTION_MODE_INVALID = "mode must be either 'add' or 'update'";
     }
 
     @UtilityClass
