@@ -62,6 +62,7 @@ public class HoldingRepository extends JdbcRepository<Holding> {
             ps.setLong(2, accountId);
             ps.setLong(3, accountId);
             ps.setLong(4, accountId);
+            ps.setLong(5, accountId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<HoldingSummary> list = new ArrayList<>();
                 while (rs.next()) {

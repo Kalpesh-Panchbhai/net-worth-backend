@@ -338,21 +338,20 @@ public class SampleDataGenerator {
     }
 
     private static void generateHoldingDaily(Connection conn, Map<Long, List<Long>> accountHoldings, LocalDate startDate, LocalDate endDate, String currency, long seed, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE) + ") VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE) + ") VALUES (?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int pending = 0;
             long total = 0;
             for (Map.Entry<Long, List<Long>> e : accountHoldings.entrySet()) {
                 long accountId = e.getKey();
                 for (long holdingId : e.getValue()) {
-                    int value = 1;
+                    double value = 1;
                     for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
                         ps.setLong(1, accountId);
                         ps.setLong(2, holdingId);
                         ps.setDate(3, Date.valueOf(d));
-                        ps.setBigDecimal(4, BigDecimal.valueOf(1));
-                        ps.setBigDecimal(5, BigDecimal.valueOf(value));
-                        value++;
+                        ps.setBigDecimal(4, BigDecimal.valueOf(value));
+                        value = value * 1.001;
                         ps.addBatch();
                         pending++;
                         if (pending >= batchSize) {
@@ -401,8 +400,8 @@ public class SampleDataGenerator {
                         ps.setLong(1, accountId);
                         ps.setLong(2, holdingId);
                         ps.setDate(3, Date.valueOf(d));
-                        ps.setBigDecimal(4, BigDecimal.valueOf(1)); // invested
-                        ps.setBigDecimal(5, BigDecimal.valueOf(i + 1)); // value grows
+                        ps.setBigDecimal(4, BigDecimal.valueOf((countPerHolding - i))); // invested
+                        ps.setBigDecimal(5, BigDecimal.valueOf((countPerHolding - i) * 1.1)); // value grows
                         ps.addBatch();
                         pending++;
                         if (pending >= batchSize) {
@@ -577,21 +576,20 @@ public class SampleDataGenerator {
 
     private static void generateAccountDailyForNonBroker(Connection conn, List<Long> nonBrokerAccountIds, Map<Long, Long> aggHoldingIds, LocalDate startDate, LocalDate endDate, String currency, long seed, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
         if (nonBrokerAccountIds.isEmpty()) return;
-        String sql = "INSERT INTO account_holding_values_daily (account_id, holding_id, date, invested, current_day_value) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO account_holding_values_daily (account_id, holding_id, date, current_day_value) VALUES (?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int pending = 0;
             long total = 0;
             for (long accountId : nonBrokerAccountIds) {
                 Long holdingId = aggHoldingIds.get(accountId);
                 if (holdingId == null) throw new SQLException("Missing aggregate holding id for account " + accountId);
-                int value = 1;
+                double value = 1;
                 for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
                     ps.setLong(1, accountId);
                     ps.setLong(2, holdingId);
                     ps.setDate(3, Date.valueOf(d));
-                    ps.setBigDecimal(4, BigDecimal.valueOf(1));
-                    ps.setBigDecimal(5, BigDecimal.valueOf(value));
-                    value++;
+                    ps.setBigDecimal(4, BigDecimal.valueOf(value));
+                    value = value * 1.001;
                     ps.addBatch();
                     pending++;
                     if (pending >= batchSize) {

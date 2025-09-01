@@ -259,10 +259,10 @@ public class Constants {
                       li AS (
                         SELECT t.holding_id, t.invested
                         FROM (
-                          SELECT ahvd.holding_id, ahvd.invested,
-                                 ROW_NUMBER() OVER (PARTITION BY ahvd.holding_id ORDER BY ahvd.date DESC) AS rn
-                          FROM account_holding_values_daily ahvd
-                          JOIN (SELECT DISTINCT holding_id FROM wh) d ON d.holding_id = ahvd.holding_id
+                          SELECT tr.holding_id, tr.invested,
+                                 ROW_NUMBER() OVER (PARTITION BY tr.holding_id ORDER BY tr.txn_date DESC) AS rn
+                          FROM transactions tr
+                          JOIN (SELECT DISTINCT holding_id FROM wh) d ON d.holding_id = tr.holding_id
                         ) t
                         WHERE t.rn = 1
                       )
@@ -291,13 +291,24 @@ public class Constants {
                       w.user_id,
                       COALESCE(SUM(CASE WHEN ahvd.date = CURRENT_DATE                 THEN ahvd.current_day_value END), 0) AS current_day_value,
                       COALESCE(SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.current_day_value END), 0) AS previous_day_value,
-                      COALESCE(SUM(CASE WHEN ahvd.date = CURRENT_DATE                 THEN ahvd.invested            END), 0) AS invested
+                      COALESCE(il.invested, 0) AS invested
                     FROM watchlist_accounts wa
                     JOIN watchlists w
                       ON w.id = wa.watchlist_id
                     LEFT JOIN account_holding_values_daily ahvd
                       ON ahvd.account_id = wa.account_id
                      AND ahvd.date IN (CURRENT_DATE, DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
+                    LEFT JOIN (
+                      SELECT t.account_id, SUM(t.invested) AS invested
+                      FROM (
+                        SELECT tr.account_id, tr.holding_id, tr.invested,
+                               ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
+                        FROM transactions tr
+                      ) t
+                      WHERE t.rn = 1
+                      GROUP BY t.account_id
+                    ) il
+                      ON il.account_id = wa.account_id
                     WHERE wa.account_id = ?
                     GROUP BY w.id, w.name, w.user_id
                     ORDER BY w.id
@@ -335,19 +346,16 @@ public class Constants {
                         WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
                         GROUP BY s.account_id
                       ),
-                      max_dates AS (
-                        SELECT s.account_id, MAX(s.date) AS max_date
-                        FROM account_holding_values_daily s
-                        JOIN my_accounts a ON a.id = s.account_id
-                        GROUP BY s.account_id
-                      ),
                       latest AS (
-                        SELECT s.account_id, SUM(s.invested) AS invested
-                        FROM account_holding_values_daily s
-                        JOIN max_dates md
-                          ON md.account_id = s.account_id
-                         AND md.max_date  = s.date
-                        GROUP BY s.account_id
+                        SELECT t.account_id, SUM(t.invested) AS invested
+                        FROM (
+                          SELECT tr.account_id, tr.holding_id, tr.invested,
+                                 ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
+                          FROM transactions tr
+                          JOIN my_accounts a ON a.id = tr.account_id
+                        ) t
+                        WHERE t.rn = 1
+                        GROUP BY t.account_id
                       )
                     SELECT
                       a.id,
@@ -377,7 +385,6 @@ public class Constants {
                       daily_sums AS (
                         SELECT avd.account_id,
                                avd.date,
-                               SUM(avd.invested)          AS invested_sum,
                                SUM(avd.current_day_value) AS value_sum
                         FROM account_holding_values_daily avd
                         WHERE avd.holding_id <> 0
@@ -388,6 +395,16 @@ public class Constants {
                         SELECT ds.*,
                                ROW_NUMBER() OVER (PARTITION BY ds.account_id ORDER BY ds.date DESC) AS rn
                         FROM daily_sums ds
+                      ),
+                      invested_latest AS (
+                        SELECT t.account_id, SUM(t.invested) AS invested_sum
+                        FROM (
+                          SELECT tr.account_id, tr.holding_id, tr.invested,
+                                 ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
+                          FROM transactions tr
+                        ) t
+                        WHERE t.rn = 1
+                        GROUP BY t.account_id
                       )
                     SELECT
                       wa.id,
@@ -398,12 +415,14 @@ public class Constants {
                       wa.currency,
                       COALESCE(l.value_sum, 0)    AS current_day_value,
                       COALESCE(p.value_sum, 0)    AS previous_day_value,
-                      COALESCE(l.invested_sum, 0) AS invested
+                      COALESCE(il.invested_sum, 0) AS invested
                     FROM watch_accounts wa
                     LEFT JOIN ranked l
                       ON l.account_id = wa.id AND l.rn = 1
                     LEFT JOIN ranked p
                       ON p.account_id = wa.id AND p.rn = 2
+                    LEFT JOIN invested_latest il
+                      ON il.account_id = wa.id
                     ORDER BY wa.id
                     """;
         }
@@ -418,7 +437,7 @@ public class Constants {
             public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
                     WITH
                       v_today AS (
-                        SELECT account_id, holding_id, invested, current_day_value
+                        SELECT account_id, holding_id, current_day_value
                         FROM account_holding_values_daily
                         WHERE account_id = ? AND date = CURRENT_DATE
                       ),
@@ -436,6 +455,16 @@ public class Constants {
                           WHERE account_id = ?
                         ) x
                         WHERE rn = 1
+                      ),
+                      v_latest_inv AS (
+                        SELECT account_id, holding_id, invested
+                        FROM (
+                          SELECT account_id, holding_id, invested,
+                                 ROW_NUMBER() OVER (PARTITION BY account_id, holding_id ORDER BY txn_date DESC) AS rn
+                          FROM transactions
+                          WHERE account_id = ?
+                        ) y
+                        WHERE rn = 1
                       )
                     SELECT
                       h.id,
@@ -445,7 +474,7 @@ public class Constants {
                       COALESCE(v_latest.units, CAST(0 AS DECIMAL(10,4))) AS units,
                       COALESCE(v_today.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
                       COALESCE(v_yday.current_day_value,  CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(v_today.invested,           CAST(0 AS DECIMAL(10,4))) AS invested
+                      COALESCE(v_latest_inv.invested,      CAST(0 AS DECIMAL(10,4))) AS invested
                     FROM holdings h
                     LEFT JOIN v_today
                       ON v_today.account_id = h.account_id
@@ -456,6 +485,9 @@ public class Constants {
                     LEFT JOIN v_latest
                       ON v_latest.account_id = h.account_id
                      AND v_latest.holding_id = h.id
+                    LEFT JOIN v_latest_inv
+                      ON v_latest_inv.account_id = h.account_id
+                     AND v_latest_inv.holding_id = h.id
                     WHERE h.account_id = ?
                     ORDER BY h.id
                     """;
@@ -474,7 +506,6 @@ public class Constants {
             public static final String COL_ACCOUNT_ID = "account_id";
             public static final String COL_HOLDING_ID = "holding_id";
             public static final String COL_DATE = "date";
-            public static final String COL_INVESTED = "invested";
             public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
         }
 
