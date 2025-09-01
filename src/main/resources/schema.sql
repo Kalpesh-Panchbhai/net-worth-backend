@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS watchlist_accounts
 CREATE TABLE IF NOT EXISTS account_holding_values_daily
 (
     account_id        BIGINT UNSIGNED NOT NULL,
-    holding_id        BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    holding_id        BIGINT UNSIGNED NOT NULL,
     date              DATE            NOT NULL,
     invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
     current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
