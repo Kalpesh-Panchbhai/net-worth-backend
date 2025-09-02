@@ -441,58 +441,46 @@ public class Constants {
             public static final String COL_SYMBOL = "symbol";
             public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
                     WITH
-                      v_today AS (
-                        SELECT account_id, holding_id, current_day_value
-                        FROM account_holding_values_daily
-                        WHERE account_id = ? AND date = CURRENT_DATE
+                      latest_tx AS (
+                        SELECT
+                          tr.account_id,
+                          tr.holding_id,
+                          tr.invested,
+                          tr.value,
+                          ROW_NUMBER() OVER (
+                            PARTITION BY tr.account_id, tr.holding_id
+                            ORDER BY tr.txn_date DESC
+                          ) AS rn
+                        FROM transactions tr
+                        WHERE tr.account_id = ?
                       ),
-                      v_yday AS (
-                        SELECT account_id, holding_id, current_day_value
-                        FROM account_holding_values_daily
-                        WHERE account_id = ? AND date = CURRENT_DATE - INTERVAL 1 DAY
-                      ),
-                      v_latest AS (
-                        SELECT account_id, holding_id, value AS units
-                        FROM (
-                          SELECT account_id, holding_id, value,
-                                 ROW_NUMBER() OVER (PARTITION BY account_id, holding_id ORDER BY txn_date DESC) AS rn
-                          FROM transactions
-                          WHERE account_id = ?
-                        ) x
-                        WHERE rn = 1
-                      ),
-                      v_latest_inv AS (
-                        SELECT account_id, holding_id, invested
-                        FROM (
-                          SELECT account_id, holding_id, invested,
-                                 ROW_NUMBER() OVER (PARTITION BY account_id, holding_id ORDER BY txn_date DESC) AS rn
-                          FROM transactions
-                          WHERE account_id = ?
-                        ) y
-                        WHERE rn = 1
+                      daily AS (
+                        SELECT
+                          ahvd.account_id,
+                          ahvd.holding_id,
+                          MAX(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.current_day_value END) AS current_day_value,
+                          MAX(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.current_day_value END) AS previous_day_value
+                        FROM account_holding_values_daily ahvd
+                        WHERE ahvd.account_id = ?
+                          AND ahvd.date IN (CURRENT_DATE, CURRENT_DATE - INTERVAL 1 DAY)
+                        GROUP BY ahvd.account_id, ahvd.holding_id
                       )
                     SELECT
                       h.id,
                       h.account_id,
                       h.name,
                       h.symbol,
-                      COALESCE(v_latest.units, CAST(0 AS DECIMAL(10,4))) AS units,
-                      COALESCE(v_today.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(v_yday.current_day_value,  CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(v_latest_inv.invested,      CAST(0 AS DECIMAL(10,4))) AS invested
+                      COALESCE(lt.value,    CAST(0 AS DECIMAL(10,4))) AS units,
+                      COALESCE(d.current_day_value,   CAST(0 AS DECIMAL(10,4))) AS current_day_value,
+                      COALESCE(d.previous_day_value,  CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
+                      COALESCE(lt.invested, CAST(0 AS DECIMAL(10,4))) AS invested
                     FROM holdings h
-                    LEFT JOIN v_today
-                      ON v_today.account_id = h.account_id
-                     AND v_today.holding_id = h.id
-                    LEFT JOIN v_yday
-                      ON v_yday.account_id = h.account_id
-                     AND v_yday.holding_id = h.id
-                    LEFT JOIN v_latest
-                      ON v_latest.account_id = h.account_id
-                     AND v_latest.holding_id = h.id
-                    LEFT JOIN v_latest_inv
-                      ON v_latest_inv.account_id = h.account_id
-                     AND v_latest_inv.holding_id = h.id
+                    LEFT JOIN (SELECT account_id, holding_id, invested, value FROM latest_tx WHERE rn = 1) lt
+                      ON lt.account_id = h.account_id
+                     AND lt.holding_id = h.id
+                    LEFT JOIN daily d
+                      ON d.account_id = h.account_id
+                     AND d.holding_id = h.id
                     WHERE h.account_id = ?
                     ORDER BY h.id
                     """;
@@ -530,6 +518,7 @@ public class Constants {
             public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
             public static final String COL_PREVIOUS_DAY_VALUE = "previous_day_value";
             public static final String COL_INVESTED = "invested";
+            public static final String COL_UNITS = "units";
         }
     }
 

@@ -2543,6 +2543,9 @@
           "symbol": {
             "type": "string"
           },
+          "units": {
+            "type": "number"
+          },
           "currentDayValue": {
             "type": "number"
           },
@@ -2558,6 +2561,7 @@
           "accountId",
           "name",
           "symbol",
+          "units",
           "currentDayValue",
           "previousDayValue",
           "invested"

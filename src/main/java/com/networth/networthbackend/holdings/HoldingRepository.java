@@ -61,8 +61,6 @@ public class HoldingRepository extends JdbcRepository<Holding> {
             ps.setLong(1, accountId);
             ps.setLong(2, accountId);
             ps.setLong(3, accountId);
-            ps.setLong(4, accountId);
-            ps.setLong(5, accountId);
             try (ResultSet rs = ps.executeQuery()) {
                 List<HoldingSummary> list = new ArrayList<>();
                 while (rs.next()) {
@@ -71,6 +69,7 @@ public class HoldingRepository extends JdbcRepository<Holding> {
                             .accountId(rs.getLong(Constants.DB.Holdings.COL_ACCOUNT_ID))
                             .name(rs.getString(Constants.DB.Holdings.COL_NAME))
                             .symbol(rs.getString(Constants.DB.Holdings.COL_SYMBOL))
+                            .units(rs.getBigDecimal(Constants.DB.Aliases.COL_UNITS))
                             .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
                             .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
                             .invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED))
