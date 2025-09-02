@@ -88,6 +88,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseIncome"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "incomeSourceId": 1,
+                        "incomeTagId": 1,
+                        "netAmount": 1000.5,
+                        "taxPaid": 100.25,
+                        "currency": "INR",
+                        "creditedDate": "2025-08-26"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -157,6 +174,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "name": "All",
+                          "userId": 1,
+                          "currentDayValue": 2700.5,
+                          "previousDayValue": 2650.25,
+                          "invested": 2380.0
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -203,6 +237,14 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseIncomeSource"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
+                    }
+                  }
                 }
               }
             }
@@ -267,6 +309,14 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseIncomeTag"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "id": 1, "userId": 1, "name": "Salary", "isDefault": false }
+                    }
+                  }
                 }
               }
             }
@@ -329,6 +379,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseUser"
+                },
+                "examples": {
+                  "default": {
+                    "value": { "success": true, "data": { "id": 1, "externalUserId": "demo-user" } }
+                  }
                 }
               }
             }
@@ -339,6 +394,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseUser"
+                },
+                "examples": {
+                  "default": {
+                    "value": { "success": true, "data": { "id": 1, "externalUserId": "demo-user" } }
+                  }
                 }
               }
             }
@@ -872,6 +932,14 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseWatchlist"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "id": 1, "userId": 1, "name": "My Watchlist" }
+                    }
+                  }
                 }
               }
             }
@@ -928,6 +996,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseWatchlistSummaryList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        { "id": 1, "name": "All", "userId": 1, "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -981,6 +1059,14 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseWatchlist"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "id": 1, "userId": 1, "name": "Updated Name" }
+                    }
+                  }
                 }
               }
             }
@@ -1141,6 +1227,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseAccount"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "Broker Acc 1",
+                        "type": "BROKER",
+                        "isActive": true,
+                        "needsDailyData": false,
+                        "currency": "INR"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1197,6 +1299,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseAccountSummaryList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "userId": 1,
+                          "name": "Zerodha",
+                          "type": "BROKER",
+                          "isActive": true,
+                          "needsDailyData": true,
+                          "currency": "INR",
+                          "currentDayValue": 2700.5,
+                          "previousDayValue": 2650.25,
+                          "invested": 2380.0
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -1322,6 +1445,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseAccount"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "New Account Name",
+                        "type": "BROKER",
+                        "isActive": true,
+                        "needsDailyData": true,
+                        "currency": "INR"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1419,6 +1558,14 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseHolding"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "id": 1, "accountId": 1, "name": "TCS", "symbol": "TCS" }
+                    }
+                  }
                 }
               }
             }
@@ -1482,8 +1629,8 @@
                       "success": true,
                       "data": [
                         {
-                          "id": 123,
-                          "accountId": 45,
+                          "id": 1,
+                          "accountId": 1,
                           "name": "Apple Inc.",
                           "symbol": "AAPL",
                           "units": 10.5,
@@ -1492,8 +1639,8 @@
                           "invested": 1700.0
                         },
                         {
-                          "id": 124,
-                          "accountId": 45,
+                          "id": 2,
+                          "accountId": 1,
                           "name": "Tesla, Inc.",
                           "symbol": "TSLA",
                           "units": 3.0,
@@ -1738,8 +1885,8 @@
               "examples": {
                 "default": {
                   "value": {
-                    "accountId": 123,
-                    "holdingId": 456,
+                    "accountId": 1,
+                    "holdingId": 1,
                     "txnDate": "2025-08-29",
                     "invested": 1.00,
                     "value": 10.25,
@@ -1757,6 +1904,21 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseTransaction"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "accountId": 1,
+                        "holdingId": 1,
+                        "txnDate": "2025-08-29",
+                        "invested": 1.00,
+                        "value": 10.25
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1827,7 +1989,7 @@
               "type": "integer",
               "format": "int64"
             },
-            "example": 123
+            "example": 1
           },
           {
             "name": "holdingId",
@@ -1837,7 +1999,7 @@
               "type": "integer",
               "format": "int64"
             },
-            "example": 456
+            "example": 1
           }
         ],
         "responses": {
@@ -1850,22 +2012,22 @@
                 },
                 "examples": {
                   "byAccountId": {
-                    "summary": "Transactions for accountId=123",
+                    "summary": "Transactions for accountId=1",
                     "value": {
                       "success": true,
                       "data": [
                         {
                           "id": 1,
-                          "accountId": 123,
-                          "holdingId": 1001,
+                          "accountId": 1,
+                          "holdingId": 1,
                           "txnDate": "2025-08-20",
                           "invested": 100.00,
                           "value": 120.00
                         },
                         {
                           "id": 2,
-                          "accountId": 123,
-                          "holdingId": 1002,
+                          "accountId": 1,
+                          "holdingId": 2,
                           "txnDate": "2025-08-19",
                           "invested": 50.00,
                           "value": 60.00
@@ -1874,22 +2036,22 @@
                     }
                   },
                   "byHoldingId": {
-                    "summary": "Transactions for holdingId=456",
+                    "summary": "Transactions for holdingId=1",
                     "value": {
                       "success": true,
                       "data": [
                         {
-                          "id": 10,
-                          "accountId": 789,
-                          "holdingId": 456,
+                          "id": 1,
+                          "accountId": 1,
+                          "holdingId": 1,
                           "txnDate": "2025-08-29",
                           "invested": 1.00,
                           "value": 10.00
                         },
                         {
-                          "id": 11,
-                          "accountId": 789,
-                          "holdingId": 456,
+                          "id": 2,
+                          "accountId": 1,
+                          "holdingId": 1,
                           "txnDate": "2025-08-28",
                           "invested": 1.00,
                           "value": 9.50
