@@ -95,8 +95,14 @@ public class SampleDataGenerator {
         List<Long> nonBrokerAccountsNeedingDaily = filterAccountsNeedingDailyData(conn, nonBrokerAccountIds);
         // Holdings for broker accounts
         Map<Long, List<Long>> accountHoldings = createHoldingsForBrokerAccounts(conn, brokerAccountIds, cfg.holdingsPerBroker, cfg.commitPerBatch, false);
-        // Aggregate holding for only those non-broker accounts that need daily data
-        Map<Long, Long> nonBrokerAggHolding = createAggregateHoldingForAccounts(conn, nonBrokerAccountsNeedingDaily, cfg.commitPerBatch, false);
+        // Aggregate holding for ALL non-broker accounts (placeholder exists regardless of needsDailyData)
+        Map<Long, Long> nonBrokerAggHoldingAll = createAggregateHoldingForAccounts(conn, nonBrokerAccountIds, cfg.commitPerBatch, false);
+        // Filtered view for accounts that need daily data (used for time-series and transactions to keep volume bounded)
+        Map<Long, Long> nonBrokerAggHolding = new LinkedHashMap<>();
+        for (long aId : nonBrokerAccountsNeedingDaily) {
+            Long hId = nonBrokerAggHoldingAll.get(aId);
+            if (hId != null) nonBrokerAggHolding.put(aId, hId);
+        }
         // Watchlists & memberships
         List<Long> watchlistIds = createWatchlists(conn, userId, cfg.watchlists, cfg.commitPerBatch, false);
         attachAccountsToWatchlists(conn, watchlistIds, accountIds, cfg.commitPerBatch, false);
@@ -108,9 +114,8 @@ public class SampleDataGenerator {
         generateAccountDailyForNonBroker(conn, nonBrokerAccountsNeedingDaily, nonBrokerAggHolding, cfg.startDate, cfg.endDate, cfg.currency, cfg.seed + (idx * 1000L), cfg.batchSize, cfg.commitPerBatch, false);
         // Time-series: broker holdings
         generateHoldingDaily(conn, accountHoldings, cfg.startDate, cfg.endDate, cfg.currency, cfg.seed + 1 + (idx * 1000L), cfg.batchSize, cfg.commitPerBatch, false);
-        long holdings = totalHoldings(accountHoldings);
-        // Transactions: create 10 per holding (including aggregate holdings for non-broker accounts needing daily)
-        generateSampleTransactions(conn, accountHoldings, nonBrokerAggHolding, cfg.endDate, 10, cfg.batchSize, cfg.commitPerBatch, false);
+        // Transactions: create 10 per holding (including aggregate holdings for ALL non-broker accounts)
+        generateSampleTransactions(conn, accountHoldings, nonBrokerAggHoldingAll, cfg.endDate, 10, cfg.batchSize, cfg.commitPerBatch, false);
         conn.commit();
     }
 
