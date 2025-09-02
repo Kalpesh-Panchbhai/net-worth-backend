@@ -5,9 +5,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.Constants;
-import com.networth.networthbackend.accounts.AccountRepository;
-import com.networth.networthbackend.holdings.HoldingRepository;
-import com.networth.networthbackend.watchlists.WatchlistRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -17,9 +14,6 @@ import java.util.List;
 public class ChartDataApiHandler extends EntityHandlerBase {
 
     private final ChartDataRepository chartDataRepository = new ChartDataRepository();
-    private final AccountRepository accountRepository = new AccountRepository();
-    private final HoldingRepository holdingRepository = new HoldingRepository();
-    private final WatchlistRepository watchlistRepository = new WatchlistRepository();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -67,29 +61,14 @@ public class ChartDataApiHandler extends EntityHandlerBase {
         List<ChartDataPoint> chartData;
         switch (chartType.toLowerCase()) {
             case Constants.ChartData.CHART_TYPE_HOLDING -> {
-                // Verify holding exists
-                var holding = holdingRepository.findById(id);
-                if (holding.isEmpty()) {
-                    return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.CHART_DATA_HOLDING_NOT_FOUND);
-                }
                 chartData = chartDataRepository.getChartDataForHolding(id, startDate);
                 log.info("Chart data fetched for holding: id={}, period={}, points={}", id, period, chartData.size());
             }
             case Constants.ChartData.CHART_TYPE_ACCOUNT -> {
-                // Verify account exists
-                var account = accountRepository.findById(id);
-                if (account.isEmpty()) {
-                    return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.CHART_DATA_ACCOUNT_NOT_FOUND);
-                }
                 chartData = chartDataRepository.getChartDataForAccount(id, startDate);
                 log.info("Chart data fetched for account: id={}, period={}, points={}", id, period, chartData.size());
             }
             case Constants.ChartData.CHART_TYPE_WATCHLIST -> {
-                // Verify watchlist exists
-                var watchlist = watchlistRepository.findById(id);
-                if (watchlist.isEmpty()) {
-                    return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.CHART_DATA_WATCHLIST_NOT_FOUND);
-                }
                 chartData = chartDataRepository.getChartDataForWatchlist(id, startDate);
                 log.info("Chart data fetched for watchlist: id={}, period={}, points={}", id, period, chartData.size());
             }

@@ -2314,7 +2314,7 @@
           "chart-data"
         ],
         "summary": "Get chart data for holdings, accounts, or watchlists",
-        "description": "Fetches historical chart data for a specific entity (holding, account, or watchlist) over the specified time period. Returns data points with date, current day value, and invested amount.",
+        "description": "Fetches historical chart data for a specific entity (holding, account, or watchlist) over the specified time period. Returns data points with date, current day value, and invested amount. If the entity ID does not exist, returns an empty array instead of an error.",
         "parameters": [
           {
             "name": "id",
@@ -2415,6 +2415,13 @@
                         }
                       ]
                     }
+                  },
+                  "emptyResponse": {
+                    "summary": "Empty response for non-existent entity or no data",
+                    "value": {
+                      "success": true,
+                      "data": []
+                    }
                   }
                 }
               }
@@ -2444,36 +2451,6 @@
                     "value": {
                       "code": "VALIDATION_ERROR",
                       "message": "id is required for the specified chartType"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Entity not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                },
-                "examples": {
-                  "holdingNotFound": {
-                    "value": {
-                      "code": "NOT_FOUND",
-                      "message": "Holding not found"
-                    }
-                  },
-                  "accountNotFound": {
-                    "value": {
-                      "code": "NOT_FOUND",
-                      "message": "Account not found"
-                    }
-                  },
-                  "watchlistNotFound": {
-                    "value": {
-                      "code": "NOT_FOUND",
-                      "message": "Watchlist not found"
                     }
                   }
                 }

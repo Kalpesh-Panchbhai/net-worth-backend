@@ -667,262 +667,380 @@ public class Constants {
         @UtilityClass
         public static class ChartData {
             public static final String SQL_CHART_DATA_FOR_HOLDING = """
-                    WITH RECURSIVE date_series AS (
-                        SELECT ? AS chart_date
-                        UNION ALL
-                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
-                        FROM date_series
-                        WHERE chart_date < CURRENT_DATE
-                    ),
-                    holding_account AS (
+                    WITH 
+                    holding_info AS (
                         SELECT h.id as holding_id, h.account_id, a.type, a.needs_daily_data
                         FROM holdings h
                         JOIN accounts a ON a.id = h.account_id
                         WHERE h.id = ?
                     ),
-                    daily_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT ahvd.current_day_value
-                                    FROM account_holding_values_daily ahvd
-                                    WHERE ahvd.holding_id = ha.holding_id
-                                      AND ahvd.date <= ds.chart_date
-                                    ORDER BY ahvd.date DESC
-                                    LIMIT 1), 0
-                               ) AS daily_value
-                        FROM date_series ds
-                        CROSS JOIN holding_account ha
-                        WHERE (ha.type = 'BROKER' OR ha.needs_daily_data = 1)
+                    -- Get all unique dates from both daily values and transactions
+                    all_dates AS (
+                        SELECT DISTINCT DATE(ahvd.date) as chart_date
+                        FROM account_holding_values_daily ahvd
+                        JOIN holding_info hi ON hi.holding_id = ahvd.holding_id
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
+                        UNION
+                        SELECT DISTINCT DATE(t.txn_date) as chart_date
+                        FROM transactions t
+                        WHERE t.holding_id = ? AND t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
-                    transaction_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT t.value
-                                    FROM transactions t
-                                    WHERE t.holding_id = ha.holding_id
-                                      AND t.txn_date <= ds.chart_date
-                                    ORDER BY t.txn_date DESC
-                                    LIMIT 1), 0
-                               ) AS txn_value
-                        FROM date_series ds
-                        CROSS JOIN holding_account ha
-                        WHERE (ha.type != 'BROKER' AND ha.needs_daily_data = 0)
+                    -- Pre-aggregate daily values using window functions
+                    daily_values_agg AS (
+                        SELECT 
+                            DATE(ahvd.date) as date,
+                            FIRST_VALUE(ahvd.current_day_value) OVER (
+                                PARTITION BY DATE(ahvd.date) 
+                                ORDER BY ahvd.date DESC
+                                ROWS UNBOUNDED PRECEDING
+                            ) as current_day_value
+                        FROM account_holding_values_daily ahvd
+                        JOIN holding_info hi ON hi.holding_id = ahvd.holding_id
+                        WHERE ahvd.date >= ? 
+                          AND ahvd.date <= CURRENT_DATE
+                          AND (hi.type = 'BROKER' OR hi.needs_daily_data = 1)
                     ),
-                    invested_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT t.invested
-                                    FROM transactions t
-                                    WHERE t.holding_id = ?
-                                      AND t.txn_date <= ds.chart_date
-                                    ORDER BY t.txn_date DESC
-                                    LIMIT 1), 0
-                               ) AS invested
-                        FROM date_series ds
+                    daily_values_clean AS (
+                        SELECT DISTINCT date, current_day_value
+                        FROM daily_values_agg
+                    ),
+                    -- Pre-aggregate transaction values using window functions
+                    txn_values_agg AS (
+                        SELECT 
+                            DATE(t.txn_date) as date,
+                            FIRST_VALUE(t.value) OVER (
+                                PARTITION BY DATE(t.txn_date) 
+                                ORDER BY t.txn_date DESC
+                                ROWS UNBOUNDED PRECEDING
+                            ) as value
+                        FROM transactions t
+                        JOIN holding_info hi ON hi.holding_id = t.holding_id
+                        WHERE t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                          AND (hi.type != 'BROKER' AND hi.needs_daily_data = 0)
+                    ),
+                    txn_values_clean AS (
+                        SELECT DISTINCT date, value
+                        FROM txn_values_agg
+                    ),
+                    -- Pre-aggregate invested values using window functions
+                    invested_values_agg AS (
+                        SELECT 
+                            DATE(t.txn_date) as date,
+                            FIRST_VALUE(t.invested) OVER (
+                                PARTITION BY DATE(t.txn_date) 
+                                ORDER BY t.txn_date DESC
+                                ROWS UNBOUNDED PRECEDING
+                            ) as invested
+                        FROM transactions t
+                        WHERE t.holding_id = ?
+                          AND t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                    ),
+                    invested_values_clean AS (
+                        SELECT DISTINCT date, invested
+                        FROM invested_values_agg
+                    ),
+                    -- Forward-fill values using window functions
+                    chart_data_with_nulls AS (
+                        SELECT 
+                            ad.chart_date,
+                            dv.current_day_value,
+                            tv.value as txn_value,
+                            iv.invested
+                        FROM all_dates ad
+                        LEFT JOIN daily_values_clean dv ON dv.date = ad.chart_date
+                        LEFT JOIN txn_values_clean tv ON tv.date = ad.chart_date
+                        LEFT JOIN invested_values_clean iv ON iv.date = ad.chart_date
+                    ),
+                    chart_data_filled AS (
+                        SELECT 
+                            chart_date,
+                            COALESCE(
+                                current_day_value,
+                                LAG(current_day_value) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 2) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as current_day_value,
+                            COALESCE(
+                                txn_value,
+                                LAG(txn_value) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 2) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as txn_value,
+                            COALESCE(
+                                invested,
+                                LAG(invested) OVER (ORDER BY chart_date),
+                                LAG(invested, 2) OVER (ORDER BY chart_date),
+                                LAG(invested, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as invested
+                        FROM chart_data_with_nulls
                     )
                     SELECT 
-                        ROW_NUMBER() OVER (ORDER BY ds.chart_date) AS id,
-                        ds.chart_date AS date,
+                        ROW_NUMBER() OVER (ORDER BY cdf.chart_date) AS id,
+                        cdf.chart_date AS date,
                         CASE 
-                            WHEN ha.type = 'BROKER' OR ha.needs_daily_data = 1 
-                            THEN COALESCE(dv.daily_value, 0)
-                            ELSE COALESCE(tv.txn_value, 0)
+                            WHEN hi.type = 'BROKER' OR hi.needs_daily_data = 1 
+                            THEN COALESCE(cdf.current_day_value, 0)
+                            ELSE COALESCE(cdf.txn_value, 0)
                         END AS currentDayValue,
-                        COALESCE(iv.invested, 0) AS invested
-                    FROM date_series ds
-                    CROSS JOIN holding_account ha
-                    LEFT JOIN daily_values dv ON dv.chart_date = ds.chart_date
-                    LEFT JOIN transaction_values tv ON tv.chart_date = ds.chart_date
-                    LEFT JOIN invested_values iv ON iv.chart_date = ds.chart_date
-                    ORDER BY ds.chart_date
+                        COALESCE(cdf.invested, 0) AS invested
+                    FROM chart_data_filled cdf
+                    CROSS JOIN holding_info hi
+                    ORDER BY cdf.chart_date
                     """;
 
             public static final String SQL_CHART_DATA_FOR_ACCOUNT = """
-                    WITH RECURSIVE date_series AS (
-                        SELECT ? AS chart_date
-                        UNION ALL
-                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
-                        FROM date_series
-                        WHERE chart_date < CURRENT_DATE
-                    ),
+                    WITH 
                     account_info AS (
                         SELECT a.id as account_id, a.type, a.needs_daily_data
                         FROM accounts a
                         WHERE a.id = ?
                     ),
-                    daily_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT SUM(ahvd.current_day_value)
-                                    FROM account_holding_values_daily ahvd
-                                    WHERE ahvd.account_id = ai.account_id
-                                      AND ahvd.date <= ds.chart_date
-                                      AND ahvd.date = (
-                                          SELECT MAX(ahvd2.date)
-                                          FROM account_holding_values_daily ahvd2
-                                          WHERE ahvd2.account_id = ai.account_id
-                                            AND ahvd2.date <= ds.chart_date
-                                      )
-                                   ), 0
-                               ) AS daily_value
-                        FROM date_series ds
-                        CROSS JOIN account_info ai
-                        WHERE (ai.type = 'BROKER' OR ai.needs_daily_data = 1)
+                    -- Get all unique dates from both daily values and transactions
+                    all_dates AS (
+                        SELECT DISTINCT DATE(ahvd.date) as chart_date
+                        FROM account_holding_values_daily ahvd
+                        JOIN account_info ai ON ai.account_id = ahvd.account_id
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
+                        UNION
+                        SELECT DISTINCT DATE(t.txn_date) as chart_date
+                        FROM transactions t
+                        WHERE t.account_id = ? AND t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
-                    transaction_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT SUM(t.value)
-                                    FROM transactions t
-                                    WHERE t.account_id = ai.account_id
-                                      AND t.txn_date <= ds.chart_date
-                                      AND t.txn_date = (
-                                          SELECT MAX(t2.txn_date)
-                                          FROM transactions t2
-                                          WHERE t2.account_id = ai.account_id
-                                            AND t2.txn_date <= ds.chart_date
-                                      )
-                                   ), 0
-                               ) AS txn_value
-                        FROM date_series ds
-                        CROSS JOIN account_info ai
-                        WHERE (ai.type != 'BROKER' AND ai.needs_daily_data = 0)
+                    -- Pre-aggregate daily values using window functions
+                    daily_values_agg AS (
+                        SELECT 
+                            DATE(ahvd.date) as date,
+                            SUM(ahvd.current_day_value) as daily_total,
+                            ROW_NUMBER() OVER (PARTITION BY DATE(ahvd.date) ORDER BY MAX(ahvd.date) DESC) as rn
+                        FROM account_holding_values_daily ahvd
+                        JOIN account_info ai ON ai.account_id = ahvd.account_id
+                        WHERE ahvd.date >= ? 
+                          AND ahvd.date <= CURRENT_DATE
+                          AND (ai.type = 'BROKER' OR ai.needs_daily_data = 1)
+                        GROUP BY DATE(ahvd.date)
                     ),
-                    invested_values AS (
-                        SELECT ds.chart_date,
-                               COALESCE(
-                                   (SELECT SUM(latest_tx.invested)
-                                    FROM (
-                                        SELECT t.holding_id, t.invested,
-                                               ROW_NUMBER() OVER (PARTITION BY t.holding_id ORDER BY t.txn_date DESC) as rn
-                                        FROM transactions t
-                                        WHERE t.account_id = ?
-                                          AND t.txn_date <= ds.chart_date
-                                    ) latest_tx
-                                    WHERE latest_tx.rn = 1
-                                   ), 0
-                               ) AS invested
-                        FROM date_series ds
+                    daily_values_clean AS (
+                        SELECT date, daily_total as current_day_value
+                        FROM daily_values_agg
+                        WHERE rn = 1
+                    ),
+                    -- Pre-aggregate transaction values using window functions
+                    txn_values_agg AS (
+                        SELECT 
+                            DATE(t.txn_date) as date,
+                            SUM(t.value) as txn_total,
+                            ROW_NUMBER() OVER (PARTITION BY DATE(t.txn_date) ORDER BY MAX(t.txn_date) DESC) as rn
+                        FROM transactions t
+                        JOIN account_info ai ON ai.account_id = t.account_id
+                        WHERE t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                          AND (ai.type != 'BROKER' AND ai.needs_daily_data = 0)
+                        GROUP BY DATE(t.txn_date)
+                    ),
+                    txn_values_clean AS (
+                        SELECT date, txn_total as value
+                        FROM txn_values_agg
+                        WHERE rn = 1
+                    ),
+                    -- Pre-aggregate invested values using window functions
+                    invested_values_agg AS (
+                        SELECT 
+                            DATE(t.txn_date) as date,
+                            t.holding_id,
+                            FIRST_VALUE(t.invested) OVER (
+                                PARTITION BY t.holding_id, DATE(t.txn_date) 
+                                ORDER BY t.txn_date DESC
+                                ROWS UNBOUNDED PRECEDING
+                            ) as invested
+                        FROM transactions t
+                        WHERE t.account_id = ?
+                          AND t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                    ),
+                    invested_values_clean AS (
+                        SELECT date, SUM(DISTINCT invested) as total_invested
+                        FROM invested_values_agg
+                        GROUP BY date
+                    ),
+                    -- Forward-fill values using window functions
+                    chart_data_with_nulls AS (
+                        SELECT 
+                            ad.chart_date,
+                            dv.current_day_value,
+                            tv.value as txn_value,
+                            iv.total_invested as invested
+                        FROM all_dates ad
+                        LEFT JOIN daily_values_clean dv ON dv.date = ad.chart_date
+                        LEFT JOIN txn_values_clean tv ON tv.date = ad.chart_date
+                        LEFT JOIN invested_values_clean iv ON iv.date = ad.chart_date
+                    ),
+                    chart_data_filled AS (
+                        SELECT 
+                            chart_date,
+                            COALESCE(
+                                current_day_value,
+                                LAG(current_day_value) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 2) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as current_day_value,
+                            COALESCE(
+                                txn_value,
+                                LAG(txn_value) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 2) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as txn_value,
+                            COALESCE(
+                                invested,
+                                LAG(invested) OVER (ORDER BY chart_date),
+                                LAG(invested, 2) OVER (ORDER BY chart_date),
+                                LAG(invested, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as invested
+                        FROM chart_data_with_nulls
                     )
                     SELECT 
-                        ROW_NUMBER() OVER (ORDER BY ds.chart_date) AS id,
-                        ds.chart_date AS date,
+                        ROW_NUMBER() OVER (ORDER BY cdf.chart_date) AS id,
+                        cdf.chart_date AS date,
                         CASE 
                             WHEN ai.type = 'BROKER' OR ai.needs_daily_data = 1 
-                            THEN COALESCE(dv.daily_value, 0)
-                            ELSE COALESCE(tv.txn_value, 0)
+                            THEN COALESCE(cdf.current_day_value, 0)
+                            ELSE COALESCE(cdf.txn_value, 0)
                         END AS currentDayValue,
-                        COALESCE(iv.invested, 0) AS invested
-                    FROM date_series ds
+                        COALESCE(cdf.invested, 0) AS invested
+                    FROM chart_data_filled cdf
                     CROSS JOIN account_info ai
-                    LEFT JOIN daily_values dv ON dv.chart_date = ds.chart_date
-                    LEFT JOIN transaction_values tv ON tv.chart_date = ds.chart_date
-                    LEFT JOIN invested_values iv ON iv.chart_date = ds.chart_date
-                    ORDER BY ds.chart_date
+                    ORDER BY cdf.chart_date
                     """;
 
             public static final String SQL_CHART_DATA_FOR_WATCHLIST = """
-                    WITH RECURSIVE date_series AS (
-                        SELECT ? AS chart_date
-                        UNION ALL
-                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
-                        FROM date_series
-                        WHERE chart_date < CURRENT_DATE
-                    ),
+                    WITH 
                     wl_accounts AS (
                         SELECT a.id as account_id, a.type, a.needs_daily_data
                         FROM accounts a
                         JOIN watchlist_accounts wa ON wa.account_id = a.id
                         WHERE wa.watchlist_id = ?
                     ),
-                    -- Pre-aggregate daily values with window functions for better performance
-                    daily_data_ranked AS (
-                        SELECT 
-                            ahvd.account_id,
-                            ahvd.date,
-                            ahvd.current_day_value,
-                            ROW_NUMBER() OVER (PARTITION BY ahvd.account_id, DATE(ahvd.date) ORDER BY ahvd.date DESC) as rn
+                    -- Get all unique dates from both daily values and transactions across all watchlist accounts
+                    all_dates AS (
+                        SELECT DISTINCT DATE(ahvd.date) as chart_date
                         FROM account_holding_values_daily ahvd
                         JOIN wl_accounts wla ON wla.account_id = ahvd.account_id
-                        WHERE (wla.type = 'BROKER' OR wla.needs_daily_data = 1)
-                          AND ahvd.date >= ?
-                          AND ahvd.date <= CURRENT_DATE
-                    ),
-                    daily_data_clean AS (
-                        SELECT account_id, date, current_day_value
-                        FROM daily_data_ranked
-                        WHERE rn = 1
-                    ),
-                    -- Pre-aggregate transaction values with window functions
-                    txn_data_ranked AS (
-                        SELECT 
-                            t.account_id,
-                            t.txn_date,
-                            t.value,
-                            ROW_NUMBER() OVER (PARTITION BY t.account_id, DATE(t.txn_date) ORDER BY t.txn_date DESC) as rn
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
+                        UNION
+                        SELECT DISTINCT DATE(t.txn_date) as chart_date
                         FROM transactions t
                         JOIN wl_accounts wla ON wla.account_id = t.account_id
-                        WHERE (wla.type != 'BROKER' AND wla.needs_daily_data = 0)
-                          AND t.txn_date >= ?
-                          AND t.txn_date <= CURRENT_DATE
+                        WHERE t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
-                    txn_data_clean AS (
-                        SELECT account_id, txn_date as date, value
-                        FROM txn_data_ranked
+                    -- Pre-aggregate daily values using window functions
+                    daily_values_agg AS (
+                        SELECT 
+                            DATE(ahvd.date) as date,
+                            SUM(ahvd.current_day_value) as daily_total,
+                            ROW_NUMBER() OVER (PARTITION BY DATE(ahvd.date) ORDER BY MAX(ahvd.date) DESC) as rn
+                        FROM account_holding_values_daily ahvd
+                        JOIN wl_accounts wla ON wla.account_id = ahvd.account_id
+                        WHERE ahvd.date >= ? 
+                          AND ahvd.date <= CURRENT_DATE
+                          AND (wla.type = 'BROKER' OR wla.needs_daily_data = 1)
+                        GROUP BY DATE(ahvd.date)
+                    ),
+                    daily_values_clean AS (
+                        SELECT date, daily_total as current_day_value
+                        FROM daily_values_agg
                         WHERE rn = 1
                     ),
-                    -- Pre-aggregate invested values with window functions
-                    invested_data_ranked AS (
+                    -- Pre-aggregate transaction values using window functions
+                    txn_values_agg AS (
                         SELECT 
-                            h.account_id,
-                            t.txn_date,
-                            t.invested,
-                            ROW_NUMBER() OVER (PARTITION BY h.account_id, DATE(t.txn_date) ORDER BY t.txn_date DESC) as rn
+                            DATE(t.txn_date) as date,
+                            SUM(t.value) as txn_total,
+                            ROW_NUMBER() OVER (PARTITION BY DATE(t.txn_date) ORDER BY MAX(t.txn_date) DESC) as rn
+                        FROM transactions t
+                        JOIN wl_accounts wla ON wla.account_id = t.account_id
+                        WHERE t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                          AND (wla.type != 'BROKER' AND wla.needs_daily_data = 0)
+                        GROUP BY DATE(t.txn_date)
+                    ),
+                    txn_values_clean AS (
+                        SELECT date, txn_total as value
+                        FROM txn_values_agg
+                        WHERE rn = 1
+                    ),
+                    -- Pre-aggregate invested values using window functions
+                    invested_values_agg AS (
+                        SELECT 
+                            DATE(t.txn_date) as date,
+                            t.holding_id,
+                            FIRST_VALUE(t.invested) OVER (
+                                PARTITION BY t.holding_id, DATE(t.txn_date) 
+                                ORDER BY t.txn_date DESC
+                                ROWS UNBOUNDED PRECEDING
+                            ) as invested
                         FROM transactions t
                         JOIN holdings h ON h.id = t.holding_id
                         JOIN wl_accounts wla ON wla.account_id = h.account_id
                         WHERE t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                     ),
-                    invested_data_clean AS (
-                        SELECT account_id, txn_date as date, invested
-                        FROM invested_data_ranked
-                        WHERE rn = 1
+                    invested_values_clean AS (
+                        SELECT date, SUM(DISTINCT invested) as total_invested
+                        FROM invested_values_agg
+                        GROUP BY date
                     ),
-                    -- Use forward-fill approach for missing dates
-                    chart_data_raw AS (
+                    -- Forward-fill values using window functions
+                    chart_data_with_nulls AS (
                         SELECT 
-                            ds.chart_date,
+                            ad.chart_date,
+                            dv.current_day_value,
+                            tv.value as txn_value,
+                            iv.total_invested as invested
+                        FROM all_dates ad
+                        LEFT JOIN daily_values_clean dv ON dv.date = ad.chart_date
+                        LEFT JOIN txn_values_clean tv ON tv.date = ad.chart_date
+                        LEFT JOIN invested_values_clean iv ON iv.date = ad.chart_date
+                    ),
+                    chart_data_filled AS (
+                        SELECT 
+                            chart_date,
                             COALESCE(
-                                (SELECT SUM(dd.current_day_value) 
-                                 FROM daily_data_clean dd 
-                                 WHERE dd.date <= ds.chart_date 
-                                   AND dd.date = (SELECT MAX(dd2.date) FROM daily_data_clean dd2 WHERE dd2.account_id = dd.account_id AND dd2.date <= ds.chart_date)
-                                ), 0
-                            ) AS daily_value,
+                                current_day_value,
+                                LAG(current_day_value) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 2) OVER (ORDER BY chart_date),
+                                LAG(current_day_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as current_day_value,
                             COALESCE(
-                                (SELECT SUM(td.value) 
-                                 FROM txn_data_clean td 
-                                 WHERE td.date <= ds.chart_date 
-                                   AND td.date = (SELECT MAX(td2.date) FROM txn_data_clean td2 WHERE td2.account_id = td.account_id AND td2.date <= ds.chart_date)
-                                ), 0
-                            ) AS txn_value,
+                                txn_value,
+                                LAG(txn_value) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 2) OVER (ORDER BY chart_date),
+                                LAG(txn_value, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as txn_value,
                             COALESCE(
-                                (SELECT SUM(id.invested) 
-                                 FROM invested_data_clean id 
-                                 WHERE id.date <= ds.chart_date 
-                                   AND id.date = (SELECT MAX(id2.date) FROM invested_data_clean id2 WHERE id2.account_id = id.account_id AND id2.date <= ds.chart_date)
-                                ), 0
-                            ) AS invested
-                        FROM date_series ds
+                                invested,
+                                LAG(invested) OVER (ORDER BY chart_date),
+                                LAG(invested, 2) OVER (ORDER BY chart_date),
+                                LAG(invested, 3) OVER (ORDER BY chart_date),
+                                0
+                            ) as invested
+                        FROM chart_data_with_nulls
                     )
                     SELECT 
-                        ROW_NUMBER() OVER (ORDER BY chart_date) AS id,
-                        chart_date AS date,
-                        (daily_value + txn_value) AS currentDayValue,
-                        invested
-                    FROM chart_data_raw
-                    ORDER BY chart_date
+                        ROW_NUMBER() OVER (ORDER BY cdf.chart_date) AS id,
+                        cdf.chart_date AS date,
+                        COALESCE(cdf.current_day_value, 0) + COALESCE(cdf.txn_value, 0) AS currentDayValue,
+                        COALESCE(cdf.invested, 0) AS invested
+                    FROM chart_data_filled cdf
+                    ORDER BY cdf.chart_date
                     """;
         }
     }

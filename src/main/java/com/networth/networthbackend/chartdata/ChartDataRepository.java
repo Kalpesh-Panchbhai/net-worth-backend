@@ -19,9 +19,14 @@ public class ChartDataRepository {
     public List<ChartDataPoint> getChartDataForHolding(Long holdingId, LocalDate startDate) throws Exception {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_HOLDING);
-            statement.setDate(1, Date.valueOf(startDate));
-            statement.setLong(2, holdingId);
-            statement.setLong(3, holdingId);
+            statement.setLong(1, holdingId); // holding_info WHERE clause
+            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
+            statement.setLong(3, holdingId); // all_dates transactions filter
+            statement.setDate(4, Date.valueOf(startDate)); // all_dates transactions filter
+            statement.setDate(5, Date.valueOf(startDate)); // daily_values_agg filter
+            statement.setDate(6, Date.valueOf(startDate)); // txn_values_agg filter
+            statement.setLong(7, holdingId); // invested_values_agg filter
+            statement.setDate(8, Date.valueOf(startDate)); // invested_values_agg date filter
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
@@ -42,9 +47,14 @@ public class ChartDataRepository {
     public List<ChartDataPoint> getChartDataForAccount(Long accountId, LocalDate startDate) throws Exception {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_ACCOUNT);
-            statement.setDate(1, Date.valueOf(startDate));
-            statement.setLong(2, accountId);
-            statement.setLong(3, accountId);
+            statement.setLong(1, accountId); // account_info WHERE clause
+            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
+            statement.setLong(3, accountId); // all_dates transactions filter
+            statement.setDate(4, Date.valueOf(startDate)); // all_dates transactions filter
+            statement.setDate(5, Date.valueOf(startDate)); // daily_values_agg filter
+            statement.setDate(6, Date.valueOf(startDate)); // txn_values_agg filter
+            statement.setLong(7, accountId); // invested_values_agg filter
+            statement.setDate(8, Date.valueOf(startDate)); // invested_values_agg date filter
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
@@ -65,11 +75,12 @@ public class ChartDataRepository {
     public List<ChartDataPoint> getChartDataForWatchlist(Long watchlistId, LocalDate startDate) throws Exception {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_WATCHLIST);
-            statement.setDate(1, Date.valueOf(startDate));
-            statement.setLong(2, watchlistId);
-            statement.setDate(3, Date.valueOf(startDate)); // For daily_data_ranked filter
-            statement.setDate(4, Date.valueOf(startDate)); // For txn_data_ranked filter
-            statement.setDate(5, Date.valueOf(startDate)); // For invested_data_ranked filter
+            statement.setLong(1, watchlistId); // wl_accounts WHERE clause
+            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
+            statement.setDate(3, Date.valueOf(startDate)); // all_dates transactions filter
+            statement.setDate(4, Date.valueOf(startDate)); // daily_values_agg filter
+            statement.setDate(5, Date.valueOf(startDate)); // txn_values_agg filter
+            statement.setDate(6, Date.valueOf(startDate)); // invested_values_agg filter
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
