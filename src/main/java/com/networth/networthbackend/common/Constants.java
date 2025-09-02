@@ -286,32 +286,85 @@ public class Constants {
                     """;
 
             public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
+                    WITH
+                      acc AS (
+                        SELECT a.*
+                        FROM accounts a
+                        WHERE a.id = ?
+                      ),
+                      ahd_curr AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
+                        FROM account_holding_values_daily s
+                        JOIN acc a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE
+                        GROUP BY s.account_id
+                      ),
+                      ahd_prev AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
+                        FROM account_holding_values_daily s
+                        JOIN acc a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
+                        GROUP BY s.account_id
+                      ),
+                      tx_curr AS (
+                        SELECT t.account_id, SUM(t.value) AS curr_value
+                        FROM transactions t
+                        JOIN acc a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE
+                        GROUP BY t.account_id
+                      ),
+                      tx_prev AS (
+                        SELECT t.account_id, SUM(t.value) AS prev_value
+                        FROM transactions t
+                        JOIN acc a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE - INTERVAL 1 DAY
+                        GROUP BY t.account_id
+                      ),
+                      invested_latest AS (
+                        SELECT x.account_id, SUM(x.invested) AS invested
+                        FROM (
+                          SELECT tr.account_id, tr.holding_id, tr.invested,
+                                 ROW_NUMBER() OVER (
+                                   PARTITION BY tr.account_id, tr.holding_id
+                                   ORDER BY tr.txn_date DESC
+                                 ) AS rn
+                          FROM transactions tr
+                          JOIN acc a ON a.id = tr.account_id
+                        ) x
+                        WHERE x.rn = 1
+                        GROUP BY x.account_id
+                      )
                     SELECT
                       w.id,
                       w.name,
                       w.user_id,
-                      COALESCE(SUM(CASE WHEN ahvd.date = CURRENT_DATE                 THEN ahvd.current_day_value END), 0) AS current_day_value,
-                      COALESCE(SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.current_day_value END), 0) AS previous_day_value,
-                      COALESCE(il.invested, 0) AS invested
+                      COALESCE(
+                        CASE
+                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahc.curr_value
+                          ELSE tc.curr_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS current_day_value,
+                      COALESCE(
+                        CASE
+                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahp.prev_value
+                          ELSE tp.prev_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS previous_day_value,
+                      COALESCE(il.invested, CAST(0 AS DECIMAL(10,4))) AS invested
                     FROM watchlist_accounts wa
                     JOIN watchlists w
                       ON w.id = wa.watchlist_id
-                    LEFT JOIN account_holding_values_daily ahvd
-                      ON ahvd.account_id = wa.account_id
-                     AND ahvd.date IN (CURRENT_DATE, DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
-                    LEFT JOIN (
-                      SELECT t.account_id, SUM(t.invested) AS invested
-                      FROM (
-                        SELECT tr.account_id, tr.holding_id, tr.invested,
-                               ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
-                        FROM transactions tr
-                      ) t
-                      WHERE t.rn = 1
-                      GROUP BY t.account_id
-                    ) il
-                      ON il.account_id = wa.account_id
-                    WHERE wa.account_id = ?
-                    GROUP BY w.id, w.name, w.user_id
+                    JOIN acc a
+                      ON a.id = wa.account_id
+                    LEFT JOIN ahd_curr ahc ON ahc.account_id = wa.account_id
+                    LEFT JOIN ahd_prev ahp ON ahp.account_id = wa.account_id
+                    LEFT JOIN tx_curr  tc  ON tc.account_id  = wa.account_id
+                    LEFT JOIN tx_prev  tp  ON tp.account_id  = wa.account_id
+                    LEFT JOIN invested_latest il ON il.account_id = wa.account_id
+                    WHERE wa.account_id = a.id
+                    GROUP BY w.id, w.name, w.user_id, a.type, a.needs_daily_data
                     ORDER BY w.id
                     """;
         }
@@ -334,29 +387,49 @@ public class Constants {
                         JOIN users u ON u.id = a.user_id
                         WHERE u.id = ?
                       ),
-                      curr AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS current_day_value
+                      -- Invested: latest available per (account_id, holding_id), summed per account
+                      invested_latest AS (
+                        SELECT x.account_id, SUM(x.invested) AS invested
+                        FROM (
+                          SELECT tr.account_id, tr.holding_id, tr.invested,
+                                 ROW_NUMBER() OVER (
+                                   PARTITION BY tr.account_id, tr.holding_id
+                                   ORDER BY tr.txn_date DESC
+                                 ) AS rn
+                          FROM transactions tr
+                          JOIN my_accounts a ON a.id = tr.account_id
+                        ) x
+                        WHERE x.rn = 1
+                        GROUP BY x.account_id
+                      ),
+                      -- Daily table sums for current and previous day
+                      ahd_curr AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
                         FROM account_holding_values_daily s
                         JOIN my_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE
                         GROUP BY s.account_id
                       ),
-                      prev AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS previous_day_value
+                      ahd_prev AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
                         FROM account_holding_values_daily s
                         JOIN my_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
                         GROUP BY s.account_id
                       ),
-                      latest AS (
-                        SELECT t.account_id, SUM(t.invested) AS invested
-                        FROM (
-                          SELECT tr.account_id, tr.holding_id, tr.invested,
-                                 ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
-                          FROM transactions tr
-                          JOIN my_accounts a ON a.id = tr.account_id
-                        ) t
-                        WHERE t.rn = 1
+                      -- Transaction sums by day for non-daily accounts
+                      tx_curr AS (
+                        SELECT t.account_id, SUM(t.value) AS curr_value
+                        FROM transactions t
+                        JOIN my_accounts a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE
+                        GROUP BY t.account_id
+                      ),
+                      tx_prev AS (
+                        SELECT t.account_id, SUM(t.value) AS prev_value
+                        FROM transactions t
+                        JOIN my_accounts a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE - INTERVAL 1 DAY
                         GROUP BY t.account_id
                       )
                     SELECT
@@ -367,13 +440,30 @@ public class Constants {
                       a.is_active,
                       a.needs_daily_data,
                       a.currency,
-                      COALESCE(c.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(p.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(l.invested,    CAST(0 AS DECIMAL(10,4))) AS invested
+                      -- current_day_value by rules (default 0)
+                      COALESCE(
+                        CASE
+                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahc.curr_value
+                          ELSE tc.curr_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS current_day_value,
+                      -- previous_day_value by rules (default 0)
+                      COALESCE(
+                        CASE
+                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahp.prev_value
+                          ELSE tp.prev_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS previous_day_value,
+                      -- invested defaults to 0
+                      COALESCE(il.invested, CAST(0 AS DECIMAL(10,4))) AS invested
                     FROM my_accounts a
-                    LEFT JOIN curr   c ON c.account_id = a.id
-                    LEFT JOIN prev   p ON p.account_id = a.id
-                    LEFT JOIN latest l ON l.account_id = a.id
+                    LEFT JOIN ahd_curr ahc ON ahc.account_id = a.id
+                    LEFT JOIN ahd_prev ahp ON ahp.account_id = a.id
+                    LEFT JOIN tx_curr  tc  ON tc.account_id  = a.id
+                    LEFT JOIN tx_prev  tp  ON tp.account_id  = a.id
+                    LEFT JOIN invested_latest il ON il.account_id = a.id
                     ORDER BY a.id
                     """;
 
@@ -386,28 +476,49 @@ public class Constants {
                           ON wa.account_id = a.id
                         WHERE wa.watchlist_id = ?
                       ),
-                      daily_sums AS (
-                        SELECT avd.account_id,
-                               avd.date,
-                               SUM(avd.current_day_value) AS value_sum
-                        FROM account_holding_values_daily avd
-                        WHERE avd.holding_id <> 0
-                          AND avd.account_id IN (SELECT id FROM watch_accounts)
-                        GROUP BY avd.account_id, avd.date
-                      ),
-                      ranked AS (
-                        SELECT ds.*,
-                               ROW_NUMBER() OVER (PARTITION BY ds.account_id ORDER BY ds.date DESC) AS rn
-                        FROM daily_sums ds
-                      ),
+                      -- Invested: latest available per (account_id, holding_id), summed per account
                       invested_latest AS (
-                        SELECT t.account_id, SUM(t.invested) AS invested_sum
+                        SELECT x.account_id, SUM(x.invested) AS invested
                         FROM (
                           SELECT tr.account_id, tr.holding_id, tr.invested,
-                                 ROW_NUMBER() OVER (PARTITION BY tr.account_id, tr.holding_id ORDER BY tr.txn_date DESC) AS rn
+                                 ROW_NUMBER() OVER (
+                                   PARTITION BY tr.account_id, tr.holding_id
+                                   ORDER BY tr.txn_date DESC
+                                 ) AS rn
                           FROM transactions tr
-                        ) t
-                        WHERE t.rn = 1
+                          JOIN watch_accounts a ON a.id = tr.account_id
+                        ) x
+                        WHERE x.rn = 1
+                        GROUP BY x.account_id
+                      ),
+                      -- Daily table sums for current and previous day
+                      ahd_curr AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
+                        FROM account_holding_values_daily s
+                        JOIN watch_accounts a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE
+                        GROUP BY s.account_id
+                      ),
+                      ahd_prev AS (
+                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
+                        FROM account_holding_values_daily s
+                        JOIN watch_accounts a ON a.id = s.account_id
+                        WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
+                        GROUP BY s.account_id
+                      ),
+                      -- Transaction sums by day for non-daily accounts
+                      tx_curr AS (
+                        SELECT t.account_id, SUM(t.value) AS curr_value
+                        FROM transactions t
+                        JOIN watch_accounts a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE
+                        GROUP BY t.account_id
+                      ),
+                      tx_prev AS (
+                        SELECT t.account_id, SUM(t.value) AS prev_value
+                        FROM transactions t
+                        JOIN watch_accounts a ON a.id = t.account_id
+                        WHERE t.txn_date = CURRENT_DATE - INTERVAL 1 DAY
                         GROUP BY t.account_id
                       )
                     SELECT
@@ -418,16 +529,30 @@ public class Constants {
                       wa.is_active,
                       wa.needs_daily_data,
                       wa.currency,
-                      COALESCE(l.value_sum, 0)    AS current_day_value,
-                      COALESCE(p.value_sum, 0)    AS previous_day_value,
-                      COALESCE(il.invested_sum, 0) AS invested
+                      -- current_day_value by rules (default 0)
+                      COALESCE(
+                        CASE
+                          WHEN wa.type = 'BROKER' OR wa.needs_daily_data = 1 THEN ahc.curr_value
+                          ELSE tc.curr_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS current_day_value,
+                      -- previous_day_value by rules (default 0)
+                      COALESCE(
+                        CASE
+                          WHEN wa.type = 'BROKER' OR wa.needs_daily_data = 1 THEN ahp.prev_value
+                          ELSE tp.prev_value
+                        END,
+                        CAST(0 AS DECIMAL(10,4))
+                      ) AS previous_day_value,
+                      -- invested defaults to 0
+                      COALESCE(il.invested, CAST(0 AS DECIMAL(10,4))) AS invested
                     FROM watch_accounts wa
-                    LEFT JOIN ranked l
-                      ON l.account_id = wa.id AND l.rn = 1
-                    LEFT JOIN ranked p
-                      ON p.account_id = wa.id AND p.rn = 2
-                    LEFT JOIN invested_latest il
-                      ON il.account_id = wa.id
+                    LEFT JOIN ahd_curr ahc ON ahc.account_id = wa.id
+                    LEFT JOIN ahd_prev ahp ON ahp.account_id = wa.id
+                    LEFT JOIN tx_curr  tc  ON tc.account_id  = wa.id
+                    LEFT JOIN tx_prev  tp  ON tp.account_id  = wa.id
+                    LEFT JOIN invested_latest il ON il.account_id = wa.id
                     ORDER BY wa.id
                     """;
         }
