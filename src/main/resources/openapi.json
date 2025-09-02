@@ -2320,14 +2320,20 @@
             "in": "query",
             "required": false,
             "description": "Account id (optional; provide either accountId or holdingId)",
-            "schema": { "type": "integer", "format": "int64" }
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
           {
             "name": "holdingId",
             "in": "query",
             "required": false,
             "description": "Holding id (optional; provide either accountId or holdingId)",
-            "schema": { "type": "integer", "format": "int64" }
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
           },
           {
             "name": "range",
@@ -2336,7 +2342,15 @@
             "description": "Time range for the series",
             "schema": {
               "type": "string",
-              "enum": ["1M", "3M", "6M", "1Y", "2Y", "5Y", "ALL"]
+              "enum": [
+                "1M",
+                "3M",
+                "6M",
+                "1Y",
+                "2Y",
+                "5Y",
+                "ALL"
+              ]
             }
           }
         ],
@@ -2348,21 +2362,41 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": { "type": "boolean" },
+                    "success": {
+                      "type": "boolean"
+                    },
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": { "type": "integer", "format": "int64" },
-                          "date": { "type": "string", "format": "date" },
-                          "currentDayValue": { "type": "number" }
+                          "id": {
+                            "type": "integer",
+                            "format": "int64"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "currentDayValue": {
+                            "type": "number"
+                          },
+                          "invested": {
+                            "type": "number"
+                          }
                         },
-                        "required": ["id", "date", "currentDayValue"]
+                        "required": [
+                          "id",
+                          "date",
+                          "currentDayValue"
+                        ]
                       }
                     }
                   },
-                  "required": ["success", "data"]
+                  "required": [
+                    "success",
+                    "data"
+                  ]
                 },
                 "examples": {
                   "byHoldingId": {
@@ -2370,9 +2404,24 @@
                     "value": {
                       "success": true,
                       "data": [
-                        { "id": 101, "date": "2025-08-10", "currentDayValue": 98.12 },
-                        { "id": 101, "date": "2025-08-11", "currentDayValue": 98.25 },
-                        { "id": 101, "date": "2025-08-12", "currentDayValue": 98.40 }
+                        {
+                          "id": 1,
+                          "date": "2025-08-10",
+                          "currentDayValue": 98.12,
+                          "invested": 75.00
+                        },
+                        {
+                          "id": 2,
+                          "date": "2025-08-11",
+                          "currentDayValue": 98.25,
+                          "invested": 75.00
+                        },
+                        {
+                          "id": 3,
+                          "date": "2025-08-12",
+                          "currentDayValue": 98.40,
+                          "invested": 80.00
+                        }
                       ]
                     }
                   },
@@ -2381,9 +2430,21 @@
                     "value": {
                       "success": true,
                       "data": [
-                        { "id": 1, "date": "2025-06-01", "currentDayValue": 2500.00 },
-                        { "id": 1, "date": "2025-06-02", "currentDayValue": 2510.75 },
-                        { "id": 1, "date": "2025-06-03", "currentDayValue": 2522.10 }
+                        {
+                          "id": 1,
+                          "date": "2025-06-01",
+                          "currentDayValue": 2500.00
+                        },
+                        {
+                          "id": 1,
+                          "date": "2025-06-02",
+                          "currentDayValue": 2510.75
+                        },
+                        {
+                          "id": 1,
+                          "date": "2025-06-03",
+                          "currentDayValue": 2522.10
+                        }
                       ]
                     }
                   }

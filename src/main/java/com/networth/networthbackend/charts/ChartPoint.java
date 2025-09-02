@@ -20,4 +20,5 @@ import java.time.LocalDate;
 public class ChartPoint extends BaseEntity {
     private LocalDate date;
     private BigDecimal currentDayValue;
+    private BigDecimal invested;
 }
