@@ -2231,7 +2231,8 @@
         "required": [
           "id",
           "externalUserId"
-        ]
+        ],
+        "example": { "id": 1, "externalUserId": "demo-user" }
       },
       "CreateIncomeTagRequest": {
         "type": "object",
@@ -2287,7 +2288,8 @@
           "userId",
           "name",
           "isDefault"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "Salary", "isDefault": false }
       },
       "ApiResponseIncomeTag": {
         "type": "object",
@@ -2363,7 +2365,8 @@
           "userId",
           "name",
           "isDefault"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
       },
       "CreateIncomeSourceRequest": {
         "type": "object",
@@ -2427,7 +2430,17 @@
           "taxPaid",
           "currency",
           "creditedDate"
-        ]
+        ],
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "incomeSourceId": 1,
+          "incomeTagId": 1,
+          "netAmount": 1500.75,
+          "taxPaid": 150.25,
+          "currency": "INR",
+          "creditedDate": "2025-08-31"
+        }
       },
       "Transaction": {
         "type": "object",
@@ -2454,6 +2467,14 @@
           "value": {
             "type": "number"
           }
+        },
+        "example": {
+          "id": 1,
+          "accountId": 1,
+          "holdingId": 1,
+          "txnDate": "2025-08-29",
+          "invested": 1.00,
+          "value": 10.25
         }
       },
       "CreateTransactionRequest": {
@@ -2628,7 +2649,8 @@
           "id",
           "userId",
           "name"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "All" }
       },
       "ApiResponseWatchlist": {
         "type": "object",
@@ -2672,7 +2694,8 @@
           "currentDayValue",
           "previousDayValue",
           "invested"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "All", "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
       },
       "ApiResponseWatchlistSummaryList": {
         "type": "object",
@@ -2731,7 +2754,8 @@
           "isActive",
           "needsDailyData",
           "currency"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "Zerodha", "type": "BROKER", "isActive": true, "needsDailyData": true, "currency": "INR" }
       },
       "ApiResponseAccount": {
         "type": "object",
@@ -2767,7 +2791,8 @@
           "accountId",
           "name",
           "symbol"
-        ]
+        ],
+        "example": { "id": 1, "accountId": 1, "name": "Apple Inc.", "symbol": "AAPL" }
       },
       "CreateHoldingRequest": {
         "type": "object",
@@ -2828,7 +2853,8 @@
           "currentDayValue",
           "previousDayValue",
           "invested"
-        ]
+        ],
+        "example": { "id": 1, "accountId": 1, "name": "Apple Inc.", "symbol": "AAPL", "units": 10.5, "currentDayValue": 1950.25, "previousDayValue": 1925.0, "invested": 1700.0 }
       },
       "ApiResponseHolding": {
         "type": "object",
@@ -2919,7 +2945,8 @@
           "currentDayValue",
           "previousDayValue",
           "invested"
-        ]
+        ],
+        "example": { "id": 1, "userId": 1, "name": "Zerodha", "type": "BROKER", "isActive": true, "needsDailyData": true, "currency": "INR", "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
       },
       "ApiResponseAccountSummaryList": {
         "type": "object",
