@@ -150,7 +150,6 @@ public class Constants {
         public static final String SYMBOL = "symbol";
         public static final String WATCHLIST_ID = "watchlistId";
         public static final String MODE = "mode";
-        public static final String RANGE = "range";
     }
 
     @UtilityClass
@@ -165,7 +164,6 @@ public class Constants {
         public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
         public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
         public static final String TRANSACTIONS = "transactions";
-        public static final String CHARTS = "charts";
     }
 
     @UtilityClass
