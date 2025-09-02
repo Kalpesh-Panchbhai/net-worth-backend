@@ -8,6 +8,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.BaseApiHandler;
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.holdings.HoldingApiHandler;
+import com.networth.networthbackend.charts.ChartApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
@@ -35,6 +36,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.WATCHLISTS, new WatchlistApiHandler());
         registry.put(Constants.Entities.ACCOUNTS, new AccountApiHandler());
         registry.put(Constants.Entities.HOLDINGS, new HoldingApiHandler());
+        registry.put(Constants.Entities.CHARTS, new ChartApiHandler());
         registry.put(Constants.Entities.WATCHLIST_ACCOUNTS, new WatchlistAccountApiHandler());
         registry.put(Constants.Entities.ACCOUNT_WATCHLISTS, new AccountWatchlistApiHandler());
         registry.put(Constants.Entities.TRANSACTIONS, new com.networth.networthbackend.transactions.TransactionApiHandler());

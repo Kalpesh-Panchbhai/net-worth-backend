@@ -49,6 +49,10 @@
     {
       "name": "transactions",
       "description": "Transactions listing & deletion"
+    },
+    {
+      "name": "charts",
+      "description": "Chart time-series for accounts and holdings"
     }
   ],
   "paths": {
@@ -2297,6 +2301,98 @@
                 }
               }
             }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/charts": {
+      "get": {
+        "tags": [
+          "charts"
+        ],
+        "summary": "List chart points by accountId or holdingId and range",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "query",
+            "required": false,
+            "description": "Account id (optional; provide either accountId or holdingId)",
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "holdingId",
+            "in": "query",
+            "required": false,
+            "description": "Holding id (optional; provide either accountId or holdingId)",
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": true,
+            "description": "Time range for the series",
+            "schema": {
+              "type": "string",
+              "enum": ["1M", "3M", "6M", "1Y", "2Y", "5Y", "ALL"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of chart points",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer", "format": "int64" },
+                          "date": { "type": "string", "format": "date" },
+                          "currentDayValue": { "type": "number" }
+                        },
+                        "required": ["id", "date", "currentDayValue"]
+                      }
+                    }
+                  },
+                  "required": ["success", "data"]
+                },
+                "examples": {
+                  "byHoldingId": {
+                    "summary": "Chart for holdingId=101, range=1M",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        { "id": 101, "date": "2025-08-10", "currentDayValue": 98.12 },
+                        { "id": 101, "date": "2025-08-11", "currentDayValue": 98.25 },
+                        { "id": 101, "date": "2025-08-12", "currentDayValue": 98.40 }
+                      ]
+                    }
+                  },
+                  "byAccountId": {
+                    "summary": "Chart for accountId=1, range=3M (aggregated across holdings)",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        { "id": 1, "date": "2025-06-01", "currentDayValue": 2500.00 },
+                        { "id": 1, "date": "2025-06-02", "currentDayValue": 2510.75 },
+                        { "id": 1, "date": "2025-06-03", "currentDayValue": 2522.10 }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
