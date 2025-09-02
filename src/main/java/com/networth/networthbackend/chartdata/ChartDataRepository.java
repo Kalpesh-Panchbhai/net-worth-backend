@@ -20,13 +20,10 @@ public class ChartDataRepository {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_HOLDING);
             statement.setLong(1, holdingId); // holding_info WHERE clause
-            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
-            statement.setLong(3, holdingId); // all_dates transactions filter
-            statement.setDate(4, Date.valueOf(startDate)); // all_dates transactions filter
-            statement.setDate(5, Date.valueOf(startDate)); // daily_values_agg filter
-            statement.setDate(6, Date.valueOf(startDate)); // txn_values_agg filter
-            statement.setLong(7, holdingId); // invested_values_agg filter
-            statement.setDate(8, Date.valueOf(startDate)); // invested_values_agg date filter
+            statement.setLong(2, holdingId); // earliest_txn_date WHERE clause
+            statement.setDate(3, Date.valueOf(startDate)); // effective_dates GREATEST calculation
+            statement.setLong(4, holdingId); // all_dates transactions WHERE clause
+            statement.setLong(5, holdingId); // invested_values_agg WHERE clause
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
@@ -48,13 +45,10 @@ public class ChartDataRepository {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_ACCOUNT);
             statement.setLong(1, accountId); // account_info WHERE clause
-            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
-            statement.setLong(3, accountId); // all_dates transactions filter
-            statement.setDate(4, Date.valueOf(startDate)); // all_dates transactions filter
-            statement.setDate(5, Date.valueOf(startDate)); // daily_values_agg filter
-            statement.setDate(6, Date.valueOf(startDate)); // txn_values_agg filter
-            statement.setLong(7, accountId); // invested_values_agg filter
-            statement.setDate(8, Date.valueOf(startDate)); // invested_values_agg date filter
+            statement.setLong(2, accountId); // earliest_txn_date WHERE clause
+            statement.setDate(3, Date.valueOf(startDate)); // effective_dates GREATEST calculation
+            statement.setLong(4, accountId); // all_dates transactions WHERE clause
+            statement.setLong(5, accountId); // invested_values_agg WHERE clause
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
@@ -76,11 +70,7 @@ public class ChartDataRepository {
         try (Connection connection = Database.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(Constants.DB.ChartData.SQL_CHART_DATA_FOR_WATCHLIST);
             statement.setLong(1, watchlistId); // wl_accounts WHERE clause
-            statement.setDate(2, Date.valueOf(startDate)); // all_dates daily values filter
-            statement.setDate(3, Date.valueOf(startDate)); // all_dates transactions filter
-            statement.setDate(4, Date.valueOf(startDate)); // daily_values_agg filter
-            statement.setDate(5, Date.valueOf(startDate)); // txn_values_agg filter
-            statement.setDate(6, Date.valueOf(startDate)); // invested_values_agg filter
+            statement.setDate(2, Date.valueOf(startDate)); // effective_dates GREATEST calculation
             
             ResultSet resultSet = statement.executeQuery();
             List<ChartDataPoint> chartData = new ArrayList<>();
