@@ -1475,6 +1475,35 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseHoldingSummaryList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 123,
+                          "accountId": 45,
+                          "name": "Apple Inc.",
+                          "symbol": "AAPL",
+                          "units": 10.5,
+                          "currentDayValue": 1950.25,
+                          "previousDayValue": 1925.0,
+                          "invested": 1700.0
+                        },
+                        {
+                          "id": 124,
+                          "accountId": 45,
+                          "name": "Tesla, Inc.",
+                          "symbol": "TSLA",
+                          "units": 3.0,
+                          "currentDayValue": 750.0,
+                          "previousDayValue": 740.0,
+                          "invested": 680.0
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
