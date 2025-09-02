@@ -69,10 +69,10 @@
                 "default": {
                   "value": {
                     "userId": 1,
-                    "incomeSourceId": 10,
-                    "incomeTagId": 5,
-                    "netAmount": 1000.5,
-                    "taxPaid": 100.25,
+                    "incomeSourceId": 1,
+                    "incomeTagId": 1,
+                    "netAmount": 1800.50,
+                    "taxPaid": 180.25,
                     "currency": "INR",
                     "creditedDate": "2025-08-26"
                   }
@@ -131,7 +131,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingFilter": {
                     "value": {
@@ -242,7 +244,12 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "Company",
+                        "isDefault": false
+                      }
                     }
                   }
                 }
@@ -314,7 +321,12 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "id": 1, "userId": 1, "name": "Salary", "isDefault": false }
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "Salary",
+                        "isDefault": false
+                      }
                     }
                   }
                 }
@@ -382,7 +394,13 @@
                 },
                 "examples": {
                   "default": {
-                    "value": { "success": true, "data": { "id": 1, "externalUserId": "demo-user" } }
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "externalUserId": "demo-user"
+                      }
+                    }
                   }
                 }
               }
@@ -397,7 +415,13 @@
                 },
                 "examples": {
                   "default": {
-                    "value": { "success": true, "data": { "id": 1, "externalUserId": "demo-user" } }
+                    "value": {
+                      "success": true,
+                      "data": {
+                        "id": 1,
+                        "externalUserId": "demo-user"
+                      }
+                    }
                   }
                 }
               }
@@ -621,7 +645,12 @@
                     "value": {
                       "success": true,
                       "data": [
-                        { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
+                        {
+                          "id": 1,
+                          "userId": 1,
+                          "name": "Company",
+                          "isDefault": false
+                        }
                       ]
                     }
                   }
@@ -804,6 +833,18 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateIncomeRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "incomeSourceId": 1,
+                    "incomeTagId": 1,
+                    "netAmount": 1750.25,
+                    "taxPaid": 170.00,
+                    "currency": "INR",
+                    "creditedDate": "2025-09-01"
+                  }
+                }
               }
             }
           }
@@ -976,7 +1017,11 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "id": 1, "userId": 1, "name": "My Watchlist" }
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "My Watchlist"
+                      }
                     }
                   }
                 }
@@ -1041,7 +1086,14 @@
                     "value": {
                       "success": true,
                       "data": [
-                        { "id": 1, "name": "All", "userId": 1, "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
+                        {
+                          "id": 1,
+                          "name": "All",
+                          "userId": 1,
+                          "currentDayValue": 2700.5,
+                          "previousDayValue": 2650.25,
+                          "invested": 2380.0
+                        }
                       ]
                     }
                   }
@@ -1103,7 +1155,11 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "id": 1, "userId": 1, "name": "Updated Name" }
+                      "data": {
+                        "id": 1,
+                        "userId": 1,
+                        "name": "Updated Name"
+                      }
                     }
                   }
                 }
@@ -1602,7 +1658,12 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "id": 1, "accountId": 1, "name": "TCS", "symbol": "TCS" }
+                      "data": {
+                        "id": 1,
+                        "accountId": 1,
+                        "name": "TCS",
+                        "symbol": "TCS"
+                      }
                     }
                   }
                 }
@@ -1726,7 +1787,9 @@
             "description": "Holding not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -1742,7 +1805,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -1852,7 +1917,10 @@
                   "default": {
                     "value": {
                       "success": true,
-                      "data": { "watchlistId": 1, "accountId": 1 }
+                      "data": {
+                        "watchlistId": 1,
+                        "accountId": 1
+                      }
                     }
                   }
                 }
@@ -1863,7 +1931,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingWatchlistId": {
                     "value": {
@@ -1917,7 +1987,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingWatchlistId": {
                     "value": {
@@ -1999,7 +2071,9 @@
             "description": "Conflict",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "duplicateDate": {
                     "value": {
@@ -2015,28 +2089,51 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingAccountId": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "accountId is required to create transaction" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "accountId is required to create transaction"
+                    }
                   },
                   "missingHoldingId": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "holdingId is required to create transaction" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "holdingId is required to create transaction"
+                    }
                   },
                   "missingDate": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "txnDate is required 'YYYY-MM-DD' format" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "txnDate is required 'YYYY-MM-DD' format"
+                    }
                   },
                   "missingInvested": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "invested is required to create transaction" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "invested is required to create transaction"
+                    }
                   },
                   "missingValue": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "value is required to create transaction" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "value is required to create transaction"
+                    }
                   },
                   "missingMode": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "mode is required and must be either 'add' or 'update'" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "mode is required and must be either 'add' or 'update'"
+                    }
                   },
                   "invalidMode": {
-                    "value": { "code": "VALIDATION_ERROR", "message": "mode must be either 'add' or 'update'" }
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "mode must be either 'add' or 'update'"
+                    }
                   }
                 }
               }
@@ -2169,7 +2266,9 @@
             "description": "Transaction not found",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "default": {
                     "value": {
@@ -2185,7 +2284,9 @@
             "description": "Bad request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
                 "examples": {
                   "missingPathId": {
                     "value": {
@@ -2232,7 +2333,10 @@
           "id",
           "externalUserId"
         ],
-        "example": { "id": 1, "externalUserId": "demo-user" }
+        "example": {
+          "id": 1,
+          "externalUserId": "demo-user"
+        }
       },
       "CreateIncomeTagRequest": {
         "type": "object",
@@ -2289,7 +2393,12 @@
           "name",
           "isDefault"
         ],
-        "example": { "id": 1, "userId": 1, "name": "Salary", "isDefault": false }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "Salary",
+          "isDefault": false
+        }
       },
       "ApiResponseIncomeTag": {
         "type": "object",
@@ -2366,7 +2475,12 @@
           "name",
           "isDefault"
         ],
-        "example": { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "Company",
+          "isDefault": false
+        }
       },
       "CreateIncomeSourceRequest": {
         "type": "object",
@@ -2500,7 +2614,10 @@
           },
           "mode": {
             "type": "string",
-            "enum": ["add", "update"],
+            "enum": [
+              "add",
+              "update"
+            ],
             "description": "add => add to latest invested/value; update => create as-is"
           }
         },
@@ -2650,7 +2767,11 @@
           "userId",
           "name"
         ],
-        "example": { "id": 1, "userId": 1, "name": "All" }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "All"
+        }
       },
       "ApiResponseWatchlist": {
         "type": "object",
@@ -2695,7 +2816,14 @@
           "previousDayValue",
           "invested"
         ],
-        "example": { "id": 1, "userId": 1, "name": "All", "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "All",
+          "currentDayValue": 2700.5,
+          "previousDayValue": 2650.25,
+          "invested": 2380.0
+        }
       },
       "ApiResponseWatchlistSummaryList": {
         "type": "object",
@@ -2755,7 +2883,15 @@
           "needsDailyData",
           "currency"
         ],
-        "example": { "id": 1, "userId": 1, "name": "Zerodha", "type": "BROKER", "isActive": true, "needsDailyData": true, "currency": "INR" }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "Zerodha",
+          "type": "BROKER",
+          "isActive": true,
+          "needsDailyData": true,
+          "currency": "INR"
+        }
       },
       "ApiResponseAccount": {
         "type": "object",
@@ -2792,7 +2928,12 @@
           "name",
           "symbol"
         ],
-        "example": { "id": 1, "accountId": 1, "name": "Apple Inc.", "symbol": "AAPL" }
+        "example": {
+          "id": 1,
+          "accountId": 1,
+          "name": "Apple Inc.",
+          "symbol": "AAPL"
+        }
       },
       "CreateHoldingRequest": {
         "type": "object",
@@ -2854,7 +2995,16 @@
           "previousDayValue",
           "invested"
         ],
-        "example": { "id": 1, "accountId": 1, "name": "Apple Inc.", "symbol": "AAPL", "units": 10.5, "currentDayValue": 1950.25, "previousDayValue": 1925.0, "invested": 1700.0 }
+        "example": {
+          "id": 1,
+          "accountId": 1,
+          "name": "Apple Inc.",
+          "symbol": "AAPL",
+          "units": 10.5,
+          "currentDayValue": 1950.25,
+          "previousDayValue": 1925.0,
+          "invested": 1700.0
+        }
       },
       "ApiResponseHolding": {
         "type": "object",
@@ -2946,7 +3096,18 @@
           "previousDayValue",
           "invested"
         ],
-        "example": { "id": 1, "userId": 1, "name": "Zerodha", "type": "BROKER", "isActive": true, "needsDailyData": true, "currency": "INR", "currentDayValue": 2700.5, "previousDayValue": 2650.25, "invested": 2380.0 }
+        "example": {
+          "id": 1,
+          "userId": 1,
+          "name": "Zerodha",
+          "type": "BROKER",
+          "isActive": true,
+          "needsDailyData": true,
+          "currency": "INR",
+          "currentDayValue": 2700.5,
+          "previousDayValue": 2650.25,
+          "invested": 2380.0
+        }
       },
       "ApiResponseAccountSummaryList": {
         "type": "object",
