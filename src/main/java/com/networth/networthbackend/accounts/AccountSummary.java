@@ -17,5 +17,7 @@ public class AccountSummary extends SummaryMetrics {
     private String type;
     @JsonProperty("isActive")
     private boolean isActive;
+    @JsonProperty("needsDailyData")
+    private boolean needsDailyData;
     private String currency;
 }

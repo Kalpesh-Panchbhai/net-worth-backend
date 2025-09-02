@@ -55,6 +55,7 @@ public class AccountApiHandler extends EntityHandlerBase {
         String type = json.hasNonNull(Constants.Query.TYPE) ? json.get(Constants.Query.TYPE).asText() : null;
         String currency = json.hasNonNull(Constants.Query.CURRENCY) ? json.get(Constants.Query.CURRENCY).asText() : null;
         boolean isActive = !json.hasNonNull(Constants.Query.IS_ACTIVE) || json.get(Constants.Query.IS_ACTIVE).asBoolean();
+        boolean needsDailyData = json.hasNonNull(Constants.Query.NEEDS_DAILY_DATA) && json.get(Constants.Query.NEEDS_DAILY_DATA).asBoolean();
 
         if (userId == null || userId <= 0) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_USER_ID_REQUIRED);
@@ -71,7 +72,7 @@ public class AccountApiHandler extends EntityHandlerBase {
         log.debug(Constants.Logs.ACCOUNT_CREATE, userId, name, type, currency, isActive);
         Account created;
         try {
-            created = repository.create(userId, name, type, isActive, currency);
+            created = repository.create(userId, name, type, isActive, needsDailyData, currency);
         } catch (SQLIntegrityConstraintViolationException e) {
             log.warn(Constants.Logs.ACCOUNT_NAME_TYPE_DUPLICATE, userId, name, type);
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.ACCOUNT_NAME_TYPE_DUPLICATE);

@@ -227,7 +227,7 @@ public class SampleDataGenerator {
 
     private static List<Long> createAccounts(Connection conn, long userId, int total, int brokerCount, String currency, boolean commitPerBatch, boolean verbose) throws SQLException {
         List<Long> ids = new ArrayList<>(total);
-        String sql = "INSERT INTO " + Constants.DB.Accounts.TABLE + " (" + String.join(", ", Constants.DB.Accounts.COL_USER_ID, Constants.DB.Accounts.COL_NAME, Constants.DB.Accounts.COL_TYPE, Constants.DB.Accounts.COL_IS_ACTIVE, Constants.DB.Accounts.COL_CURRENCY) + ") VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.Accounts.TABLE + " (" + String.join(", ", Constants.DB.Accounts.COL_USER_ID, Constants.DB.Accounts.COL_NAME, Constants.DB.Accounts.COL_TYPE, Constants.DB.Accounts.COL_IS_ACTIVE, Constants.DB.Accounts.COL_NEEDS_DAILY_DATA, Constants.DB.Accounts.COL_CURRENCY) + ") VALUES (?,?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             for (int i = 1; i <= total; i++) {
                 boolean isBroker = i <= brokerCount;
@@ -237,7 +237,8 @@ public class SampleDataGenerator {
                 ps.setString(2, name);
                 ps.setString(3, type);
                 ps.setBoolean(4, true);
-                ps.setString(5, currency);
+                ps.setBoolean(5, true);
+                ps.setString(6, currency);
                 ps.addBatch();
             }
             long tBatch = System.nanoTime();

@@ -141,6 +141,7 @@ public class Constants {
         public static final String CREDITED_DATE = "creditedDate";
         public static final String TYPE = "type";
         public static final String IS_ACTIVE = "isActive";
+        public static final String NEEDS_DAILY_DATA = "needsDailyData";
         public static final String ACCOUNT_ID = "accountId";
         public static final String HOLDING_ID = "holdingId";
         public static final String TXN_DATE = "txnDate";
@@ -323,6 +324,7 @@ public class Constants {
             public static final String COL_NAME = "name";
             public static final String COL_TYPE = "type";
             public static final String COL_IS_ACTIVE = "is_active";
+            public static final String COL_NEEDS_DAILY_DATA = "needs_daily_data";
             public static final String COL_CURRENCY = "currency";
             public static final String SQL_LIST_SUMMARIES_BY_USER_ID = """
                     WITH
@@ -363,6 +365,7 @@ public class Constants {
                       a.name,
                       a.type,
                       a.is_active,
+                      a.needs_daily_data,
                       a.currency,
                       COALESCE(c.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
                       COALESCE(p.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
@@ -373,6 +376,7 @@ public class Constants {
                     LEFT JOIN latest l ON l.account_id = a.id
                     ORDER BY a.id
                     """;
+
             public static final String SQL_LIST_SUMMARIES_BY_WATCHLIST_ID = """
                     WITH
                       watch_accounts AS (
@@ -412,6 +416,7 @@ public class Constants {
                       wa.name,
                       wa.type,
                       wa.is_active,
+                      wa.needs_daily_data,
                       wa.currency,
                       COALESCE(l.value_sum, 0)    AS current_day_value,
                       COALESCE(p.value_sum, 0)    AS previous_day_value,

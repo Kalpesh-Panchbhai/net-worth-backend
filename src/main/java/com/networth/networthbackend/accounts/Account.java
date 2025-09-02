@@ -17,5 +17,7 @@ public class Account extends BaseEntity {
     private String type;
     @JsonProperty("isActive")
     private boolean isActive;
+    @JsonProperty("needsDailyData")
+    private boolean needsDailyData;
     private String currency;
 }

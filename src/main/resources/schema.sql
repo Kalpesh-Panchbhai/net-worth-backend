@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS accounts
     name      VARCHAR(100)    NOT NULL,
     type      VARCHAR(50)     NOT NULL,
     is_active TINYINT         NOT NULL DEFAULT 1,
+    needs_daily_data TINYINT  NOT NULL DEFAULT 0,
     currency  CHAR(3)         NOT NULL,
     PRIMARY KEY (id),
 

@@ -1126,7 +1126,8 @@
                     "name": "Broker Acc 1",
                     "type": "BROKER",
                     "currency": "INR",
-                    "isActive": true
+                    "isActive": true,
+                    "needsDailyData": false
                   }
                 }
               }
@@ -2452,6 +2453,9 @@
           "isActive": {
             "type": "boolean"
           },
+          "needsDailyData": {
+            "type": "boolean"
+          },
           "currency": {
             "type": "string"
           }
@@ -2462,6 +2466,7 @@
           "name",
           "type",
           "isActive",
+          "needsDailyData",
           "currency"
         ]
       },
@@ -2620,6 +2625,9 @@
           "isActive": {
             "type": "boolean"
           },
+          "needsDailyData": {
+            "type": "boolean"
+          },
           "currency": {
             "type": "string"
           },
@@ -2639,6 +2647,7 @@
           "name",
           "type",
           "isActive",
+          "needsDailyData",
           "currency",
           "currentDayValue",
           "previousDayValue",
@@ -2685,6 +2694,10 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "needsDailyData": {
+            "type": "boolean",
+            "description": "Optional. Whether the account needs daily data. Only settable at creation time."
           }
         },
         "required": [

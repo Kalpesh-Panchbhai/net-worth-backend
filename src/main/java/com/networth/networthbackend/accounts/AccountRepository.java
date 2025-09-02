@@ -20,6 +20,7 @@ public class AccountRepository extends JdbcRepository<Account> {
             .name(rs.getString(Constants.DB.Accounts.COL_NAME))
             .type(rs.getString(Constants.DB.Accounts.COL_TYPE))
             .isActive(rs.getBoolean(Constants.DB.Accounts.COL_IS_ACTIVE))
+            .needsDailyData(rs.getBoolean(Constants.DB.Accounts.COL_NEEDS_DAILY_DATA))
             .currency(rs.getString(Constants.DB.Accounts.COL_CURRENCY))
             .build();
 
@@ -30,6 +31,7 @@ public class AccountRepository extends JdbcRepository<Account> {
                 Constants.DB.Accounts.COL_NAME,
                 Constants.DB.Accounts.COL_TYPE,
                 Constants.DB.Accounts.COL_IS_ACTIVE,
+                Constants.DB.Accounts.COL_NEEDS_DAILY_DATA,
                 Constants.DB.Accounts.COL_CURRENCY)
                 + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM
@@ -37,50 +39,17 @@ public class AccountRepository extends JdbcRepository<Account> {
         return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
     }
 
-    public boolean existsByUserIdAndNameAndType(long userId, String name, String type) throws SQLException {
-        final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
-                + Constants.SQL.WHERE + Constants.DB.Accounts.COL_USER_ID + Constants.SQL.EQ_PARAM
-                + Constants.SQL.AND + Constants.DB.Accounts.COL_NAME + Constants.SQL.EQ_PARAM
-                + Constants.SQL.AND + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM
-                + Constants.SQL.LIMIT_1;
-        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, userId);
-            ps.setString(2, name);
-            ps.setString(3, type);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
-    }
-
-    public boolean existsByUserIdAndNameAndTypeExceptId(long userId, String name, String type, long excludeId) throws SQLException {
-        final String sql = Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Accounts.TABLE
-                + Constants.SQL.WHERE + Constants.DB.Accounts.COL_USER_ID + Constants.SQL.EQ_PARAM
-                + Constants.SQL.AND + Constants.DB.Accounts.COL_NAME + Constants.SQL.EQ_PARAM
-                + Constants.SQL.AND + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM
-                + Constants.SQL.AND + Constants.DB.Accounts.COL_ID + " <> ?"
-                + Constants.SQL.LIMIT_1;
-        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, userId);
-            ps.setString(2, name);
-            ps.setString(3, type);
-            ps.setLong(4, excludeId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
-    }
-
-    public Account create(long userId, String name, String type, boolean isActive, String currency) throws SQLException {
+    public Account create(long userId, String name, String type, boolean isActive, boolean needsDailyData, String currency) throws SQLException {
         final String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Accounts.TABLE + Constants.SQL.OPEN_PAREN
                 + String.join(Constants.SQL.COMMA_SPACE,
                 Constants.DB.Accounts.COL_USER_ID,
                 Constants.DB.Accounts.COL_NAME,
                 Constants.DB.Accounts.COL_TYPE,
                 Constants.DB.Accounts.COL_IS_ACTIVE,
+                Constants.DB.Accounts.COL_NEEDS_DAILY_DATA,
                 Constants.DB.Accounts.COL_CURRENCY)
                 + Constants.SQL.CLOSE_PAREN + Constants.SQL.VALUES + Constants.SQL.OPEN_PAREN
-                + String.join(Constants.SQL.COMMA_SPACE, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM)
+                + String.join(Constants.SQL.COMMA_SPACE, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM, Constants.SQL.PARAM)
                 + Constants.SQL.CLOSE_PAREN;
         long id = 0L;
         try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
@@ -88,7 +57,8 @@ public class AccountRepository extends JdbcRepository<Account> {
             ps.setString(2, name);
             ps.setString(3, type);
             ps.setBoolean(4, isActive);
-            ps.setString(5, currency);
+            ps.setBoolean(5, needsDailyData);
+            ps.setString(6, currency);
             int affected = ps.executeUpdate();
             log.debug(Constants.Logs.ACCOUNT_INSERT_AFFECTED, affected, userId, name, type);
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -112,7 +82,7 @@ public class AccountRepository extends JdbcRepository<Account> {
                 }
             }
         }
-        return Account.builder().id(id).userId(userId).name(name).type(type).isActive(isActive).currency(currency).build();
+        return Account.builder().id(id).userId(userId).name(name).type(type).isActive(isActive).needsDailyData(needsDailyData).currency(currency).build();
     }
 
     public int deleteById(long id) throws SQLException {
@@ -144,33 +114,17 @@ public class AccountRepository extends JdbcRepository<Account> {
 
     public List<AccountSummary> listSummariesByUserId(long userId) throws SQLException {
         final String sql = Constants.DB.Accounts.SQL_LIST_SUMMARIES_BY_USER_ID;
-        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, userId);
-            try (ResultSet rs = ps.executeQuery()) {
-                List<AccountSummary> list = new ArrayList<>();
-                while (rs.next()) {
-                    AccountSummary s = AccountSummary.builder()
-                            .id(rs.getLong(Constants.DB.Accounts.COL_ID))
-                            .userId(rs.getLong(Constants.DB.Accounts.COL_USER_ID))
-                            .name(rs.getString(Constants.DB.Accounts.COL_NAME))
-                            .type(rs.getString(Constants.DB.Accounts.COL_TYPE))
-                            .isActive(rs.getBoolean(Constants.DB.Accounts.COL_IS_ACTIVE))
-                            .currency(rs.getString(Constants.DB.Accounts.COL_CURRENCY))
-                            .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
-                            .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
-                            .invested(rs.getBigDecimal(Constants.DB.Aliases.COL_INVESTED))
-                            .build();
-                    list.add(s);
-                }
-                return list;
-            }
-        }
+        return getAccountSummaries(userId, sql);
     }
 
     public List<AccountSummary> listSummariesByWatchlistId(long watchlistId) throws SQLException {
         final String sql = Constants.DB.Accounts.SQL_LIST_SUMMARIES_BY_WATCHLIST_ID;
+        return getAccountSummaries(watchlistId, sql);
+    }
+
+    private List<AccountSummary> getAccountSummaries(long id, String sql) throws SQLException {
         try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, watchlistId);
+            ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 List<AccountSummary> list = new ArrayList<>();
                 while (rs.next()) {
@@ -180,6 +134,7 @@ public class AccountRepository extends JdbcRepository<Account> {
                             .name(rs.getString(Constants.DB.Accounts.COL_NAME))
                             .type(rs.getString(Constants.DB.Accounts.COL_TYPE))
                             .isActive(rs.getBoolean(Constants.DB.Accounts.COL_IS_ACTIVE))
+                            .needsDailyData(rs.getBoolean(Constants.DB.Accounts.COL_NEEDS_DAILY_DATA))
                             .currency(rs.getString(Constants.DB.Accounts.COL_CURRENCY))
                             .currentDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_CURRENT_DAY_VALUE))
                             .previousDayValue(rs.getBigDecimal(Constants.DB.Aliases.COL_PREVIOUS_DAY_VALUE))
