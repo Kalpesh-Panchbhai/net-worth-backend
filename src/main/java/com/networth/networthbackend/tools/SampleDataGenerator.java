@@ -75,7 +75,6 @@ public class SampleDataGenerator {
             System.out.printf("Users to process: %d -> %s%n", externalUserIds.size(), String.join(",", externalUserIds));
         }
         try (Connection conn = Database.getConnection()) {
-            long tAllStart = System.nanoTime();
             boolean initialAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(autoCommit);
             if (verbose) {
@@ -98,14 +97,20 @@ public class SampleDataGenerator {
                     List<Long> brokerAccountIds = accountIds.subList(0, brokerAccounts);
                     List<Long> nonBrokerAccountIds = accountIds.subList(brokerAccounts, accountIds.size());
 
+                    // Filter non-broker accounts that actually need daily data (drives whether we create agg holding)
+                    t = System.nanoTime();
+                    List<Long> nonBrokerAccountsNeedingDaily = filterAccountsNeedingDailyData(conn, nonBrokerAccountIds);
+                    if (verbose)
+                        System.out.printf("[user=%s] Non-broker accounts needing daily data: %d of %d in %s%n", externalUserId, nonBrokerAccountsNeedingDaily.size(), nonBrokerAccountIds.size(), fmtMs(t));
+
                     t = System.nanoTime();
                     Map<Long, List<Long>> accountHoldings = createHoldingsForBrokerAccounts(conn, brokerAccountIds, holdingsPerBroker, commitPerBatch, verbose);
                     if (verbose)
                         System.out.printf("[user=%s] Inserted holdings: %d across %d broker accounts in %s%n", externalUserId, totalHoldings(accountHoldings), brokerAccountIds.size(), fmtMs(t));
                     t = System.nanoTime();
-                    Map<Long, Long> nonBrokerAggHolding = createAggregateHoldingForAccounts(conn, nonBrokerAccountIds, commitPerBatch, verbose);
+                    Map<Long, Long> nonBrokerAggHolding = createAggregateHoldingForAccounts(conn, nonBrokerAccountsNeedingDaily, commitPerBatch, verbose);
                     if (verbose)
-                        System.out.printf("[user=%s] Inserted aggregate holdings for non-broker accounts: %d in %s%n", externalUserId, nonBrokerAggHolding.size(), fmtMs(t));
+                        System.out.printf("[user=%s] Inserted aggregate holdings for non-broker accounts (needs_daily_data=true): %d in %s%n", externalUserId, nonBrokerAggHolding.size(), fmtMs(t));
 
                     t = System.nanoTime();
                     List<Long> watchlistIds = createWatchlists(conn, userId, watchlists, commitPerBatch, verbose);
@@ -121,12 +126,11 @@ public class SampleDataGenerator {
                     if (verbose)
                         System.out.printf("[user=%s] Inserted income tags=%d, sources=%d, incomes=%d in %s%n", externalUserId, incomeTagIds.size(), incomeSourceIds.size(), 10, fmtMs(t));
 
-                    // Time-series
                     t = System.nanoTime();
-                    generateAccountDailyForNonBroker(conn, nonBrokerAccountIds, nonBrokerAggHolding, startDate, endDate, currency, seed + (idx * 1000L), batchSize, commitPerBatch, verbose);
+                    generateAccountDailyForNonBroker(conn, nonBrokerAccountsNeedingDaily, nonBrokerAggHolding, startDate, endDate, currency, seed + (idx * 1000L), batchSize, commitPerBatch, verbose);
                     long nbDays = daysBetween(startDate, endDate);
                     if (verbose)
-                        System.out.printf("[user=%s] Inserted non-broker daily rows (expected): %d x %d = %d in %s%n", externalUserId, nonBrokerAccountIds.size(), nbDays, (nonBrokerAccountIds.size() * nbDays), fmtMs(t));
+                        System.out.printf("[user=%s] Inserted non-broker daily rows (expected): %d x %d = %d in %s%n", externalUserId, nonBrokerAccountsNeedingDaily.size(), nbDays, (nonBrokerAccountsNeedingDaily.size() * nbDays), fmtMs(t));
                     t = System.nanoTime();
                     generateHoldingDaily(conn, accountHoldings, startDate, endDate, currency, seed + 1 + (idx * 1000L), batchSize, commitPerBatch, verbose);
                     long holdings = totalHoldings(accountHoldings);
@@ -237,7 +241,7 @@ public class SampleDataGenerator {
                 ps.setString(2, name);
                 ps.setString(3, type);
                 ps.setBoolean(4, true);
-                ps.setBoolean(5, true);
+                ps.setBoolean(5, isBroker || i % 2 == 0);
                 ps.setString(6, currency);
                 ps.addBatch();
             }
@@ -336,6 +340,27 @@ public class SampleDataGenerator {
         }
         if (verbose)
             System.out.printf("Watchlist memberships created: %d watchlists x %d accounts%n", watchlistIds.size(), accountIds.size());
+    }
+
+    // Returns only those account IDs from the input list that have needs_daily_data = true
+    private static List<Long> filterAccountsNeedingDailyData(Connection conn, List<Long> accountIds) throws SQLException {
+        if (accountIds == null || accountIds.isEmpty()) return Collections.emptyList();
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ").append(Constants.DB.Accounts.COL_ID).append(" FROM ").append(Constants.DB.Accounts.TABLE).append(" WHERE ").append(Constants.DB.Accounts.COL_ID).append(" IN (");
+        for (int i = 0; i < accountIds.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append('?');
+        }
+        sb.append(") AND ").append(Constants.DB.Accounts.COL_NEEDS_DAILY_DATA).append(" = 1");
+        List<Long> result = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            int idx = 1;
+            for (Long id : accountIds) ps.setLong(idx++, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) result.add(rs.getLong(1));
+            }
+        }
+        return result;
     }
 
     private static void generateHoldingDaily(Connection conn, Map<Long, List<Long>> accountHoldings, LocalDate startDate, LocalDate endDate, String currency, long seed, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {

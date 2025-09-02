@@ -64,8 +64,8 @@ public class AccountRepository extends JdbcRepository<Account> {
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) id = rs.getLong(1);
             }
-            // If account is not a BROKER type, create placeholder aggregate holding
-            if (id > 0 && (!Constants.Accounts.TYPE_BROKER.equalsIgnoreCase(type))) {
+            // If account is not a BROKER type AND needsDailyData=true, create placeholder aggregate holding
+            if (id > 0 && (!Constants.Accounts.TYPE_BROKER.equalsIgnoreCase(type)) && needsDailyData) {
                 final String holdingSql = Constants.SQL.INSERT_INTO + Constants.DB.Holdings.TABLE + Constants.SQL.OPEN_PAREN
                         + String.join(Constants.SQL.COMMA_SPACE,
                         Constants.DB.Holdings.COL_ACCOUNT_ID,
