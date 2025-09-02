@@ -615,6 +615,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseIncomeSourceList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        { "id": 1, "userId": 1, "name": "Company", "isDefault": false }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -730,6 +740,35 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseIncomeList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "userId": 1,
+                          "incomeSourceId": 1,
+                          "incomeTagId": 1,
+                          "netAmount": 1000.5,
+                          "taxPaid": 100.25,
+                          "currency": "INR",
+                          "creditedDate": "2025-08-26"
+                        },
+                        {
+                          "id": 2,
+                          "userId": 1,
+                          "incomeSourceId": 1,
+                          "incomeTagId": 1,
+                          "netAmount": 1500.75,
+                          "taxPaid": 150.25,
+                          "currency": "INR",
+                          "creditedDate": "2025-08-31"
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -1746,6 +1785,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseAccountSummaryList"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "userId": 1,
+                          "name": "Zerodha",
+                          "type": "BROKER",
+                          "isActive": true,
+                          "needsDailyData": true,
+                          "currency": "INR",
+                          "currentDayValue": 2700.5,
+                          "previousDayValue": 2650.25,
+                          "invested": 2380.0
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -1785,7 +1845,19 @@
         },
         "responses": {
           "201": {
-            "description": "Linked"
+            "description": "Linked",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "default": {
+                    "value": {
+                      "success": true,
+                      "data": { "watchlistId": 1, "accountId": 1 }
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Bad request",
