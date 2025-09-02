@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 public class HoldingRepository extends JdbcRepository<Holding> {
@@ -53,6 +54,32 @@ public class HoldingRepository extends JdbcRepository<Holding> {
     public int deleteById(long id) throws SQLException {
         final String sql = Constants.SQL.DELETE_FROM + Constants.DB.Holdings.TABLE + Constants.SQL.WHERE + Constants.DB.Holdings.COL_ID + Constants.SQL.EQ_PARAM;
         return execute(sql, ps -> ps.setLong(1, id));
+    }
+
+    public Optional<Holding> findById(long id) throws SQLException {
+        final String sql = Constants.SQL.SELECT + String.join(Constants.SQL.COMMA_SPACE, 
+                Constants.DB.Holdings.COL_ID, 
+                Constants.DB.Holdings.COL_ACCOUNT_ID, 
+                Constants.DB.Holdings.COL_NAME, 
+                Constants.DB.Holdings.COL_SYMBOL) 
+                + Constants.SQL.FROM + Constants.DB.Holdings.TABLE 
+                + Constants.SQL.WHERE + Constants.DB.Holdings.COL_ID + Constants.SQL.EQ_PARAM 
+                + Constants.SQL.LIMIT_1;
+        
+        try (Connection conn = Database.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(Holding.builder()
+                            .id(rs.getLong(Constants.DB.Holdings.COL_ID))
+                            .accountId(rs.getLong(Constants.DB.Holdings.COL_ACCOUNT_ID))
+                            .name(rs.getString(Constants.DB.Holdings.COL_NAME))
+                            .symbol(rs.getString(Constants.DB.Holdings.COL_SYMBOL))
+                            .build());
+                }
+                return Optional.empty();
+            }
+        }
     }
 
     public List<HoldingSummary> listSummariesByAccountId(long accountId) throws SQLException {

@@ -150,6 +150,8 @@ public class Constants {
         public static final String SYMBOL = "symbol";
         public static final String WATCHLIST_ID = "watchlistId";
         public static final String MODE = "mode";
+        public static final String PERIOD = "period";
+        public static final String CHART_TYPE = "chartType";
     }
 
     @UtilityClass
@@ -164,6 +166,7 @@ public class Constants {
         public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
         public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
         public static final String TRANSACTIONS = "transactions";
+        public static final String CHART_DATA = "chart-data";
     }
 
     @UtilityClass
@@ -172,6 +175,21 @@ public class Constants {
         public static final String TYPE_SAVINGS = "SAVINGS";
         public static final String AGG_HOLDING_NAME = "Account Aggregate";
         public static final String AGG_HOLDING_SYMBOL = "__ACCT__";
+    }
+
+    @UtilityClass
+    public static class ChartData {
+        public static final String PERIOD_1M = "1M";
+        public static final String PERIOD_3M = "3M";
+        public static final String PERIOD_6M = "6M";
+        public static final String PERIOD_1Y = "1Y";
+        public static final String PERIOD_2Y = "2Y";
+        public static final String PERIOD_5Y = "5Y";
+        public static final String PERIOD_ALL = "ALL";
+        
+        public static final String CHART_TYPE_HOLDING = "holding";
+        public static final String CHART_TYPE_ACCOUNT = "account";
+        public static final String CHART_TYPE_WATCHLIST = "watchlist";
     }
 
     @UtilityClass
@@ -645,6 +663,268 @@ public class Constants {
             public static final String COL_INVESTED = "invested";
             public static final String COL_UNITS = "units";
         }
+
+        @UtilityClass
+        public static class ChartData {
+            public static final String SQL_CHART_DATA_FOR_HOLDING = """
+                    WITH RECURSIVE date_series AS (
+                        SELECT ? AS chart_date
+                        UNION ALL
+                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
+                        FROM date_series
+                        WHERE chart_date < CURRENT_DATE
+                    ),
+                    holding_account AS (
+                        SELECT h.id as holding_id, h.account_id, a.type, a.needs_daily_data
+                        FROM holdings h
+                        JOIN accounts a ON a.id = h.account_id
+                        WHERE h.id = ?
+                    ),
+                    daily_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT ahvd.current_day_value
+                                    FROM account_holding_values_daily ahvd
+                                    WHERE ahvd.holding_id = ha.holding_id
+                                      AND ahvd.date <= ds.chart_date
+                                    ORDER BY ahvd.date DESC
+                                    LIMIT 1), 0
+                               ) AS daily_value
+                        FROM date_series ds
+                        CROSS JOIN holding_account ha
+                        WHERE (ha.type = 'BROKER' OR ha.needs_daily_data = 1)
+                    ),
+                    transaction_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT t.value
+                                    FROM transactions t
+                                    WHERE t.holding_id = ha.holding_id
+                                      AND t.txn_date <= ds.chart_date
+                                    ORDER BY t.txn_date DESC
+                                    LIMIT 1), 0
+                               ) AS txn_value
+                        FROM date_series ds
+                        CROSS JOIN holding_account ha
+                        WHERE (ha.type != 'BROKER' AND ha.needs_daily_data = 0)
+                    ),
+                    invested_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT t.invested
+                                    FROM transactions t
+                                    WHERE t.holding_id = ?
+                                      AND t.txn_date <= ds.chart_date
+                                    ORDER BY t.txn_date DESC
+                                    LIMIT 1), 0
+                               ) AS invested
+                        FROM date_series ds
+                    )
+                    SELECT 
+                        ROW_NUMBER() OVER (ORDER BY ds.chart_date) AS id,
+                        ds.chart_date AS date,
+                        CASE 
+                            WHEN ha.type = 'BROKER' OR ha.needs_daily_data = 1 
+                            THEN COALESCE(dv.daily_value, 0)
+                            ELSE COALESCE(tv.txn_value, 0)
+                        END AS currentDayValue,
+                        COALESCE(iv.invested, 0) AS invested
+                    FROM date_series ds
+                    CROSS JOIN holding_account ha
+                    LEFT JOIN daily_values dv ON dv.chart_date = ds.chart_date
+                    LEFT JOIN transaction_values tv ON tv.chart_date = ds.chart_date
+                    LEFT JOIN invested_values iv ON iv.chart_date = ds.chart_date
+                    ORDER BY ds.chart_date
+                    """;
+
+            public static final String SQL_CHART_DATA_FOR_ACCOUNT = """
+                    WITH RECURSIVE date_series AS (
+                        SELECT ? AS chart_date
+                        UNION ALL
+                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
+                        FROM date_series
+                        WHERE chart_date < CURRENT_DATE
+                    ),
+                    account_info AS (
+                        SELECT a.id as account_id, a.type, a.needs_daily_data
+                        FROM accounts a
+                        WHERE a.id = ?
+                    ),
+                    daily_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT SUM(ahvd.current_day_value)
+                                    FROM account_holding_values_daily ahvd
+                                    WHERE ahvd.account_id = ai.account_id
+                                      AND ahvd.date <= ds.chart_date
+                                      AND ahvd.date = (
+                                          SELECT MAX(ahvd2.date)
+                                          FROM account_holding_values_daily ahvd2
+                                          WHERE ahvd2.account_id = ai.account_id
+                                            AND ahvd2.date <= ds.chart_date
+                                      )
+                                   ), 0
+                               ) AS daily_value
+                        FROM date_series ds
+                        CROSS JOIN account_info ai
+                        WHERE (ai.type = 'BROKER' OR ai.needs_daily_data = 1)
+                    ),
+                    transaction_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT SUM(t.value)
+                                    FROM transactions t
+                                    WHERE t.account_id = ai.account_id
+                                      AND t.txn_date <= ds.chart_date
+                                      AND t.txn_date = (
+                                          SELECT MAX(t2.txn_date)
+                                          FROM transactions t2
+                                          WHERE t2.account_id = ai.account_id
+                                            AND t2.txn_date <= ds.chart_date
+                                      )
+                                   ), 0
+                               ) AS txn_value
+                        FROM date_series ds
+                        CROSS JOIN account_info ai
+                        WHERE (ai.type != 'BROKER' AND ai.needs_daily_data = 0)
+                    ),
+                    invested_values AS (
+                        SELECT ds.chart_date,
+                               COALESCE(
+                                   (SELECT SUM(latest_tx.invested)
+                                    FROM (
+                                        SELECT t.holding_id, t.invested,
+                                               ROW_NUMBER() OVER (PARTITION BY t.holding_id ORDER BY t.txn_date DESC) as rn
+                                        FROM transactions t
+                                        WHERE t.account_id = ?
+                                          AND t.txn_date <= ds.chart_date
+                                    ) latest_tx
+                                    WHERE latest_tx.rn = 1
+                                   ), 0
+                               ) AS invested
+                        FROM date_series ds
+                    )
+                    SELECT 
+                        ROW_NUMBER() OVER (ORDER BY ds.chart_date) AS id,
+                        ds.chart_date AS date,
+                        CASE 
+                            WHEN ai.type = 'BROKER' OR ai.needs_daily_data = 1 
+                            THEN COALESCE(dv.daily_value, 0)
+                            ELSE COALESCE(tv.txn_value, 0)
+                        END AS currentDayValue,
+                        COALESCE(iv.invested, 0) AS invested
+                    FROM date_series ds
+                    CROSS JOIN account_info ai
+                    LEFT JOIN daily_values dv ON dv.chart_date = ds.chart_date
+                    LEFT JOIN transaction_values tv ON tv.chart_date = ds.chart_date
+                    LEFT JOIN invested_values iv ON iv.chart_date = ds.chart_date
+                    ORDER BY ds.chart_date
+                    """;
+
+            public static final String SQL_CHART_DATA_FOR_WATCHLIST = """
+                    WITH RECURSIVE date_series AS (
+                        SELECT ? AS chart_date
+                        UNION ALL
+                        SELECT DATE_ADD(chart_date, INTERVAL 1 DAY)
+                        FROM date_series
+                        WHERE chart_date < CURRENT_DATE
+                    ),
+                    wl_accounts AS (
+                        SELECT a.id as account_id, a.type, a.needs_daily_data
+                        FROM accounts a
+                        JOIN watchlist_accounts wa ON wa.account_id = a.id
+                        WHERE wa.watchlist_id = ?
+                    ),
+                    -- Pre-aggregate daily values with window functions for better performance
+                    daily_data_ranked AS (
+                        SELECT 
+                            ahvd.account_id,
+                            ahvd.date,
+                            ahvd.current_day_value,
+                            ROW_NUMBER() OVER (PARTITION BY ahvd.account_id, DATE(ahvd.date) ORDER BY ahvd.date DESC) as rn
+                        FROM account_holding_values_daily ahvd
+                        JOIN wl_accounts wla ON wla.account_id = ahvd.account_id
+                        WHERE (wla.type = 'BROKER' OR wla.needs_daily_data = 1)
+                          AND ahvd.date >= ?
+                          AND ahvd.date <= CURRENT_DATE
+                    ),
+                    daily_data_clean AS (
+                        SELECT account_id, date, current_day_value
+                        FROM daily_data_ranked
+                        WHERE rn = 1
+                    ),
+                    -- Pre-aggregate transaction values with window functions
+                    txn_data_ranked AS (
+                        SELECT 
+                            t.account_id,
+                            t.txn_date,
+                            t.value,
+                            ROW_NUMBER() OVER (PARTITION BY t.account_id, DATE(t.txn_date) ORDER BY t.txn_date DESC) as rn
+                        FROM transactions t
+                        JOIN wl_accounts wla ON wla.account_id = t.account_id
+                        WHERE (wla.type != 'BROKER' AND wla.needs_daily_data = 0)
+                          AND t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                    ),
+                    txn_data_clean AS (
+                        SELECT account_id, txn_date as date, value
+                        FROM txn_data_ranked
+                        WHERE rn = 1
+                    ),
+                    -- Pre-aggregate invested values with window functions
+                    invested_data_ranked AS (
+                        SELECT 
+                            h.account_id,
+                            t.txn_date,
+                            t.invested,
+                            ROW_NUMBER() OVER (PARTITION BY h.account_id, DATE(t.txn_date) ORDER BY t.txn_date DESC) as rn
+                        FROM transactions t
+                        JOIN holdings h ON h.id = t.holding_id
+                        JOIN wl_accounts wla ON wla.account_id = h.account_id
+                        WHERE t.txn_date >= ?
+                          AND t.txn_date <= CURRENT_DATE
+                    ),
+                    invested_data_clean AS (
+                        SELECT account_id, txn_date as date, invested
+                        FROM invested_data_ranked
+                        WHERE rn = 1
+                    ),
+                    -- Use forward-fill approach for missing dates
+                    chart_data_raw AS (
+                        SELECT 
+                            ds.chart_date,
+                            COALESCE(
+                                (SELECT SUM(dd.current_day_value) 
+                                 FROM daily_data_clean dd 
+                                 WHERE dd.date <= ds.chart_date 
+                                   AND dd.date = (SELECT MAX(dd2.date) FROM daily_data_clean dd2 WHERE dd2.account_id = dd.account_id AND dd2.date <= ds.chart_date)
+                                ), 0
+                            ) AS daily_value,
+                            COALESCE(
+                                (SELECT SUM(td.value) 
+                                 FROM txn_data_clean td 
+                                 WHERE td.date <= ds.chart_date 
+                                   AND td.date = (SELECT MAX(td2.date) FROM txn_data_clean td2 WHERE td2.account_id = td.account_id AND td2.date <= ds.chart_date)
+                                ), 0
+                            ) AS txn_value,
+                            COALESCE(
+                                (SELECT SUM(id.invested) 
+                                 FROM invested_data_clean id 
+                                 WHERE id.date <= ds.chart_date 
+                                   AND id.date = (SELECT MAX(id2.date) FROM invested_data_clean id2 WHERE id2.account_id = id.account_id AND id2.date <= ds.chart_date)
+                                ), 0
+                            ) AS invested
+                        FROM date_series ds
+                    )
+                    SELECT 
+                        ROW_NUMBER() OVER (ORDER BY chart_date) AS id,
+                        chart_date AS date,
+                        (daily_value + txn_value) AS currentDayValue,
+                        invested
+                    FROM chart_data_raw
+                    ORDER BY chart_date
+                    """;
+        }
     }
 
     @UtilityClass
@@ -729,6 +1009,16 @@ public class Constants {
         public static final String TRANSACTION_DUPLICATE = "Transaction with the same date already exists.";
         public static final String TRANSACTION_MODE_REQUIRED = "mode is required and must be either 'add' or 'update'";
         public static final String TRANSACTION_MODE_INVALID = "mode must be either 'add' or 'update'";
+        
+        // Chart Data
+        public static final String CHART_DATA_CHART_TYPE_REQUIRED = "chartType is required and must be one of: holding, account, watchlist";
+        public static final String CHART_DATA_CHART_TYPE_INVALID = "chartType must be one of: holding, account, watchlist";
+        public static final String CHART_DATA_PERIOD_REQUIRED = "period is required and must be one of: 1M, 3M, 6M, 1Y, 2Y, 5Y, ALL";
+        public static final String CHART_DATA_PERIOD_INVALID = "period must be one of: 1M, 3M, 6M, 1Y, 2Y, 5Y, ALL";
+        public static final String CHART_DATA_ID_REQUIRED = "id is required for the specified chartType";
+        public static final String CHART_DATA_HOLDING_NOT_FOUND = "Holding not found";
+        public static final String CHART_DATA_ACCOUNT_NOT_FOUND = "Account not found";
+        public static final String CHART_DATA_WATCHLIST_NOT_FOUND = "Watchlist not found";
     }
 
     @UtilityClass
