@@ -4,7 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.accounts.AccountApiHandler;
-import com.networth.networthbackend.chartdata.ChartDataApiHandler;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.BaseApiHandler;
 import com.networth.networthbackend.common.Constants;
@@ -39,7 +38,6 @@ public class ApiRouterHandler extends BaseApiHandler {
         registry.put(Constants.Entities.WATCHLIST_ACCOUNTS, new WatchlistAccountApiHandler());
         registry.put(Constants.Entities.ACCOUNT_WATCHLISTS, new AccountWatchlistApiHandler());
         registry.put(Constants.Entities.TRANSACTIONS, new com.networth.networthbackend.transactions.TransactionApiHandler());
-        registry.put(Constants.Entities.CHART_DATA, new ChartDataApiHandler());
     }
 
     @Override
