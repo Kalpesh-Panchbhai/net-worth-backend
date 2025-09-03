@@ -674,34 +674,16 @@ public class Constants {
                         JOIN accounts a ON a.id = h.account_id
                         WHERE h.id = ?
                     ),
-                    -- Find the earliest transaction date for this holding
-                    earliest_txn_date AS (
-                        SELECT COALESCE(MIN(DATE(t.txn_date)), CURRENT_DATE) as min_txn_date
-                        FROM transactions t
-                        WHERE t.holding_id = ?
-                    ),
-                    -- Calculate effective start date (max of requested start date and earliest transaction date)
-                    effective_dates AS (
-                        SELECT 
-                            GREATEST(?, etd.min_txn_date) as effective_start_date,
-                            etd.min_txn_date
-                        FROM earliest_txn_date etd
-                    ),
-                    -- Get all unique dates from both daily values and transactions, respecting transaction boundary
+                    -- Get all unique dates from both daily values and transactions
                     all_dates AS (
                         SELECT DISTINCT DATE(ahvd.date) as chart_date
                         FROM account_holding_values_daily ahvd
                         JOIN holding_info hi ON hi.holding_id = ahvd.holding_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date AND ahvd.date <= CURRENT_DATE
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
                         UNION
                         SELECT DISTINCT DATE(t.txn_date) as chart_date
                         FROM transactions t
-                        CROSS JOIN effective_dates ed
-                        WHERE t.holding_id = ? AND t.txn_date >= ed.effective_start_date AND t.txn_date <= CURRENT_DATE
-                        UNION
-                        -- Always include today's date to ensure chart extends to current date
-                        SELECT CURRENT_DATE as chart_date
+                        WHERE t.holding_id = ? AND t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
                     -- Pre-aggregate daily values using window functions
                     daily_values_agg AS (
@@ -714,8 +696,7 @@ public class Constants {
                             ) as current_day_value
                         FROM account_holding_values_daily ahvd
                         JOIN holding_info hi ON hi.holding_id = ahvd.holding_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date 
+                        WHERE ahvd.date >= ? 
                           AND ahvd.date <= CURRENT_DATE
                           AND (hi.type = 'BROKER' OR hi.needs_daily_data = 1)
                     ),
@@ -734,8 +715,7 @@ public class Constants {
                             ) as value
                         FROM transactions t
                         JOIN holding_info hi ON hi.holding_id = t.holding_id
-                        CROSS JOIN effective_dates ed
-                        WHERE t.txn_date >= ed.effective_start_date
+                        WHERE t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                           AND (hi.type != 'BROKER' AND hi.needs_daily_data = 0)
                     ),
@@ -753,9 +733,8 @@ public class Constants {
                                 ROWS UNBOUNDED PRECEDING
                             ) as invested
                         FROM transactions t
-                        CROSS JOIN effective_dates ed
                         WHERE t.holding_id = ?
-                          AND t.txn_date >= ed.effective_start_date
+                          AND t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                     ),
                     invested_values_clean AS (
@@ -821,34 +800,16 @@ public class Constants {
                         FROM accounts a
                         WHERE a.id = ?
                     ),
-                    -- Find the earliest transaction date for this account
-                    earliest_txn_date AS (
-                        SELECT COALESCE(MIN(DATE(t.txn_date)), CURRENT_DATE) as min_txn_date
-                        FROM transactions t
-                        WHERE t.account_id = ?
-                    ),
-                    -- Calculate effective start date (max of requested start date and earliest transaction date)
-                    effective_dates AS (
-                        SELECT 
-                            GREATEST(?, etd.min_txn_date) as effective_start_date,
-                            etd.min_txn_date
-                        FROM earliest_txn_date etd
-                    ),
-                    -- Get all unique dates from both daily values and transactions, respecting transaction boundary
+                    -- Get all unique dates from both daily values and transactions
                     all_dates AS (
                         SELECT DISTINCT DATE(ahvd.date) as chart_date
                         FROM account_holding_values_daily ahvd
                         JOIN account_info ai ON ai.account_id = ahvd.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date AND ahvd.date <= CURRENT_DATE
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
                         UNION
                         SELECT DISTINCT DATE(t.txn_date) as chart_date
                         FROM transactions t
-                        CROSS JOIN effective_dates ed
-                        WHERE t.account_id = ? AND t.txn_date >= ed.effective_start_date AND t.txn_date <= CURRENT_DATE
-                        UNION
-                        -- Always include today's date to ensure chart extends to current date
-                        SELECT CURRENT_DATE as chart_date
+                        WHERE t.account_id = ? AND t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
                     -- Pre-aggregate daily values using window functions
                     daily_values_agg AS (
@@ -858,8 +819,7 @@ public class Constants {
                             ROW_NUMBER() OVER (PARTITION BY DATE(ahvd.date) ORDER BY MAX(ahvd.date) DESC) as rn
                         FROM account_holding_values_daily ahvd
                         JOIN account_info ai ON ai.account_id = ahvd.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date 
+                        WHERE ahvd.date >= ? 
                           AND ahvd.date <= CURRENT_DATE
                           AND (ai.type = 'BROKER' OR ai.needs_daily_data = 1)
                         GROUP BY DATE(ahvd.date)
@@ -877,8 +837,7 @@ public class Constants {
                             ROW_NUMBER() OVER (PARTITION BY DATE(t.txn_date) ORDER BY MAX(t.txn_date) DESC) as rn
                         FROM transactions t
                         JOIN account_info ai ON ai.account_id = t.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE t.txn_date >= ed.effective_start_date
+                        WHERE t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                           AND (ai.type != 'BROKER' AND ai.needs_daily_data = 0)
                         GROUP BY DATE(t.txn_date)
@@ -899,9 +858,8 @@ public class Constants {
                                 ROWS UNBOUNDED PRECEDING
                             ) as invested
                         FROM transactions t
-                        CROSS JOIN effective_dates ed
                         WHERE t.account_id = ?
-                          AND t.txn_date >= ed.effective_start_date
+                          AND t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                     ),
                     invested_values_clean AS (
@@ -969,35 +927,17 @@ public class Constants {
                         JOIN watchlist_accounts wa ON wa.account_id = a.id
                         WHERE wa.watchlist_id = ?
                     ),
-                    -- Find the earliest transaction date across all watchlist accounts
-                    earliest_txn_date AS (
-                        SELECT COALESCE(MIN(DATE(t.txn_date)), CURRENT_DATE) as min_txn_date
-                        FROM transactions t
-                        JOIN wl_accounts wla ON wla.account_id = t.account_id
-                    ),
-                    -- Calculate effective start date (max of requested start date and earliest transaction date)
-                    effective_dates AS (
-                        SELECT 
-                            GREATEST(?, etd.min_txn_date) as effective_start_date,
-                            etd.min_txn_date
-                        FROM earliest_txn_date etd
-                    ),
-                    -- Get all unique dates from both daily values and transactions across all watchlist accounts, respecting transaction boundary
+                    -- Get all unique dates from both daily values and transactions across all watchlist accounts
                     all_dates AS (
                         SELECT DISTINCT DATE(ahvd.date) as chart_date
                         FROM account_holding_values_daily ahvd
                         JOIN wl_accounts wla ON wla.account_id = ahvd.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date AND ahvd.date <= CURRENT_DATE
+                        WHERE ahvd.date >= ? AND ahvd.date <= CURRENT_DATE
                         UNION
                         SELECT DISTINCT DATE(t.txn_date) as chart_date
                         FROM transactions t
                         JOIN wl_accounts wla ON wla.account_id = t.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE t.txn_date >= ed.effective_start_date AND t.txn_date <= CURRENT_DATE
-                        UNION
-                        -- Always include today's date to ensure chart extends to current date
-                        SELECT CURRENT_DATE as chart_date
+                        WHERE t.txn_date >= ? AND t.txn_date <= CURRENT_DATE
                     ),
                     -- Pre-aggregate daily values using window functions
                     daily_values_agg AS (
@@ -1007,8 +947,7 @@ public class Constants {
                             ROW_NUMBER() OVER (PARTITION BY DATE(ahvd.date) ORDER BY MAX(ahvd.date) DESC) as rn
                         FROM account_holding_values_daily ahvd
                         JOIN wl_accounts wla ON wla.account_id = ahvd.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE ahvd.date >= ed.effective_start_date 
+                        WHERE ahvd.date >= ? 
                           AND ahvd.date <= CURRENT_DATE
                           AND (wla.type = 'BROKER' OR wla.needs_daily_data = 1)
                         GROUP BY DATE(ahvd.date)
@@ -1026,8 +965,7 @@ public class Constants {
                             ROW_NUMBER() OVER (PARTITION BY DATE(t.txn_date) ORDER BY MAX(t.txn_date) DESC) as rn
                         FROM transactions t
                         JOIN wl_accounts wla ON wla.account_id = t.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE t.txn_date >= ed.effective_start_date
+                        WHERE t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                           AND (wla.type != 'BROKER' AND wla.needs_daily_data = 0)
                         GROUP BY DATE(t.txn_date)
@@ -1050,8 +988,7 @@ public class Constants {
                         FROM transactions t
                         JOIN holdings h ON h.id = t.holding_id
                         JOIN wl_accounts wla ON wla.account_id = h.account_id
-                        CROSS JOIN effective_dates ed
-                        WHERE t.txn_date >= ed.effective_start_date
+                        WHERE t.txn_date >= ?
                           AND t.txn_date <= CURRENT_DATE
                     ),
                     invested_values_clean AS (
