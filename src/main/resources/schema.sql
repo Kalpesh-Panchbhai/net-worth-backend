@@ -188,6 +188,7 @@ CREATE TABLE IF NOT EXISTS account_holding_values_daily
     holding_id        BIGINT UNSIGNED NOT NULL,
     date              DATE            NOT NULL,
     current_day_value DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+    invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
 
     PRIMARY KEY (account_id, holding_id, date),
 

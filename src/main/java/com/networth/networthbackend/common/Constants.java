@@ -625,6 +625,7 @@ public class Constants {
             public static final String COL_HOLDING_ID = "holding_id";
             public static final String COL_DATE = "date";
             public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
+            public static final String COL_INVESTED = "invested";
         }
 
         @UtilityClass

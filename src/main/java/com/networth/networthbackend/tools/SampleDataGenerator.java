@@ -289,19 +289,22 @@ public class SampleDataGenerator {
     }
 
     private static void generateHoldingDaily(Connection conn, Map<Long, List<Long>> accountHoldings, LocalDate startDate, LocalDate endDate, String currency, long seed, int batchSize, boolean commitPerBatch, boolean verbose) throws SQLException {
-        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE) + ") VALUES (?,?,?,?)";
+        String sql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED) + ") VALUES (?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int pending = 0;
             for (Map.Entry<Long, List<Long>> e : accountHoldings.entrySet()) {
                 long accountId = e.getKey();
                 for (long holdingId : e.getValue()) {
                     double value = 1;
+                    double invested = 1;
                     for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
                         ps.setLong(1, accountId);
                         ps.setLong(2, holdingId);
                         ps.setDate(3, Date.valueOf(d));
                         ps.setBigDecimal(4, BigDecimal.valueOf(value));
+                        ps.setBigDecimal(5, BigDecimal.valueOf(invested));
                         value = value * 1.001;
+                        invested = invested * 1.0005; // invested grows slower than value
                         ps.addBatch();
                         pending++;
                         if (pending >= batchSize) {
