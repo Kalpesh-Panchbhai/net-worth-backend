@@ -49,7 +49,7 @@ public class DailyDataRunner {
     }
 
     public static void run(Map<String, String> params) throws Exception {
-        int batchSize = Integer.parseInt(params.getOrDefault("batchSize", "2000"));
+        int batchSize = Integer.parseInt(params.getOrDefault("batchSize", "20000"));
         int maxAccounts = Integer.parseInt(params.getOrDefault("maxAccounts", "0"));
         LocalDate today = LocalDate.now();
 
