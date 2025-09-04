@@ -78,12 +78,25 @@ public class Constants {
         public static final String UPDATE = "UPDATE ";
         public static final String SET = " SET ";
         public static final String AND = " AND ";
+        public static final String OR = " OR ";
+        public static final String ORDER_BY = " ORDER BY ";
+        public static final String ASC = " ASC";
+        public static final String DESC = " DESC";
         public static final String LIMIT_1 = " LIMIT 1";
+        public static final String LIMIT = " LIMIT ";
         public static final String INSERT_INTO = "INSERT INTO ";
         public static final String INSERT_IGNORE_INTO = "INSERT IGNORE INTO ";
         public static final String VALUES = " VALUES ";
         public static final String PARAM = "?";
         public static final String EQ_PARAM = " = ?";
+        public static final String NEQ_PARAM = " <> ?";
+        public static final String EQ_0 = " = 0";
+        public static final String EQ_1 = " = 1";
+        public static final String GE = " >= ";
+        public static final String LE = " <= ";
+        public static final String GT = " > ";
+        public static final String LT = " < ";
+        public static final String EXISTS_OPEN = "EXISTS (";
     }
 
     @UtilityClass
@@ -730,6 +743,33 @@ public class Constants {
         public static final String TRANSACTION_DUPLICATE = "Transaction with the same date already exists.";
         public static final String TRANSACTION_MODE_REQUIRED = "mode is required and must be either 'add' or 'update'";
         public static final String TRANSACTION_MODE_INVALID = "mode must be either 'add' or 'update'";
+    }
+
+    @UtilityClass
+    public static class DailyDataRunner {
+        // Default configuration values
+        public static final String DEFAULT_BATCH_SIZE = "20000";
+        public static final String DEFAULT_MAX_ACCOUNTS = "0";
+        public static final String DEFAULT_MODE = "all";
+        public static final int WINDOW_DAYS_7D = 7;
+        public static final int DEFAULT_THREAD_POOL_SIZE = 8;
+        public static final int MIN_THREAD_POOL_SIZE = 1;
+        
+        // Parameter names
+        public static final String PARAM_BATCH_SIZE = "batchSize";
+        public static final String PARAM_MAX_ACCOUNTS = "maxAccounts";
+        public static final String PARAM_MODE = "mode";
+        
+        // Mode values
+        public static final String MODE_ALL = "all";
+        public static final String MODE_7D = "7d";
+        
+        // FX cache key format
+        public static final String FX_CACHE_KEY_FORMAT = "%s:%s:%s:%s";
+        
+        // SQL operations
+        public static final String ON_DUPLICATE_KEY_UPDATE = " ON DUPLICATE KEY UPDATE ";
+        public static final String VALUES_PLACEHOLDER = "VALUES(%s)";
     }
 
     @UtilityClass

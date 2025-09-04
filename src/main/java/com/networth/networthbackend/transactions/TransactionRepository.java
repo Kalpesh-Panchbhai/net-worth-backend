@@ -25,12 +25,13 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
 
     public Transaction create(long accountId, long holdingId, LocalDate txnDate, BigDecimal invested, BigDecimal value) throws SQLException {
         final String sql = Constants.SQL.INSERT_INTO + Constants.DB.Transactions.TABLE +
-                " (" + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.SQL.OPEN_PAREN + String.join(Constants.SQL.COMMA_SPACE,
                 Constants.DB.Transactions.COL_ACCOUNT_ID,
                 Constants.DB.Transactions.COL_HOLDING_ID,
                 Constants.DB.Transactions.COL_TXN_DATE,
                 Constants.DB.Transactions.COL_INVESTED,
-                Constants.DB.Transactions.COL_VALUE) + ") VALUES (?,?,?,?,?)";
+                Constants.DB.Transactions.COL_VALUE) + Constants.SQL.CLOSE_PAREN +
+                Constants.SQL.VALUES + "(?,?,?,?,?)";
         long id = executeAndReturnGeneratedId(sql, ps -> {
             ps.setLong(1, accountId);
             ps.setLong(2, holdingId);
@@ -59,7 +60,7 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
                 Constants.DB.Transactions.COL_VALUE)
                 + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM
-                + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC";
+                + Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.DESC;
         return queryList(sql, ps -> ps.setLong(1, accountId), MAPPER);
     }
 
@@ -74,7 +75,7 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
                 Constants.DB.Transactions.COL_VALUE)
                 + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM
-                + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC";
+                + Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.DESC;
         return queryList(sql, ps -> ps.setLong(1, holdingId), MAPPER);
     }
 
@@ -89,7 +90,7 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
                 Constants.DB.Transactions.COL_VALUE)
                 + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM
-                + " ORDER BY " + Constants.DB.Transactions.COL_TXN_DATE + " DESC"
+                + Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.DESC
                 + Constants.SQL.LIMIT_1;
         return queryOne(sql, ps -> ps.setLong(1, holdingId), MAPPER);
     }

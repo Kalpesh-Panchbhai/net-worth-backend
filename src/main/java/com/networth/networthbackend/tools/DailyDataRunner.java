@@ -32,11 +32,11 @@ public class DailyDataRunner {
     }
 
     public static void run(Map<String, String> params) throws Exception {
-        int batchSize = Integer.parseInt(params.getOrDefault("batchSize", "20000"));
-        int maxAccounts = Integer.parseInt(params.getOrDefault("maxAccounts", "0"));
+        int batchSize = Integer.parseInt(params.getOrDefault(Constants.DailyDataRunner.PARAM_BATCH_SIZE, Constants.DailyDataRunner.DEFAULT_BATCH_SIZE));
+        int maxAccounts = Integer.parseInt(params.getOrDefault(Constants.DailyDataRunner.PARAM_MAX_ACCOUNTS, Constants.DailyDataRunner.DEFAULT_MAX_ACCOUNTS));
         LocalDate today = LocalDate.now();
-        String mode = params.getOrDefault("mode", "all").toLowerCase(Locale.ROOT); // 'all' or '7d'
-        Integer windowDays = "all".equals(mode) ? null : 7;
+        String mode = params.getOrDefault(Constants.DailyDataRunner.PARAM_MODE, Constants.DailyDataRunner.DEFAULT_MODE).toLowerCase(Locale.ROOT);
+        Integer windowDays = Constants.DailyDataRunner.MODE_ALL.equals(mode) ? null : Constants.DailyDataRunner.WINDOW_DAYS_7D;
 
         try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);
@@ -68,7 +68,7 @@ public class DailyDataRunner {
     // ---- Public entrypoints ----
 
     private static String getAccountCurrency(Connection conn, long accountId) throws SQLException {
-        String sql = "SELECT " + Constants.DB.Accounts.COL_CURRENCY + " FROM " + Constants.DB.Accounts.TABLE + " WHERE " + Constants.DB.Accounts.COL_ID + " = ?";
+        String sql = Constants.SQL.SELECT + Constants.DB.Accounts.COL_CURRENCY + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -114,7 +114,7 @@ public class DailyDataRunner {
         List<Holding> holdings = readHoldings(context.conn(), accountId);
 
         // Parallel price fetching for broker holdings
-        ExecutorService ex = Executors.newFixedThreadPool(Math.min(Math.max(1, holdings.size()), 8));
+        ExecutorService ex = Executors.newFixedThreadPool(Math.min(Math.max(Constants.DailyDataRunner.MIN_THREAD_POOL_SIZE, holdings.size()), Constants.DailyDataRunner.DEFAULT_THREAD_POOL_SIZE));
         Map<Long, CompletableFuture<Map<LocalDate, BigDecimal>>> priceFutures = new HashMap<>();
         Map<Long, DateRange> rangeByHolding = new HashMap<>();
 
@@ -152,7 +152,19 @@ public class DailyDataRunner {
     // ---- Unified processing framework ----
 
     private static Map<Long, List<Tx>> readTransactionsByHoldingForAccount(Connection conn, long accountId) throws SQLException {
-        String sql = "SELECT " + String.join(", ", Constants.DB.Transactions.COL_HOLDING_ID, Constants.DB.Transactions.COL_TXN_DATE, Constants.DB.Transactions.COL_INVESTED, Constants.DB.Transactions.COL_VALUE) + " FROM " + Constants.DB.Transactions.TABLE + " WHERE " + Constants.DB.Transactions.COL_ACCOUNT_ID + " = ?" + " ORDER BY " + Constants.DB.Transactions.COL_HOLDING_ID + ", " + Constants.DB.Transactions.COL_TXN_DATE + " ASC";
+        String sql =
+                Constants.SQL.SELECT +
+                String.join(
+                        Constants.SQL.COMMA_SPACE,
+                        Constants.DB.Transactions.COL_HOLDING_ID,
+                        Constants.DB.Transactions.COL_TXN_DATE,
+                        Constants.DB.Transactions.COL_INVESTED,
+                        Constants.DB.Transactions.COL_VALUE
+                ) +
+                Constants.SQL.FROM + Constants.DB.Transactions.TABLE +
+                Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
+                Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_HOLDING_ID +
+                Constants.SQL.COMMA_SPACE + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.ASC;
         Map<Long, List<Tx>> map = new HashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
@@ -198,7 +210,17 @@ public class DailyDataRunner {
     // ---- Common transaction and data access methods ----
 
     private static List<Long> findEligibleNonBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql = "SELECT a." + Constants.DB.Accounts.COL_ID + " FROM " + Constants.DB.Accounts.TABLE + " a" + " WHERE a." + Constants.DB.Accounts.COL_TYPE + " <> ?" + " AND a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + " = 0" + " AND EXISTS (SELECT 1 FROM " + Constants.DB.Transactions.TABLE + " t WHERE t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + ")" + (limit > 0 ? " LIMIT " + limit : "");
+        String sql =
+                Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID +
+                Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" +
+                Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM +
+                Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 +
+                Constants.SQL.AND + Constants.SQL.EXISTS_OPEN +
+                    Constants.SQL.SELECT + "1" +
+                    Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" +
+                    Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID +
+                Constants.SQL.CLOSE_PAREN +
+                (limit > 0 ? Constants.SQL.LIMIT + limit : "");
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -257,12 +279,16 @@ public class DailyDataRunner {
     }
 
     private static PreparedStatement prepareUpsert(Connection conn) throws SQLException {
-        String upsertSql = "INSERT INTO " + Constants.DB.AccountHoldingValuesDaily.TABLE + " (" + String.join(", ", Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED) + ") VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE " + Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE + "=VALUES(" + Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE + "), " + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + "=VALUES(" + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + ")";
+        String upsertSql = Constants.SQL.INSERT_INTO + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.SPACE + Constants.SQL.OPEN_PAREN + String.join(Constants.SQL.COMMA_SPACE, Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID, Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID, Constants.DB.AccountHoldingValuesDaily.COL_DATE, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED) + Constants.SQL.CLOSE_PAREN + Constants.SQL.VALUES + "(?,?,?,?,?)" + Constants.DailyDataRunner.ON_DUPLICATE_KEY_UPDATE + Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE + "=" + String.format(Constants.DailyDataRunner.VALUES_PLACEHOLDER, Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE) + Constants.SQL.COMMA_SPACE + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + "=" + String.format(Constants.DailyDataRunner.VALUES_PLACEHOLDER, Constants.DB.AccountHoldingValuesDaily.COL_INVESTED);
         return conn.prepareStatement(upsertSql);
     }
 
     private static PreparedStatement prepareDeleteDaily(Connection conn) throws SQLException {
-        String delSql = "DELETE FROM " + Constants.DB.AccountHoldingValuesDaily.TABLE + " WHERE " + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + " = ?" + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + " = ?" + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " >= ?";
+        String delSql =
+                Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE +
+                Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
+                Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + Constants.SQL.EQ_PARAM +
+                Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.GE + Constants.SQL.PARAM;
         return conn.prepareStatement(delSql);
     }
 
@@ -285,7 +311,7 @@ public class DailyDataRunner {
         boolean needsFx = symbolCurrency != null && accountCurrency != null && !symbolCurrency.equalsIgnoreCase(accountCurrency);
         if (!needsFx) return priceMap;
 
-        String fxKey = (symbolCurrency + ":" + accountCurrency + ":" + start + ":" + end).toUpperCase();
+        String fxKey = String.format(Constants.DailyDataRunner.FX_CACHE_KEY_FORMAT, symbolCurrency, accountCurrency, start, end).toUpperCase();
         Map<LocalDate, BigDecimal> fxMap = fxCache.get(fxKey);
         if (fxMap == null) {
             fxMap = yf.getFxCalendarFilled(symbolCurrency, accountCurrency, start, end);
@@ -303,7 +329,12 @@ public class DailyDataRunner {
     }
 
     private static List<Holding> readHoldings(Connection conn, long accountId) throws SQLException {
-        String sql = "SELECT id, symbol FROM " + Constants.DB.Holdings.TABLE + " WHERE " + Constants.DB.Holdings.COL_ACCOUNT_ID + " = ? ORDER BY id";
+        String sql =
+                Constants.SQL.SELECT + Constants.DB.Holdings.COL_ID +
+                Constants.SQL.COMMA_SPACE + Constants.DB.Holdings.COL_SYMBOL +
+                Constants.SQL.FROM + Constants.DB.Holdings.TABLE +
+                Constants.SQL.WHERE + Constants.DB.Holdings.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
+                Constants.SQL.ORDER_BY + Constants.DB.Holdings.COL_ID;
         List<Holding> res = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
@@ -331,7 +362,16 @@ public class DailyDataRunner {
     }
 
     private static List<Long> findEligibleBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql = "SELECT a." + Constants.DB.Accounts.COL_ID + " FROM " + Constants.DB.Accounts.TABLE + " a" + " WHERE a." + Constants.DB.Accounts.COL_TYPE + " = ?" + " AND EXISTS (SELECT 1 FROM " + Constants.DB.Transactions.TABLE + " t WHERE t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + ")" + (limit > 0 ? " LIMIT " + limit : "");
+        String sql =
+                Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID +
+                Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" +
+                Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM +
+                Constants.SQL.AND + Constants.SQL.EXISTS_OPEN +
+                    Constants.SQL.SELECT + "1" +
+                    Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" +
+                    Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID +
+                Constants.SQL.CLOSE_PAREN +
+                (limit > 0 ? Constants.SQL.LIMIT + limit : "");
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
