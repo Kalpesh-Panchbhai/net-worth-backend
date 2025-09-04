@@ -263,8 +263,8 @@ public class Constants {
                       ),
                       hv AS (
                         SELECT ahvd.holding_id,
-                               SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.current_day_value ELSE 0 END)                AS curr_val,
-                               SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.current_day_value ELSE 0 END) AS prev_val
+                               SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.value ELSE 0 END)                AS curr_val,
+                               SUM(CASE WHEN ahvd.date = DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY) THEN ahvd.value ELSE 0 END) AS prev_val
                         FROM account_holding_values_daily ahvd
                         JOIN (SELECT DISTINCT holding_id FROM wh) d ON d.holding_id = ahvd.holding_id
                         WHERE ahvd.date IN (CURRENT_DATE, DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY))
@@ -306,14 +306,14 @@ public class Constants {
                         WHERE a.id = ?
                       ),
                       ahd_curr AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
+                        SELECT s.account_id, SUM(s.value) AS curr_value
                         FROM account_holding_values_daily s
                         JOIN acc a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE
                         GROUP BY s.account_id
                       ),
                       ahd_prev AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
+                        SELECT s.account_id, SUM(s.value) AS prev_value
                         FROM account_holding_values_daily s
                         JOIN acc a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
@@ -417,14 +417,14 @@ public class Constants {
                       ),
                       -- Daily table sums for current and previous day
                       ahd_curr AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
+                        SELECT s.account_id, SUM(s.value) AS curr_value
                         FROM account_holding_values_daily s
                         JOIN my_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE
                         GROUP BY s.account_id
                       ),
                       ahd_prev AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
+                        SELECT s.account_id, SUM(s.value) AS prev_value
                         FROM account_holding_values_daily s
                         JOIN my_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
@@ -506,14 +506,14 @@ public class Constants {
                       ),
                       -- Daily table sums for current and previous day
                       ahd_curr AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS curr_value
+                        SELECT s.account_id, SUM(s.value) AS curr_value
                         FROM account_holding_values_daily s
                         JOIN watch_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE
                         GROUP BY s.account_id
                       ),
                       ahd_prev AS (
-                        SELECT s.account_id, SUM(s.current_day_value) AS prev_value
+                        SELECT s.account_id, SUM(s.value) AS prev_value
                         FROM account_holding_values_daily s
                         JOIN watch_accounts a ON a.id = s.account_id
                         WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
@@ -596,8 +596,8 @@ public class Constants {
                         SELECT
                           ahvd.account_id,
                           ahvd.holding_id,
-                          MAX(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.current_day_value END) AS current_day_value,
-                          MAX(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.current_day_value END) AS previous_day_value
+                          MAX(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.value END) AS current_day_value,
+                          MAX(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.value END) AS previous_day_value
                         FROM account_holding_values_daily ahvd
                         WHERE ahvd.account_id = ?
                           AND ahvd.date IN (CURRENT_DATE, CURRENT_DATE - INTERVAL 1 DAY)
@@ -637,7 +637,7 @@ public class Constants {
             public static final String COL_ACCOUNT_ID = "account_id";
             public static final String COL_HOLDING_ID = "holding_id";
             public static final String COL_DATE = "date";
-            public static final String COL_CURRENT_DAY_VALUE = "current_day_value";
+            public static final String COL_CURRENT_DAY_VALUE = "value";
             public static final String COL_INVESTED = "invested";
         }
 
