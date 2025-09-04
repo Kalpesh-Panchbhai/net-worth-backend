@@ -319,10 +319,25 @@ public class DailyDataRunner {
         }
         Map<LocalDate, BigDecimal> converted = new HashMap<>();
         LocalDate d = start;
+        BigDecimal lastPrice = null;
+        BigDecimal lastFx = null;
+        // Seed with last available prior values (if any)
+        if (priceMap instanceof java.util.NavigableMap<LocalDate, BigDecimal> navP) {
+            Map.Entry<LocalDate, BigDecimal> e = navP.floorEntry(start);
+            if (e != null) lastPrice = e.getValue();
+        }
+        if (fxMap instanceof java.util.NavigableMap<LocalDate, BigDecimal> navF) {
+            Map.Entry<LocalDate, BigDecimal> e = navF.floorEntry(start);
+            if (e != null) lastFx = e.getValue();
+        }
         while (!d.isAfter(end)) {
             BigDecimal p = priceMap.get(d);
             BigDecimal fx = fxMap.get(d);
-            if (p != null && fx != null) converted.put(d, p.multiply(fx));
+            if (p != null) lastPrice = p;
+            if (fx != null) lastFx = fx;
+            if (lastPrice != null && lastFx != null) {
+                converted.put(d, lastPrice.multiply(lastFx));
+            }
             d = d.plusDays(1);
         }
         return converted;

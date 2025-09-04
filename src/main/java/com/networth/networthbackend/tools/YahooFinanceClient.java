@@ -45,59 +45,8 @@ public class YahooFinanceClient {
      */
     public Map<LocalDate, BigDecimal> getDailyCloseCalendarFilled(String symbol, LocalDate start, LocalDate end) throws IOException, InterruptedException {
         if (end.isBefore(start)) return Map.of();
-
-        LocalDate fetchStart = start.minusDays(EXTRA_PAST_DAYS);
-        long period1 = fetchStart.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-        // Yahoo chart API expects period2 as end in seconds; add one day to be inclusive
-        long period2 = end.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-
-        String url = BASE + encodeSymbol(symbol) + "?interval=1d&period1=" + period1 + "&period2=" + period2;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", "MyYahooClient/1.0 Net-Worth API").header("Accept", "application/json").GET().build();
-        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() / 100 != 2) {
-            throw new IOException("Yahoo API status=" + resp.statusCode() + " body=" + resp.body());
-        }
-
-        JsonNode root = mapper.readTree(resp.body());
-        JsonNode result = root.path("chart").path("result");
-        if (!result.isArray() || result.isEmpty()) return Map.of();
-        JsonNode r0 = result.get(0);
-
-        JsonNode ts = r0.path("timestamp");
-        JsonNode indicators = r0.path("indicators");
-        JsonNode quote0 = indicators.path("quote").isArray() && indicators.path("quote").size() > 0 ? indicators.path("quote").get(0) : null;
-        JsonNode closeArr = quote0 != null ? quote0.path("close") : null;
-        JsonNode adjCloseArr = indicators.path("adjclose").isArray() && indicators.path("adjclose").size() > 0 ? indicators.path("adjclose").get(0).path("adjclose") : null;
-
-        // Prefer adjclose, else close
-        JsonNode prices = (adjCloseArr != null && adjCloseArr.isArray() && adjCloseArr.size() == ts.size()) ? adjCloseArr : closeArr;
-        if (ts == null || !ts.isArray() || prices == null || !prices.isArray()) return Map.of();
-
-        TreeMap<LocalDate, BigDecimal> trading = new TreeMap<>();
-        for (int i = 0; i < ts.size(); i++) {
-            JsonNode t = ts.get(i);
-            JsonNode p = prices.get(i);
-            if (t == null || t.isNull() || p == null || p.isNull()) continue;
-            long epochSec = t.asLong();
-            LocalDate d = Instant.ofEpochSecond(epochSec).atZone(ZoneOffset.UTC).toLocalDate();
-            BigDecimal val = new BigDecimal(p.asText());
-            trading.put(d, val);
-        }
-
-        // Forward-fill to calendar days
-        Map<LocalDate, BigDecimal> calendar = new HashMap<>();
-        BigDecimal last = trading.floorEntry(start) != null ? trading.floorEntry(start).getValue() : null;
-        LocalDate d = start;
-        while (!d.isAfter(end)) {
-            if (trading.containsKey(d)) {
-                last = trading.get(d);
-            }
-            if (last != null) {
-                calendar.put(d, last);
-            }
-            d = d.plusDays(1);
-        }
-        return calendar;
+        ChartFetchResult series = fetchTradingSeries(symbol, start, end);
+        return forwardFill(series.trading(), start, end);
     }
 
     /**
@@ -105,66 +54,8 @@ public class YahooFinanceClient {
      */
     public PriceSeries getDailyCloseWithCurrencyCalendarFilled(String symbol, LocalDate start, LocalDate end) throws IOException, InterruptedException {
         if (end.isBefore(start)) return new PriceSeries(Map.of(), null);
-
-        LocalDate fetchStart = start.minusDays(EXTRA_PAST_DAYS);
-        long period1 = fetchStart.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-        long period2 = end.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-
-        String url = BASE + encodeSymbol(symbol) + "?interval=1d&period1=" + period1 + "&period2=" + period2;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", "MyYahooClient/1.0 Net-Worth API").header("Accept", "application/json").GET().build();
-        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() / 100 != 2) {
-            throw new IOException("Yahoo API status=" + resp.statusCode() + " body=" + resp.body());
-        }
-
-        JsonNode root = mapper.readTree(resp.body());
-        JsonNode result = root.path("chart").path("result");
-        if (!result.isArray() || result.isEmpty()) return new PriceSeries(Map.of(), null);
-        JsonNode r0 = result.get(0);
-
-        String currency = null;
-        JsonNode meta = r0.path("meta");
-        if (meta != null && !meta.isMissingNode()) {
-            JsonNode c = meta.path("currency");
-            if (c != null && !c.isMissingNode() && !c.isNull()) {
-                currency = c.asText();
-            }
-        }
-
-        JsonNode ts = r0.path("timestamp");
-        JsonNode indicators = r0.path("indicators");
-        JsonNode quote0 = indicators.path("quote").isArray() && indicators.path("quote").size() > 0 ? indicators.path("quote").get(0) : null;
-        JsonNode closeArr = quote0 != null ? quote0.path("close") : null;
-        JsonNode adjCloseArr = indicators.path("adjclose").isArray() && indicators.path("adjclose").size() > 0 ? indicators.path("adjclose").get(0).path("adjclose") : null;
-
-        JsonNode prices = (adjCloseArr != null && adjCloseArr.isArray() && adjCloseArr.size() == ts.size()) ? adjCloseArr : closeArr;
-        if (ts == null || !ts.isArray() || prices == null || !prices.isArray())
-            return new PriceSeries(Map.of(), currency);
-
-        TreeMap<LocalDate, BigDecimal> trading = new TreeMap<>();
-        for (int i = 0; i < ts.size(); i++) {
-            JsonNode t = ts.get(i);
-            JsonNode p = prices.get(i);
-            if (t == null || t.isNull() || p == null || p.isNull()) continue;
-            long epochSec = t.asLong();
-            LocalDate d = Instant.ofEpochSecond(epochSec).atZone(ZoneOffset.UTC).toLocalDate();
-            BigDecimal val = new BigDecimal(p.asText());
-            trading.put(d, val);
-        }
-
-        Map<LocalDate, BigDecimal> calendar = new HashMap<>();
-        BigDecimal last = trading.floorEntry(start) != null ? trading.floorEntry(start).getValue() : null;
-        LocalDate d = start;
-        while (!d.isAfter(end)) {
-            if (trading.containsKey(d)) {
-                last = trading.get(d);
-            }
-            if (last != null) {
-                calendar.put(d, last);
-            }
-            d = d.plusDays(1);
-        }
-        return new PriceSeries(calendar, currency);
+        ChartFetchResult series = fetchTradingSeries(symbol, start, end);
+        return new PriceSeries(forwardFill(series.trading(), start, end), series.currency());
     }
 
     /**
@@ -190,5 +81,82 @@ public class YahooFinanceClient {
      * Wrapper with prices and the currency reported by Yahoo for the symbol.
      */
     public record PriceSeries(Map<LocalDate, BigDecimal> prices, String currency) {
+    }
+
+    private record ChartFetchResult(TreeMap<LocalDate, BigDecimal> trading, String currency) {
+    }
+
+    // ---- Reusable internals ----
+    private ChartFetchResult fetchTradingSeries(String symbol, LocalDate start, LocalDate end) throws IOException, InterruptedException {
+        LocalDate fetchStart = start.minusDays(EXTRA_PAST_DAYS);
+        long period1 = fetchStart.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+        long period2 = end.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
+
+        String url = BASE + encodeSymbol(symbol) + "?interval=1d&period1=" + period1 + "&period2=" + period2;
+        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                .header("User-Agent", "MyYahooClient/1.0 Net-Worth API")
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+        HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+        if (resp.statusCode() / 100 != 2) {
+            throw new IOException("Yahoo API status=" + resp.statusCode() + " body=" + resp.body());
+        }
+
+        JsonNode root = mapper.readTree(resp.body());
+        JsonNode result = root.path("chart").path("result");
+        if (!result.isArray() || result.isEmpty()) return new ChartFetchResult(new TreeMap<>(), null);
+        JsonNode r0 = result.get(0);
+
+        // Extract currency if available
+        String currency = null;
+        JsonNode meta = r0.path("meta");
+        if (meta != null && !meta.isMissingNode()) {
+            JsonNode c = meta.path("currency");
+            if (c != null && !c.isMissingNode() && !c.isNull()) currency = c.asText();
+        }
+
+        JsonNode ts = r0.path("timestamp");
+        // Use exchange timezone for accurate LocalDate mapping
+        java.time.ZoneId zoneId = java.time.ZoneOffset.UTC;
+        try {
+            JsonNode tz = r0.path("meta").path("exchangeTimezoneName");
+            if (tz != null && !tz.isMissingNode() && !tz.isNull()) {
+                zoneId = java.time.ZoneId.of(tz.asText());
+            }
+        } catch (Exception ignore) { /* fallback to UTC */ }
+
+        JsonNode indicators = r0.path("indicators");
+        JsonNode quote0 = indicators.path("quote").isArray() && indicators.path("quote").size() > 0 ? indicators.path("quote").get(0) : null;
+        JsonNode closeArr = quote0 != null ? quote0.path("close") : null;
+        JsonNode adjCloseArr = indicators.path("adjclose").isArray() && indicators.path("adjclose").size() > 0 ? indicators.path("adjclose").get(0).path("adjclose") : null;
+
+        JsonNode prices = (adjCloseArr != null && adjCloseArr.isArray() && adjCloseArr.size() == ts.size()) ? adjCloseArr : closeArr;
+        if (ts == null || !ts.isArray() || prices == null || !prices.isArray()) return new ChartFetchResult(new TreeMap<>(), currency);
+
+        TreeMap<LocalDate, BigDecimal> trading = new TreeMap<>();
+        for (int i = 0; i < ts.size(); i++) {
+            JsonNode t = ts.get(i);
+            JsonNode p = prices.get(i);
+            if (t == null || t.isNull() || p == null || p.isNull()) continue;
+            long epochSec = t.asLong();
+            LocalDate d = Instant.ofEpochSecond(epochSec).atZone(zoneId).toLocalDate();
+            if (d.isAfter(end)) continue; // Never consume future data beyond requested 'end'
+            BigDecimal val = new BigDecimal(p.asText());
+            trading.put(d, val);
+        }
+
+        return new ChartFetchResult(trading, currency);
+    }
+
+    private static TreeMap<LocalDate, BigDecimal> forwardFill(TreeMap<LocalDate, BigDecimal> trading, LocalDate start, LocalDate end) {
+        TreeMap<LocalDate, BigDecimal> calendar = new TreeMap<>();
+        LocalDate d = start;
+        while (!d.isAfter(end)) {
+            Map.Entry<LocalDate, BigDecimal> e = trading.floorEntry(d);
+            if (e != null) calendar.put(d, e.getValue());
+            d = d.plusDays(1);
+        }
+        return calendar;
     }
 }
