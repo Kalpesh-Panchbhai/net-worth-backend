@@ -249,15 +249,19 @@ public class Constants {
 
             public static final String SQL_LIST_SUMMARIES_BY_USER_ID = """
                     WITH
+                      user_watchlists AS (
+                        SELECT w.id, w.user_id, w.name
+                        FROM watchlists w
+                        WHERE w.user_id = ?
+                      ),
                       watchlist_holdings AS (
                         SELECT 
-                          w.id AS watchlist_id,
+                          uw.id AS watchlist_id,
                           h.id AS holding_id
-                        FROM watchlists w
-                        INNER JOIN watchlist_accounts wa ON wa.watchlist_id = w.id
-                        INNER JOIN accounts a ON a.id = wa.account_id
-                        INNER JOIN holdings h ON h.account_id = a.id
-                        WHERE w.user_id = ?
+                        FROM user_watchlists uw
+                        LEFT JOIN watchlist_accounts wa ON wa.watchlist_id = uw.id
+                        LEFT JOIN accounts a ON a.id = wa.account_id
+                        LEFT JOIN holdings h ON h.account_id = a.id
                       ),
                       holding_daily_values AS (
                         SELECT 
@@ -283,100 +287,68 @@ public class Constants {
                         GROUP BY wh.watchlist_id
                       )
                     SELECT
-                      w.id,
-                      w.user_id,
-                      w.name,
+                      uw.id,
+                      uw.user_id,
+                      uw.name,
                       COALESCE(hdv.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
                       COALESCE(hdv.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
                       COALESCE(hi.invested, CAST(0 AS DECIMAL(10,4))) AS invested
-                    FROM watchlists w
-                    LEFT JOIN holding_daily_values hdv ON hdv.watchlist_id = w.id
-                    LEFT JOIN holding_invested hi ON hi.watchlist_id = w.id
-                    WHERE w.user_id = ?
-                    ORDER BY w.id
+                    FROM user_watchlists uw
+                    LEFT JOIN holding_daily_values hdv ON hdv.watchlist_id = uw.id
+                    LEFT JOIN holding_invested hi ON hi.watchlist_id = uw.id
+                    WHERE uw.user_id = ?
+                    ORDER BY uw.id
                     """;
 
             public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
                     WITH
                       acc AS (
-                        SELECT a.*
-                        FROM accounts a
-                        WHERE a.id = ?
+                        SELECT ? AS id
                       ),
-                      ahd_curr AS (
-                        SELECT s.account_id, SUM(s.value) AS curr_value
-                        FROM account_holding_values_daily s
-                        JOIN acc a ON a.id = s.account_id
-                        WHERE s.date = CURRENT_DATE
-                        GROUP BY s.account_id
+                      watchlists_for_account AS (
+                        SELECT w.id, w.user_id, w.name
+                        FROM watchlist_accounts wa
+                        JOIN watchlists w ON w.id = wa.watchlist_id
+                        WHERE wa.account_id = (SELECT id FROM acc)
                       ),
-                      ahd_prev AS (
-                        SELECT s.account_id, SUM(s.value) AS prev_value
-                        FROM account_holding_values_daily s
-                        JOIN acc a ON a.id = s.account_id
-                        WHERE s.date = CURRENT_DATE - INTERVAL 1 DAY
-                        GROUP BY s.account_id
+                      wfa_accounts AS (
+                        SELECT wfa.id AS watchlist_id, wa.account_id
+                        FROM watchlists_for_account wfa
+                        JOIN watchlist_accounts wa ON wa.watchlist_id = wfa.id
                       ),
-                      tx_curr AS (
-                        SELECT t.account_id, SUM(t.value) AS curr_value
-                        FROM transactions t
-                        JOIN acc a ON a.id = t.account_id
-                        WHERE t.txn_date = CURRENT_DATE
-                        GROUP BY t.account_id
-                      ),
-                      tx_prev AS (
-                        SELECT t.account_id, SUM(t.value) AS prev_value
-                        FROM transactions t
-                        JOIN acc a ON a.id = t.account_id
-                        WHERE t.txn_date = CURRENT_DATE - INTERVAL 1 DAY
-                        GROUP BY t.account_id
+                      daily_agg AS (
+                        SELECT
+                          wa.watchlist_id,
+                          SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.value ELSE 0 END) AS current_day_value,
+                          SUM(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.value ELSE 0 END) AS previous_day_value
+                        FROM wfa_accounts wa
+                        JOIN account_holding_values_daily ahvd ON ahvd.account_id = wa.account_id
+                        WHERE ahvd.date IN (CURRENT_DATE, CURRENT_DATE - INTERVAL 1 DAY)
+                        GROUP BY wa.watchlist_id
                       ),
                       invested_latest AS (
-                        SELECT x.account_id, SUM(x.invested) AS invested
-                        FROM (
-                          SELECT tr.account_id, tr.holding_id, tr.invested,
-                                 ROW_NUMBER() OVER (
-                                   PARTITION BY tr.account_id, tr.holding_id
-                                   ORDER BY tr.txn_date DESC
-                                 ) AS rn
-                          FROM transactions tr
-                          JOIN acc a ON a.id = tr.account_id
-                        ) x
-                        WHERE x.rn = 1
-                        GROUP BY x.account_id
+                        SELECT
+                          wa.watchlist_id,
+                          SUM(x.invested) AS invested
+                        FROM wfa_accounts wa
+                        JOIN (
+                          SELECT t.account_id, t.holding_id, t.invested,
+                                 ROW_NUMBER() OVER (PARTITION BY t.account_id, t.holding_id ORDER BY t.txn_date DESC) rn
+                          FROM transactions t
+                        ) x ON x.account_id = wa.account_id AND x.rn = 1
+                        GROUP BY wa.watchlist_id
                       )
                     SELECT
-                      w.id,
-                      w.name,
-                      w.user_id,
-                      COALESCE(
-                        CASE
-                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahc.curr_value
-                          ELSE tc.curr_value
-                        END,
-                        CAST(0 AS DECIMAL(10,4))
-                      ) AS current_day_value,
-                      COALESCE(
-                        CASE
-                          WHEN a.type = 'BROKER' OR a.needs_daily_data = 1 THEN ahp.prev_value
-                          ELSE tp.prev_value
-                        END,
-                        CAST(0 AS DECIMAL(10,4))
-                      ) AS previous_day_value,
+                      wfa.id,
+                      wfa.user_id,
+                      wfa.name,
+                      COALESCE(d.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
+                      COALESCE(d.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
                       COALESCE(il.invested, CAST(0 AS DECIMAL(10,4))) AS invested
-                    FROM watchlist_accounts wa
-                    JOIN watchlists w
-                      ON w.id = wa.watchlist_id
-                    JOIN acc a
-                      ON a.id = wa.account_id
-                    LEFT JOIN ahd_curr ahc ON ahc.account_id = wa.account_id
-                    LEFT JOIN ahd_prev ahp ON ahp.account_id = wa.account_id
-                    LEFT JOIN tx_curr  tc  ON tc.account_id  = wa.account_id
-                    LEFT JOIN tx_prev  tp  ON tp.account_id  = wa.account_id
-                    LEFT JOIN invested_latest il ON il.account_id = wa.account_id
-                    WHERE wa.account_id = a.id
-                    GROUP BY w.id, w.name, w.user_id, a.type, a.needs_daily_data
-                    ORDER BY w.id
+                    FROM watchlists_for_account wfa
+                    LEFT JOIN daily_agg d ON d.watchlist_id = wfa.id
+                    LEFT JOIN invested_latest il ON il.watchlist_id = wfa.id
+                    ORDER BY wfa.id
                     """;
         }
 
