@@ -39,6 +39,17 @@ public class YahooFinanceClient {
         return symbol.replace("^", "%5E").replace("/", "%2F");
     }
 
+    private static TreeMap<LocalDate, BigDecimal> forwardFill(TreeMap<LocalDate, BigDecimal> trading, LocalDate start, LocalDate end) {
+        TreeMap<LocalDate, BigDecimal> calendar = new TreeMap<>();
+        LocalDate d = start;
+        while (!d.isAfter(end)) {
+            Map.Entry<LocalDate, BigDecimal> e = trading.floorEntry(d);
+            if (e != null) calendar.put(d, e.getValue());
+            d = d.plusDays(1);
+        }
+        return calendar;
+    }
+
     /**
      * Fetches daily close (prefers adjclose when available) for trading days within [start, end].
      * Also returns a calendar-day map with forward-filled values for missing calendar days.
@@ -77,15 +88,6 @@ public class YahooFinanceClient {
         return getDailyCloseCalendarFilled(pair, start, end);
     }
 
-    /**
-     * Wrapper with prices and the currency reported by Yahoo for the symbol.
-     */
-    public record PriceSeries(Map<LocalDate, BigDecimal> prices, String currency) {
-    }
-
-    private record ChartFetchResult(TreeMap<LocalDate, BigDecimal> trading, String currency) {
-    }
-
     // ---- Reusable internals ----
     private ChartFetchResult fetchTradingSeries(String symbol, LocalDate start, LocalDate end) throws IOException, InterruptedException {
         LocalDate fetchStart = start.minusDays(EXTRA_PAST_DAYS);
@@ -93,11 +95,7 @@ public class YahooFinanceClient {
         long period2 = end.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
 
         String url = BASE + encodeSymbol(symbol) + "?interval=1d&period1=" + period1 + "&period2=" + period2;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                .header("User-Agent", "MyYahooClient/1.0 Net-Worth API")
-                .header("Accept", "application/json")
-                .GET()
-                .build();
+        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", "MyYahooClient/1.0 Net-Worth API").header("Accept", "application/json").GET().build();
         HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
         if (resp.statusCode() / 100 != 2) {
             throw new IOException("Yahoo API status=" + resp.statusCode() + " body=" + resp.body());
@@ -127,12 +125,13 @@ public class YahooFinanceClient {
         } catch (Exception ignore) { /* fallback to UTC */ }
 
         JsonNode indicators = r0.path("indicators");
-        JsonNode quote0 = indicators.path("quote").isArray() && indicators.path("quote").size() > 0 ? indicators.path("quote").get(0) : null;
+        JsonNode quote0 = indicators.path("quote").isArray() && !indicators.path("quote").isEmpty() ? indicators.path("quote").get(0) : null;
         JsonNode closeArr = quote0 != null ? quote0.path("close") : null;
-        JsonNode adjCloseArr = indicators.path("adjclose").isArray() && indicators.path("adjclose").size() > 0 ? indicators.path("adjclose").get(0).path("adjclose") : null;
+        JsonNode adjCloseArr = indicators.path("adjclose").isArray() && !indicators.path("adjclose").isEmpty() ? indicators.path("adjclose").get(0).path("adjclose") : null;
 
         JsonNode prices = (adjCloseArr != null && adjCloseArr.isArray() && adjCloseArr.size() == ts.size()) ? adjCloseArr : closeArr;
-        if (ts == null || !ts.isArray() || prices == null || !prices.isArray()) return new ChartFetchResult(new TreeMap<>(), currency);
+        if (ts == null || !ts.isArray() || prices == null || !prices.isArray())
+            return new ChartFetchResult(new TreeMap<>(), currency);
 
         TreeMap<LocalDate, BigDecimal> trading = new TreeMap<>();
         for (int i = 0; i < ts.size(); i++) {
@@ -149,14 +148,12 @@ public class YahooFinanceClient {
         return new ChartFetchResult(trading, currency);
     }
 
-    private static TreeMap<LocalDate, BigDecimal> forwardFill(TreeMap<LocalDate, BigDecimal> trading, LocalDate start, LocalDate end) {
-        TreeMap<LocalDate, BigDecimal> calendar = new TreeMap<>();
-        LocalDate d = start;
-        while (!d.isAfter(end)) {
-            Map.Entry<LocalDate, BigDecimal> e = trading.floorEntry(d);
-            if (e != null) calendar.put(d, e.getValue());
-            d = d.plusDays(1);
-        }
-        return calendar;
+    /**
+     * Wrapper with prices and the currency reported by Yahoo for the symbol.
+     */
+    public record PriceSeries(Map<LocalDate, BigDecimal> prices, String currency) {
+    }
+
+    private record ChartFetchResult(TreeMap<LocalDate, BigDecimal> trading, String currency) {
     }
 }
