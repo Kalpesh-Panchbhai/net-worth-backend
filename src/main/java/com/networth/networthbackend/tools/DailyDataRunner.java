@@ -11,6 +11,10 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DailyDataRunner {
 
@@ -159,13 +163,13 @@ public class DailyDataRunner {
             for (long accountId : accountIds) {
                 String accountCurrency = getAccountCurrency(conn, accountId);
                 // FX cache per account to avoid repeated downloads for the same currency pair and window
-                java.util.concurrent.ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> fxCache = new java.util.concurrent.ConcurrentHashMap<>();
+                ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> fxCache = new ConcurrentHashMap<>();
                 List<Holding> holdings = readHoldings(conn, accountId);
                 Map<Long, List<Tx>> txByHolding = readTransactionsByHoldingForAccount(conn, accountId);
 
                 // Start parallel fetches for price maps per holding to overlap network latency
-                java.util.concurrent.ExecutorService ex = java.util.concurrent.Executors.newFixedThreadPool(Math.min(Math.max(1, holdings.size()), 8));
-                Map<Long, java.util.concurrent.CompletableFuture<Map<LocalDate, BigDecimal>>> priceFutures = new HashMap<>();
+                ExecutorService ex = Executors.newFixedThreadPool(Math.min(Math.max(1, holdings.size()), 8));
+                Map<Long, CompletableFuture<Map<LocalDate, BigDecimal>>> priceFutures = new HashMap<>();
                 Map<Long, LocalDate> startByHolding = new HashMap<>();
                 Map<Long, LocalDate> endByHolding = new HashMap<>();
                 // txByHolding already populated above
@@ -201,7 +205,7 @@ public class DailyDataRunner {
                     LocalDate start = startByHolding.get(h.id);
                     LocalDate end = endByHolding.get(h.id);
                     // Delete existing and write
-                    pending = processHoldingBrokerWithPrepared(deletePs, upsert, accountId, accountCurrency, h, txs, start, end, priceMap, today, batchSize, pending);
+                    pending = processHoldingBrokerWithPrepared(deletePs, upsert, accountId, h, txs, start, end, priceMap, today, batchSize, pending);
                 }
 
                 ex.shutdown();
@@ -222,32 +226,39 @@ public class DailyDataRunner {
     }
 
     private static PreparedStatement prepareDeleteDaily(Connection conn) throws SQLException {
-        String delSql = "DELETE FROM " + Constants.DB.AccountHoldingValuesDaily.TABLE + " WHERE " + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + " = ?" + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + " = ?" + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " BETWEEN ? AND ?";
+        String delSql = "DELETE FROM " + Constants.DB.AccountHoldingValuesDaily.TABLE
+                + " WHERE " + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + " = ?"
+                + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + " = ?"
+                + " AND " + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " >= ?";
         return conn.prepareStatement(delSql);
     }
 
-    private static void deleteDailyForHoldingRange(PreparedStatement deletePs, long accountId, long holdingId, LocalDate start, LocalDate end) throws SQLException {
+    private static void deleteDailyForHoldingRange(PreparedStatement deletePs, long accountId, long holdingId, LocalDate start) throws SQLException {
         deletePs.clearParameters();
         deletePs.setLong(1, accountId);
         deletePs.setLong(2, holdingId);
         deletePs.setDate(3, java.sql.Date.valueOf(start));
-        deletePs.setDate(4, java.sql.Date.valueOf(end));
         deletePs.executeUpdate();
     }
 
     private static int processHoldingNonBroker(PreparedStatement deletePs, PreparedStatement upsert, long accountId, long holdingId, List<Tx> txs, LocalDate today, int batchSize, int pending, Integer windowDays) throws SQLException {
         LocalDate firstTxn = txs.get(0).date;
-        LocalDate start = resolveStartForWindow(firstTxn, today, windowDays);
+        // Determine end boundary: if the LAST transaction value is 0, stop at last txn date
+        LocalDate lastTxnDate = txs.get(txs.size() - 1).date;
+        BigDecimal lastTxnValue = txs.get(txs.size() - 1).value;
+        LocalDate endInclusive = (lastTxnValue != null && lastTxnValue.compareTo(BigDecimal.ZERO) == 0) ? lastTxnDate : today;
+
+        LocalDate start = resolveStartForWindow(firstTxn, endInclusive, windowDays);
 
         // Delete existing for the window
-        deleteDailyForHoldingRange(deletePs, accountId, holdingId, start, today);
+        deleteDailyForHoldingRange(deletePs, accountId, holdingId, start);
 
         LocalDate d = start; // start at window start or firstTxn
         BigDecimal lastValue = BigDecimal.ZERO;
         BigDecimal lastInvested = BigDecimal.ZERO;
         int tIdx = 0;
 
-        while (!d.isAfter(today)) {
+        while (!d.isAfter(endInclusive)) {
             while (tIdx < txs.size() && !txs.get(tIdx).date.isAfter(d)) {
                 lastValue = txs.get(tIdx).value;
                 lastInvested = txs.get(tIdx).invested;
@@ -303,9 +314,9 @@ public class DailyDataRunner {
         return converted;
     }
 
-    private static int processHoldingBrokerWithPrepared(PreparedStatement deletePs, PreparedStatement upsert, long accountId, String accountCurrency, Holding h, List<Tx> txs, LocalDate start, LocalDate end, Map<LocalDate, BigDecimal> priceMap, LocalDate today, int batchSize, int pending) throws Exception {
+    private static int processHoldingBrokerWithPrepared(PreparedStatement deletePs, PreparedStatement upsert, long accountId, Holding h, List<Tx> txs, LocalDate start, LocalDate end, Map<LocalDate, BigDecimal> priceMap, LocalDate today, int batchSize, int pending) throws Exception {
         // Delete only in the [start, end] window
-        deleteDailyForHoldingRange(deletePs, accountId, h.id, start, end);
+        deleteDailyForHoldingRange(deletePs, accountId, h.id, start);
 
         Map<LocalDate, UnitsInvested> unitsMap = buildUnitsInvestedCalendar(txs, start, end);
 
