@@ -49,6 +49,10 @@
     {
       "name": "transactions",
       "description": "Transactions listing & deletion"
+    },
+    {
+      "name": "chart-data",
+      "description": "Chart data for holdings, accounts, and watchlists"
     }
   ],
   "paths": {
@@ -2013,6 +2017,160 @@
         }
       }
     },
+    "/chart-data": {
+      "get": {
+        "tags": [
+          "chart-data"
+        ],
+        "summary": "Get chart data for holdings, accounts, or watchlists",
+        "description": "Unified endpoint to fetch daily chart data for holdings, accounts, or watchlists with time period filtering and forward fill functionality.",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": true,
+            "description": "Type of entity (holding, account, watchlist)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "holding",
+                "account",
+                "watchlist"
+              ]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "description": "ID of the entity",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "timePeriod",
+            "in": "query",
+            "required": true,
+            "description": "Time period for chart data",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1M",
+                "3M",
+                "6M",
+                "1Y",
+                "2Y",
+                "5Y",
+                "ALL"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart data points with forward fill",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseChartDataList"
+                },
+                "examples": {
+                  "holding": {
+                    "summary": "Chart data for a holding",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "date": "2024-08-01",
+                          "value": 1000.50,
+                          "invested": 950.00
+                        },
+                        {
+                          "id": 2,
+                          "date": "2024-08-02",
+                          "value": 1025.75,
+                          "invested": 950.00
+                        }
+                      ]
+                    }
+                  },
+                  "account": {
+                    "summary": "Chart data for an account (aggregated)",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "date": "2024-08-01",
+                          "value": 2500.25,
+                          "invested": 2300.00
+                        },
+                        {
+                          "id": 2,
+                          "date": "2024-08-02",
+                          "value": 2575.50,
+                          "invested": 2300.00
+                        }
+                      ]
+                    }
+                  },
+                  "watchlist": {
+                    "summary": "Chart data for a watchlist (aggregated)",
+                    "value": {
+                      "success": true,
+                      "data": [
+                        {
+                          "id": 1,
+                          "date": "2024-08-01",
+                          "value": 5000.75,
+                          "invested": 4800.00
+                        },
+                        {
+                          "id": 2,
+                          "date": "2024-08-02",
+                          "value": 5125.25,
+                          "invested": 4800.00
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "missingEntityType": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "entityType parameter is required"
+                    }
+                  },
+                  "invalidTimePeriod": {
+                    "value": {
+                      "code": "VALIDATION_ERROR",
+                      "message": "Invalid timePeriod. Supported values: 1M, 3M, 6M, 1Y, 2Y, 5Y, ALL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/transactions": {
       "post": {
         "tags": [
@@ -3122,6 +3280,59 @@
             }
           }
         }
+      },
+      "ChartData": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Sequence number starting from 1"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of the data point"
+          },
+          "value": {
+            "type": "number",
+            "description": "Current day value"
+          },
+          "invested": {
+            "type": "number",
+            "description": "Invested amount"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "value",
+          "invested"
+        ],
+        "example": {
+          "id": 1,
+          "date": "2024-08-01",
+          "value": 1000.50,
+          "invested": 950.00
+        }
+      },
+      "ApiResponseChartDataList": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartData"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
       },
       "CreateAccountRequest": {
         "type": "object",

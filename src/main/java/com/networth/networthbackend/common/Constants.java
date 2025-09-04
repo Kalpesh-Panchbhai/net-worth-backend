@@ -177,6 +177,7 @@ public class Constants {
         public static final String WATCHLIST_ACCOUNTS = "watchlist-accounts";
         public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
         public static final String TRANSACTIONS = "transactions";
+        public static final String CHART_DATA = "chart-data";
     }
 
     @UtilityClass
