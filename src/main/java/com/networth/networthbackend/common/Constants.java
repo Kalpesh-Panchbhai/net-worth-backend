@@ -771,8 +771,8 @@ public class Constants {
         public static final String TRANSACTIONS_LIST = "Listing transactions for {}={}";
         public static final String TRANSACTIONS_LIST_COUNT = "Transactions fetched: count={} for {}={}";
         public static final String TRANSACTION_DELETE_AFFECTED = "Delete transactions affected rows: {} for id={}";
-        public static final String TRANSACTION_CREATE = "Creating transaction: accountId={}, holdingId={}, date={}, invested={}, value={}";
-        public static final String TRANSACTION_CREATED = "Transaction created: id={}, accountId={}, holdingId={}, date={}, invested={}, value={}";
+        public static final String TRANSACTION_CREATE = "Creating transaction: accountId={}, holdingId={}, date={}, invested={}, value={}, mode={}";
+        public static final String TRANSACTION_CREATED = "Transaction created: id={}, accountId={}, holdingId={}, date={}, invested={}, value={}, mode={}";
     }
 
 }

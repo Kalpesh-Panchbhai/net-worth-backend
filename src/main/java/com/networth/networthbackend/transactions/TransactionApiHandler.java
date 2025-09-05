@@ -8,8 +8,8 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.math.BigDecimal;
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
 
 @Slf4j
@@ -65,7 +65,7 @@ public class TransactionApiHandler extends EntityHandlerBase {
         } catch (Exception e) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.TRANSACTION_DATE_REQUIRED);
         }
-        log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value);
+        log.debug(Constants.Logs.TRANSACTION_CREATE, accountId, holdingId, txnDate, invested, value, m);
         Transaction created;
         try {
             BigDecimal effInvested = invested;
@@ -82,7 +82,7 @@ public class TransactionApiHandler extends EntityHandlerBase {
         } catch (SQLIntegrityConstraintViolationException e) {
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.TRANSACTION_DUPLICATE);
         }
-        log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value);
+        log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value, m);
         return created(created);
     }
 
