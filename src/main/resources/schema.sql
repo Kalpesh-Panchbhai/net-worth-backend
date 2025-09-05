@@ -125,8 +125,8 @@ CREATE TABLE IF NOT EXISTS transactions
     account_id BIGINT UNSIGNED NOT NULL,
     holding_id BIGINT UNSIGNED NOT NULL,
     txn_date   DATE            NOT NULL,
-    invested   DECIMAL(10, 4)  NOT NULL,
-    value      DECIMAL(10, 4)  NOT NULL,
+    invested   DECIMAL(20, 4)  NOT NULL,
+    value      DECIMAL(20, 4)  NOT NULL,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_transactions_account
@@ -187,8 +187,8 @@ CREATE TABLE IF NOT EXISTS account_holding_values_daily
     account_id        BIGINT UNSIGNED NOT NULL,
     holding_id        BIGINT UNSIGNED NOT NULL,
     date              DATE            NOT NULL,
-    value             DECIMAL(10, 4)  NOT NULL DEFAULT 0,
-    invested          DECIMAL(10, 4)  NOT NULL DEFAULT 0,
+    value             DECIMAL(20, 4)  NOT NULL DEFAULT 0,
+    invested          DECIMAL(20, 4)  NOT NULL DEFAULT 0,
 
     PRIMARY KEY (account_id, holding_id, date),
 
