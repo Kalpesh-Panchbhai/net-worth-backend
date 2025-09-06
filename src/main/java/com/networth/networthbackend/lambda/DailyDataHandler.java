@@ -7,30 +7,20 @@ import com.networth.networthbackend.tools.DailyDataRunner;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * AWS Lambda handler that triggers the daily data backfill job.
- * <p>
- * Set environment variables in Lambda for DB connectivity:
- * - DB_URL, DB_USERNAME, DB_PASSWORD
- * Optional tuning:
- * - BATCH_SIZE (default 2000)
- * - MAX_ACCOUNTS (default 0 => no limit)
- */
-public class DailyDataHandler implements RequestHandler<Map<String, Object>, String> {
+import static com.networth.networthbackend.common.Constants.DailyDataRunner.*;
+
+public class DailyDataHandler implements RequestHandler<Void, Void> {
     @Override
-    public String handleRequest(Map<String, Object> event, Context context) {
+    public Void handleRequest(Void unused, Context context) {
         try {
             Map<String, String> params = new HashMap<>();
-            String batchSize = System.getenv().getOrDefault("BATCH_SIZE", "2000");
-            String maxAccounts = System.getenv().getOrDefault("MAX_ACCOUNTS", "0");
-            params.put("batchSize", batchSize);
-            params.put("maxAccounts", maxAccounts);
+            params.put(PARAM_BATCH_SIZE, DEFAULT_BATCH_SIZE);
+            params.put(PARAM_MAX_ACCOUNTS, DEFAULT_MAX_ACCOUNTS);
 
             DailyDataRunner.run(params);
-            return "OK";
+            return unused;
         } catch (Exception e) {
-            // Return message for convenience; actual failure should be observed in logs/metrics
-            return "ERROR: " + e.getMessage();
+            return unused;
         }
     }
 }
