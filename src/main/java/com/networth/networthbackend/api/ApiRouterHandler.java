@@ -25,7 +25,7 @@ import java.util.Map;
 @Slf4j
 public class ApiRouterHandler extends BaseApiHandler {
 
-    private final Map<String, EntityHandler> registry = new HashMap<>();
+    private final Map<String, EntityHandlerInterface> registry = new HashMap<>();
 
     public ApiRouterHandler() {
         // Register entity handlers
@@ -52,7 +52,7 @@ public class ApiRouterHandler extends BaseApiHandler {
         if (route == null || route.entity == null) {
             return ApiGatewayResponses.error(Constants.Http.Status.NOT_FOUND, Constants.ErrorCodes.ROUTE_NOT_FOUND, Constants.Messages.UNKNOWN_ROUTE);
         }
-        EntityHandler handler = registry.get(route.entity.toLowerCase(Locale.ROOT));
+        EntityHandlerInterface handler = registry.get(route.entity.toLowerCase(Locale.ROOT));
         if (handler == null) {
             return ApiGatewayResponses.error(Constants.Http.Status.NOT_FOUND, Constants.ErrorCodes.ENTITY_NOT_SUPPORTED, String.format(Constants.Messages.ENTITY_NOT_SUPPORTED_FMT, route.entity));
         }

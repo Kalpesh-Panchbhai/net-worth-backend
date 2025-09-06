@@ -9,7 +9,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Jsons;
 import com.networth.networthbackend.common.Constants;
 
-public abstract class EntityHandlerBase implements EntityHandler {
+public abstract class EntityHandlerBase implements EntityHandlerInterface {
 
     protected static final ObjectMapper MAPPER = Jsons.MAPPER;
 
