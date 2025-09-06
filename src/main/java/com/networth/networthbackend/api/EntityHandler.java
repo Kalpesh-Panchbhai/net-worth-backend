@@ -25,6 +25,12 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
         try {
+            // Debug logging to understand the request structure
+            log.info("Request details - Path: {}, Resource: {}, HttpMethod: {}", 
+                request.getPath(), request.getResource(), request.getHttpMethod());
+            log.info("Path parameters: {}", request.getPathParameters());
+            log.info("Query parameters: {}", request.getQueryStringParameters());
+            
             // Extract entity type from path or query parameters
             String entityType = extractEntityType(request);
             String action = extractAction(request);
@@ -55,26 +61,48 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
     }
     
     private String extractEntityType(APIGatewayProxyRequestEvent request) {
-        // Try to extract from path parameters first
+        // Try to extract from path parameters first (for parameterized routes like /{entity})
         if (request.getPathParameters() != null && request.getPathParameters().containsKey("entity")) {
-            return request.getPathParameters().get("entity");
+            String entity = request.getPathParameters().get("entity");
+            log.debug("Entity type from path parameters: {}", entity);
+            return entity;
         }
         
         // Try to extract from query parameters
         if (request.getQueryStringParameters() != null && request.getQueryStringParameters().containsKey("entityType")) {
-            return request.getQueryStringParameters().get("entityType");
+            String entity = request.getQueryStringParameters().get("entityType");
+            log.debug("Entity type from query parameters: {}", entity);
+            return entity;
         }
         
-        // Try to extract from resource path
-        String resource = request.getResource();
-        if (resource != null) {
-            // Handle paths like /accounts/{id}, /holdings/{id}, etc.
-            String[] pathParts = resource.split("/");
-            if (pathParts.length > 1) {
-                return pathParts[1]; // First part after the leading slash
+        // Try to extract from the actual path (getPath())
+        String path = request.getPath();
+        if (path != null && !path.isEmpty()) {
+            String[] pathParts = path.split("/");
+            // Skip empty parts and find the first meaningful segment
+            for (String part : pathParts) {
+                if (!part.isEmpty()) {
+                    log.debug("Entity type from path: {}", part);
+                    return part;
+                }
             }
         }
         
+        // Try to extract from resource path as fallback
+        String resource = request.getResource();
+        if (resource != null && !resource.isEmpty()) {
+            // Handle paths like /accounts/{id}, /holdings/{id}, etc.
+            String[] pathParts = resource.split("/");
+            for (String part : pathParts) {
+                if (!part.isEmpty() && !part.startsWith("{") && !part.endsWith("}")) {
+                    log.debug("Entity type from resource: {}", part);
+                    return part;
+                }
+            }
+        }
+        
+        log.warn("Could not extract entity type from request. Path: {}, Resource: {}, PathParams: {}, QueryParams: {}", 
+            request.getPath(), request.getResource(), request.getPathParameters(), request.getQueryStringParameters());
         return null;
     }
     
