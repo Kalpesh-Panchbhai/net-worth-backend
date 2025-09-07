@@ -2,6 +2,7 @@ package com.networth.networthbackend.tools;
 
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
+import com.networth.networthbackend.service.DhanDataService;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -53,6 +54,10 @@ public class DailyDataRunner {
                 // Phase 2: Broker accounts (or accounts explicitly marked needs_daily_data = 1)
                 List<Long> brokerAccountIds = findEligibleBrokerAccounts(conn, maxAccounts);
                 totalPending = processAccountsBatch(context, brokerAccountIds, true, totalPending);
+
+                // Phase 3: Dhan API accounts (non-broker with needs_daily_data = 1)
+                List<Long> dhanApiAccountIds = findEligibleDhanApiAccounts(conn, maxAccounts);
+                totalPending = processDhanApiAccountsBatch(context, dhanApiAccountIds, totalPending);
 
                 // Final batch flush
                 if (totalPending > 0) {
@@ -152,19 +157,7 @@ public class DailyDataRunner {
     // ---- Unified processing framework ----
 
     private static Map<Long, List<Tx>> readTransactionsByHoldingForAccount(Connection conn, long accountId) throws SQLException {
-        String sql =
-                Constants.SQL.SELECT +
-                String.join(
-                        Constants.SQL.COMMA_SPACE,
-                        Constants.DB.Transactions.COL_HOLDING_ID,
-                        Constants.DB.Transactions.COL_TXN_DATE,
-                        Constants.DB.Transactions.COL_INVESTED,
-                        Constants.DB.Transactions.COL_VALUE
-                ) +
-                Constants.SQL.FROM + Constants.DB.Transactions.TABLE +
-                Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
-                Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_HOLDING_ID +
-                Constants.SQL.COMMA_SPACE + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.ASC;
+        String sql = Constants.SQL.SELECT + String.join(Constants.SQL.COMMA_SPACE, Constants.DB.Transactions.COL_HOLDING_ID, Constants.DB.Transactions.COL_TXN_DATE, Constants.DB.Transactions.COL_INVESTED, Constants.DB.Transactions.COL_VALUE) + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.ORDER_BY + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.COMMA_SPACE + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.ASC;
         Map<Long, List<Tx>> map = new HashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
@@ -210,17 +203,7 @@ public class DailyDataRunner {
     // ---- Common transaction and data access methods ----
 
     private static List<Long> findEligibleNonBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql =
-                Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID +
-                Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" +
-                Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM +
-                Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 +
-                Constants.SQL.AND + Constants.SQL.EXISTS_OPEN +
-                    Constants.SQL.SELECT + "1" +
-                    Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" +
-                    Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID +
-                Constants.SQL.CLOSE_PAREN +
-                (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -284,11 +267,7 @@ public class DailyDataRunner {
     }
 
     private static PreparedStatement prepareDeleteDaily(Connection conn) throws SQLException {
-        String delSql =
-                Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE +
-                Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
-                Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + Constants.SQL.EQ_PARAM +
-                Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.GE + Constants.SQL.PARAM;
+        String delSql = Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.GE + Constants.SQL.PARAM;
         return conn.prepareStatement(delSql);
     }
 
@@ -344,12 +323,7 @@ public class DailyDataRunner {
     }
 
     private static List<Holding> readHoldings(Connection conn, long accountId) throws SQLException {
-        String sql =
-                Constants.SQL.SELECT + Constants.DB.Holdings.COL_ID +
-                Constants.SQL.COMMA_SPACE + Constants.DB.Holdings.COL_SYMBOL +
-                Constants.SQL.FROM + Constants.DB.Holdings.TABLE +
-                Constants.SQL.WHERE + Constants.DB.Holdings.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM +
-                Constants.SQL.ORDER_BY + Constants.DB.Holdings.COL_ID;
+        String sql = Constants.SQL.SELECT + Constants.DB.Holdings.COL_ID + Constants.SQL.COMMA_SPACE + Constants.DB.Holdings.COL_SYMBOL + Constants.SQL.FROM + Constants.DB.Holdings.TABLE + Constants.SQL.WHERE + Constants.DB.Holdings.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.ORDER_BY + Constants.DB.Holdings.COL_ID;
         List<Holding> res = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
@@ -377,16 +351,7 @@ public class DailyDataRunner {
     }
 
     private static List<Long> findEligibleBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql =
-                Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID +
-                Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" +
-                Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM +
-                Constants.SQL.AND + Constants.SQL.EXISTS_OPEN +
-                    Constants.SQL.SELECT + "1" +
-                    Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" +
-                    Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID +
-                Constants.SQL.CLOSE_PAREN +
-                (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -395,6 +360,177 @@ public class DailyDataRunner {
             }
         }
         return ids;
+    }
+
+    private static List<Long> findEligibleDhanApiAccounts(Connection conn, int limit) throws SQLException {
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_1 + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_IS_ACTIVE + Constants.SQL.EQ_1 + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+        List<Long> ids = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, Constants.Accounts.TYPE_BROKER);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) ids.add(rs.getLong(1));
+            }
+        }
+        return ids;
+    }
+
+    private static int processDhanApiAccountsBatch(ProcessingContext context, List<Long> accountIds, int pendingBatches) throws Exception {
+        if (accountIds.isEmpty()) {
+            return pendingBatches;
+        }
+
+        DhanDataService dhanDataService = new DhanDataService();
+        int pending = pendingBatches;
+
+        for (long accountId : accountIds) {
+            try {
+                pending = processDhanApiAccount(context, accountId, dhanDataService, pending);
+            } catch (Exception e) {
+                System.err.println("Failed to process Dhan API account " + accountId + ": " + e.getMessage());
+                // Continue with next account instead of failing the entire batch
+            }
+        }
+
+        return pending;
+    }
+
+    private static int processDhanApiAccount(ProcessingContext context, long accountId, DhanDataService dhanDataService, int pending) throws Exception {
+        try {
+            // Use the exact same calculation logic as ChartService.generateDhanNonBrokerAccountData()
+            DhanDataService.DhanAccountData dhanAccountData = dhanDataService.calculateDhanAccountData();
+
+            // Get both invested amount and ledger activity status in single API call
+            DhanDataService.LedgerAnalysisResult ledgerResult = dhanDataService.getCurrentInvestedAmountAndLedgerActivity();
+            double currentInvested = ledgerResult.getInvestedAmount();
+            boolean hasLedgerRecords = ledgerResult.hasLedgerRecords();
+
+            // Find last invested amount from account_holding_values_daily and add to current invested
+            double lastInvestedAmount = getLastInvestedAmount(context.conn(), accountId);
+            double totalInvested = currentInvested + lastInvestedAmount;
+
+            // Delete existing data for today for this account
+            deleteDailyForAccountDate(context.conn(), accountId, context.today());
+
+            // Create a single "__ACCT__" holding for the total account value (same as ChartService approach)
+            Long dhanHoldingId = findOrCreateDhanHolding(context.conn(), accountId);
+
+            if (dhanHoldingId != null) {
+                // Insert the calculated total value as a single holding entry
+                context.upsert().setLong(1, accountId);
+                context.upsert().setLong(2, dhanHoldingId);
+                context.upsert().setDate(3, java.sql.Date.valueOf(context.today()));
+                context.upsert().setBigDecimal(4, BigDecimal.valueOf(dhanAccountData.getTotalValue()));
+                context.upsert().setBigDecimal(5, BigDecimal.valueOf(totalInvested));
+                context.upsert().addBatch();
+                pending++;
+
+                // Only insert totalInvested in transactions table if there are ledger records for current date
+                if (hasLedgerRecords) {
+                    insertTransactionRecord(context.conn(), accountId, dhanHoldingId, context.today(), totalInvested);
+                }
+
+                if (pending >= context.batchSize()) {
+                    context.upsert().executeBatch();
+                    pending = 0;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Dhan API error for account " + accountId + ": " + e.getMessage());
+            throw e;
+        }
+
+        return pending;
+    }
+
+    private static double getLastInvestedAmount(Connection conn, long accountId) throws SQLException {
+        String sql = Constants.SQL.SELECT + "SUM(" + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " = (" + Constants.SQL.SELECT + "MAX(" + Constants.DB.AccountHoldingValuesDaily.COL_DATE + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + ")";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setLong(2, accountId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal result = rs.getBigDecimal(1);
+                    return result != null ? result.doubleValue() : 0.0;
+                }
+            }
+        }
+
+        return 0.0;
+    }
+
+    private static void insertTransactionRecord(Connection conn, long accountId, long holdingId, LocalDate date, double totalInvested) throws SQLException {
+        // First, delete any existing transaction for this account, holding, and date
+        String deleteSql = Constants.SQL.DELETE_FROM + Constants.DB.Transactions.TABLE + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.EQ_PARAM;
+
+        try (PreparedStatement deletePs = conn.prepareStatement(deleteSql)) {
+            deletePs.setLong(1, accountId);
+            deletePs.setLong(2, holdingId);
+            deletePs.setDate(3, java.sql.Date.valueOf(date));
+            deletePs.executeUpdate();
+        }
+
+        // Insert new transaction record with totalInvested amount
+        String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Transactions.TABLE + " (" + Constants.DB.Transactions.COL_ACCOUNT_ID + ", " + Constants.DB.Transactions.COL_HOLDING_ID + ", " + Constants.DB.Transactions.COL_TXN_DATE + ", " + Constants.DB.Transactions.COL_INVESTED + ", " + Constants.DB.Transactions.COL_VALUE + ") VALUES (?, ?, ?, ?, ?)";
+
+        try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
+            insertPs.setLong(1, accountId);
+            insertPs.setLong(2, holdingId);
+            insertPs.setDate(3, java.sql.Date.valueOf(date));
+            insertPs.setBigDecimal(4, BigDecimal.valueOf(totalInvested));
+            insertPs.setBigDecimal(5, BigDecimal.valueOf(totalInvested)); // Set value same as invested for Dhan API accounts
+            insertPs.executeUpdate();
+        }
+    }
+
+    private static void deleteDailyForAccountDate(Connection conn, long accountId, LocalDate date) throws SQLException {
+        String sql = Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.EQ_PARAM;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setDate(2, java.sql.Date.valueOf(date));
+            ps.executeUpdate();
+        }
+    }
+
+    private static Long findOrCreateDhanHolding(Connection conn, long accountId) throws SQLException {
+        // First try to find existing "__ACCT__" holding
+        String selectSql = Constants.SQL.SELECT + Constants.DB.Holdings.COL_ID + Constants.SQL.FROM + Constants.DB.Holdings.TABLE + Constants.SQL.WHERE + Constants.DB.Holdings.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Holdings.COL_SYMBOL + Constants.SQL.EQ_PARAM;
+
+        try (PreparedStatement ps = conn.prepareStatement(selectSql)) {
+            ps.setLong(1, accountId);
+            ps.setString(2, "__ACCT__");
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(Constants.DB.Holdings.COL_ID);
+                }
+            }
+        }
+
+        // If not found, create new "__ACCT__" holding
+        String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Holdings.TABLE + " (" + Constants.DB.Holdings.COL_ACCOUNT_ID + ", " + Constants.DB.Holdings.COL_NAME + ", " + Constants.DB.Holdings.COL_SYMBOL + ") VALUES (?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(insertSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            ps.setLong(1, accountId);
+            ps.setString(2, "Account Total");
+            ps.setString(3, "__ACCT__");
+
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        Long holdingId = generatedKeys.getLong(1);
+                        System.out.println("Created new __ACCT__ holding " + holdingId + " for account " + accountId);
+                        return holdingId;
+                    }
+                }
+            }
+        }
+
+        System.err.println("Failed to find or create __ACCT__ holding for account " + accountId);
+        return null;
     }
 
     private record ProcessingContext(Connection conn, PreparedStatement upsert, PreparedStatement deletePs,
