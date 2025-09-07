@@ -46,18 +46,13 @@ public class DailyDataRunner {
                 ProcessingContext context = new ProcessingContext(conn, upsert, deletePs, batchSize, windowDays, today);
                 int totalPending = 0;
 
-                // Reuse a single YahooFinanceClient and FX cache across the entire run to
-                // maximize HTTP connection reuse on AWS Lambda (reduces NAT/TLS overhead).
-                YahooFinanceClient sharedYahooClient = new YahooFinanceClient();
-                ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> sharedFxCache = new ConcurrentHashMap<>();
-
                 // Phase 1: Non-broker accounts (needs_daily_data = 0)
                 List<Long> nonBrokerAccountIds = findEligibleNonBrokerAccounts(conn, maxAccounts);
                 totalPending = processAccountsBatch(context, nonBrokerAccountIds, false, totalPending);
 
                 // Phase 2: Broker accounts (or accounts explicitly marked needs_daily_data = 1)
                 List<Long> brokerAccountIds = findEligibleBrokerAccounts(conn, maxAccounts);
-                totalPending = processAccountsBatch(context, brokerAccountIds, true, totalPending, sharedYahooClient, sharedFxCache);
+                totalPending = processAccountsBatch(context, brokerAccountIds, true, totalPending);
 
                 // Final batch flush
                 if (totalPending > 0) {
@@ -90,29 +85,7 @@ public class DailyDataRunner {
             Map<Long, List<Tx>> txByHolding = readTransactionsByHoldingForAccount(context.conn(), accountId);
 
             if (isBroker) {
-                // If this overload is called, delegate to the shared-client variant with new client+cache per invocation
-                YahooFinanceClient tmpYf = new YahooFinanceClient();
-                ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> tmpFxCache = new ConcurrentHashMap<>();
-                pending = processBrokerAccount(context, accountId, txByHolding, pending, tmpYf, tmpFxCache);
-            } else {
-                pending = processNonBrokerAccount(context, accountId, txByHolding, pending);
-            }
-        }
-
-        return pending;
-    }
-
-    // Overload to allow passing shared Yahoo client and FX cache across accounts (for Lambda efficiency)
-    private static int processAccountsBatch(ProcessingContext context, List<Long> accountIds, boolean isBroker, int pendingBatches,
-                                            YahooFinanceClient sharedYahooClient,
-                                            ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> sharedFxCache) throws Exception {
-        int pending = pendingBatches;
-
-        for (long accountId : accountIds) {
-            Map<Long, List<Tx>> txByHolding = readTransactionsByHoldingForAccount(context.conn(), accountId);
-
-            if (isBroker) {
-                pending = processBrokerAccount(context, accountId, txByHolding, pending, sharedYahooClient, sharedFxCache);
+                pending = processBrokerAccount(context, accountId, txByHolding, pending);
             } else {
                 pending = processNonBrokerAccount(context, accountId, txByHolding, pending);
             }
@@ -133,10 +106,10 @@ public class DailyDataRunner {
         return pending;
     }
 
-    private static int processBrokerAccount(ProcessingContext context, long accountId, Map<Long, List<Tx>> txByHolding, int pending,
-                                            YahooFinanceClient yf,
-                                            ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> fxCache) throws Exception {
+    private static int processBrokerAccount(ProcessingContext context, long accountId, Map<Long, List<Tx>> txByHolding, int pending) throws Exception {
         String accountCurrency = getAccountCurrency(context.conn(), accountId);
+        YahooFinanceClient yf = new YahooFinanceClient();
+        ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> fxCache = new ConcurrentHashMap<>();
 
         List<Holding> holdings = readHoldings(context.conn(), accountId);
 
