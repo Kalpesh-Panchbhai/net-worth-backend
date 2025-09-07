@@ -16,7 +16,7 @@ public class DailyDataHandler implements RequestHandler<Void, Void> {
             Map<String, String> params = new HashMap<>();
             params.put(PARAM_BATCH_SIZE, DEFAULT_BATCH_SIZE);
             params.put(PARAM_MAX_ACCOUNTS, DEFAULT_MAX_ACCOUNTS);
-
+            params.put(PARAM_MODE, MODE_7D);
             DailyDataRunner.run(params);
             return unused;
         } catch (Exception e) {
