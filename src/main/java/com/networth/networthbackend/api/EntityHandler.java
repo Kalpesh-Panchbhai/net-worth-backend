@@ -6,6 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.accounts.AccountApiHandler;
 import com.networth.networthbackend.chartdata.ChartDataApiHandler;
+import com.networth.networthbackend.common.ApiGatewayResponses;
+import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.holdings.HoldingApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
@@ -15,8 +17,6 @@ import com.networth.networthbackend.users.UserApiHandler;
 import com.networth.networthbackend.watchlists.AccountWatchlistApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistAccountApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistApiHandler;
-import com.networth.networthbackend.common.ApiGatewayResponses;
-import com.networth.networthbackend.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -26,60 +26,36 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
         try {
             // Debug logging to understand the request structure
-            log.info("Request details - Path: {}, Resource: {}, HttpMethod: {}", 
-                request.getPath(), request.getResource(), request.getHttpMethod());
+            log.info("Request details - Path: {}, Resource: {}, HttpMethod: {}", request.getPath(), request.getResource(), request.getHttpMethod());
             log.info("Path parameters: {}", request.getPathParameters());
             log.info("Query parameters: {}", request.getQueryStringParameters());
-            
-            // Extract entity type from path or query parameters
+
+            // Extract entity type from path or resource ONLY (do not use query params to avoid conflicts)
             String entityType = extractEntityType(request);
             String action = extractAction(request);
-            
+
             log.info("Processing request for entityType: {}, action: {}", entityType, action);
-            
+
             // Route to appropriate handler based on entity type
             EntityHandlerBase handler = getHandlerForEntity(entityType);
             if (handler == null) {
                 log.warn("No handler found for entity type: {}", entityType);
-                return ApiGatewayResponses.error(
-                    Constants.Http.Status.BAD_REQUEST, 
-                    Constants.ErrorCodes.VALIDATION_ERROR, 
-                    "Unsupported entity type: " + entityType
-                );
+                return ApiGatewayResponses.error(Constants.Http.Status.BAD_REQUEST, Constants.ErrorCodes.VALIDATION_ERROR, "Unsupported entity type: " + entityType);
             }
-            
+
             return handler.handle(action, request, context);
-            
+
         } catch (Exception e) {
             log.error("Error processing request", e);
-            return ApiGatewayResponses.error(
-                Constants.Http.Status.INTERNAL_SERVER_ERROR, 
-                Constants.ErrorCodes.INTERNAL_ERROR, 
-                "Internal server error: " + e.getMessage()
-            );
+            return ApiGatewayResponses.error(Constants.Http.Status.INTERNAL_SERVER_ERROR, Constants.ErrorCodes.INTERNAL_ERROR, "Internal server error: " + e.getMessage());
         }
     }
-    
+
     private String extractEntityType(APIGatewayProxyRequestEvent request) {
-        // Try to extract from path parameters first (for parameterized routes like /{entity})
-        if (request.getPathParameters() != null && request.getPathParameters().containsKey("entity")) {
-            String entity = request.getPathParameters().get("entity");
-            log.debug("Entity type from path parameters: {}", entity);
-            return entity;
-        }
-        
-        // Try to extract from query parameters
-        if (request.getQueryStringParameters() != null && request.getQueryStringParameters().containsKey("entityType")) {
-            String entity = request.getQueryStringParameters().get("entityType");
-            log.debug("Entity type from query parameters: {}", entity);
-            return entity;
-        }
-        
-        // Try to extract from the actual path (getPath())
+        // 1) Prefer the actual path first: /{entity} or /{entity}/{id}
         String path = request.getPath();
         if (path != null && !path.isEmpty()) {
             String[] pathParts = path.split("/");
-            // Skip empty parts and find the first meaningful segment
             for (String part : pathParts) {
                 if (!part.isEmpty()) {
                     log.debug("Entity type from path: {}", part);
@@ -87,11 +63,10 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
                 }
             }
         }
-        
-        // Try to extract from resource path as fallback
+
+        // 2) Fallback to API Gateway resource template if available
         String resource = request.getResource();
         if (resource != null && !resource.isEmpty()) {
-            // Handle paths like /accounts/{id}, /holdings/{id}, etc.
             String[] pathParts = resource.split("/");
             for (String part : pathParts) {
                 if (!part.isEmpty() && !part.startsWith("{") && !part.endsWith("}")) {
@@ -100,18 +75,27 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
                 }
             }
         }
-        
-        log.warn("Could not extract entity type from request. Path: {}, Resource: {}, PathParams: {}, QueryParams: {}", 
-            request.getPath(), request.getResource(), request.getPathParameters(), request.getQueryStringParameters());
+
+        // 3) Final fallback: explicit path parameter named 'entity' if your API defines it
+        if (request.getPathParameters() != null && request.getPathParameters().containsKey("entity")) {
+            String entity = request.getPathParameters().get("entity");
+            log.debug("Entity type from path parameters: {}", entity);
+            return entity;
+        }
+
+        // IMPORTANT: We intentionally do NOT read query parameter 'entityType' here to avoid conflicts
+        // with endpoints like /chart-data that legitimately use 'entityType' as a business parameter.
+
+        log.warn("Could not extract entity type from request. Path: {}, Resource: {}, PathParams: {}", request.getPath(), request.getResource(), request.getPathParameters());
         return null;
     }
-    
+
     private String extractAction(APIGatewayProxyRequestEvent request) {
         // Try to extract from query parameters first
         if (request.getQueryStringParameters() != null && request.getQueryStringParameters().containsKey("action")) {
             return request.getQueryStringParameters().get("action");
         }
-        
+
         // Map HTTP methods to actions
         String httpMethod = request.getHttpMethod();
         if (httpMethod != null) {
@@ -123,15 +107,15 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
                 default -> null;
             };
         }
-        
+
         return null;
     }
-    
+
     private EntityHandlerBase getHandlerForEntity(String entityType) {
         if (entityType == null) {
             return null;
         }
-        
+
         return switch (entityType.toLowerCase()) {
             case "accounts", "account" -> new AccountApiHandler();
             case "chart-data", "chartdata" -> new ChartDataApiHandler();
