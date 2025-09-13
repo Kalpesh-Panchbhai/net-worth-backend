@@ -23,20 +23,16 @@ public class DailyDataRunner {
 
     public static void main(String[] args) throws Exception {
         System.out.println(LocalDateTime.now());
-        Map<String, String> params = parseArgs(args);
-        run(params);
+        run();
         System.out.println(LocalDateTime.now());
     }
 
     public static void run() throws Exception {
-        run(Collections.emptyMap());
-    }
+        String batchSizeStr = firstNonEmpty(System.getenv(Constants.DailyDataRunner.ENV_BATCH_SIZE), Constants.DailyDataRunner.DEFAULT_BATCH_SIZE);
+        String mode = firstNonEmpty(System.getenv(Constants.DailyDataRunner.ENV_MODE), Constants.DailyDataRunner.DEFAULT_MODE).toLowerCase(Locale.ROOT);
 
-    public static void run(Map<String, String> params) throws Exception {
-        int batchSize = Integer.parseInt(params.getOrDefault(Constants.DailyDataRunner.PARAM_BATCH_SIZE, Constants.DailyDataRunner.DEFAULT_BATCH_SIZE));
-        int maxAccounts = Integer.parseInt(params.getOrDefault(Constants.DailyDataRunner.PARAM_MAX_ACCOUNTS, Constants.DailyDataRunner.DEFAULT_MAX_ACCOUNTS));
+        int batchSize = Integer.parseInt(batchSizeStr);
         LocalDate today = LocalDate.now();
-        String mode = params.getOrDefault(Constants.DailyDataRunner.PARAM_MODE, Constants.DailyDataRunner.DEFAULT_MODE).toLowerCase(Locale.ROOT);
         Integer windowDays = Constants.DailyDataRunner.MODE_ALL.equals(mode) ? null : Constants.DailyDataRunner.WINDOW_DAYS_7D;
 
         try (Connection conn = Database.getConnection()) {
@@ -48,15 +44,15 @@ public class DailyDataRunner {
                 int totalPending = 0;
 
                 // Phase 1: Non-broker accounts (needs_daily_data = 0)
-                List<Long> nonBrokerAccountIds = findEligibleNonBrokerAccounts(conn, maxAccounts);
+                List<Long> nonBrokerAccountIds = findEligibleNonBrokerAccounts(conn);
                 totalPending = processAccountsBatch(context, nonBrokerAccountIds, false, totalPending);
 
                 // Phase 2: Broker accounts (or accounts explicitly marked needs_daily_data = 1)
-                List<Long> brokerAccountIds = findEligibleBrokerAccounts(conn, maxAccounts);
+                List<Long> brokerAccountIds = findEligibleBrokerAccounts(conn);
                 totalPending = processAccountsBatch(context, brokerAccountIds, true, totalPending);
 
                 // Phase 3: Dhan API accounts (non-broker with needs_daily_data = 1)
-                List<Long> dhanApiAccountIds = findEligibleDhanApiAccounts(conn, maxAccounts);
+                List<Long> dhanApiAccountIds = findEligibleDhanApiAccounts(conn);
                 totalPending = processDhanApiAccountsBatch(context, dhanApiAccountIds, totalPending);
 
                 // Final batch flush
@@ -202,8 +198,8 @@ public class DailyDataRunner {
 
     // ---- Common transaction and data access methods ----
 
-    private static List<Long> findEligibleNonBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+    private static List<Long> findEligibleNonBrokerAccounts(Connection conn) throws SQLException {
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN;
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -336,22 +332,16 @@ public class DailyDataRunner {
         return res;
     }
 
-    private static Map<String, String> parseArgs(String[] args) {
-        Map<String, String> map = new HashMap<>();
-        if (args == null) return map;
-        for (String a : args) {
-            int i = a.indexOf('=');
-            if (i > 0) {
-                String k = a.substring(0, i).trim();
-                String v = a.substring(i + 1).trim();
-                if (!k.isEmpty()) map.put(k, v);
-            }
+    private static String firstNonEmpty(String... values) {
+        if (values == null) return null;
+        for (String v : values) {
+            if (v != null && !v.isBlank()) return v;
         }
-        return map;
+        return null;
     }
 
-    private static List<Long> findEligibleBrokerAccounts(Connection conn, int limit) throws SQLException {
-        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+    private static List<Long> findEligibleBrokerAccounts(Connection conn) throws SQLException {
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN;
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -362,8 +352,8 @@ public class DailyDataRunner {
         return ids;
     }
 
-    private static List<Long> findEligibleDhanApiAccounts(Connection conn, int limit) throws SQLException {
-        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_1 + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_IS_ACTIVE + Constants.SQL.EQ_1 + (limit > 0 ? Constants.SQL.LIMIT + limit : "");
+    private static List<Long> findEligibleDhanApiAccounts(Connection conn) throws SQLException {
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_1 + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_IS_ACTIVE + Constants.SQL.EQ_1;
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);

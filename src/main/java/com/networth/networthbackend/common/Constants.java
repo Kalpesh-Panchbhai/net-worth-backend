@@ -655,24 +655,20 @@ public class Constants {
     public static class DailyDataRunner {
         // Default configuration values
         public static final String DEFAULT_BATCH_SIZE = "20000";
-        public static final String DEFAULT_MAX_ACCOUNTS = "0";
         public static final String DEFAULT_MODE = "all";
         public static final int WINDOW_DAYS_7D = 7;
         public static final int DEFAULT_THREAD_POOL_SIZE = 8;
         public static final int MIN_THREAD_POOL_SIZE = 1;
-        
-        // Parameter names
-        public static final String PARAM_BATCH_SIZE = "batchSize";
-        public static final String PARAM_MAX_ACCOUNTS = "maxAccounts";
-        public static final String PARAM_MODE = "mode";
-        
+        public static final String ENV_BATCH_SIZE = "DAILY_DATA_BATCH_SIZE";
+        public static final String ENV_MODE = "DAILY_DATA_MODE";
+
         // Mode values
         public static final String MODE_ALL = "all";
         public static final String MODE_7D = "7d";
-        
+
         // FX cache key format
         public static final String FX_CACHE_KEY_FORMAT = "%s:%s:%s:%s";
-        
+
         // SQL operations
         public static final String ON_DUPLICATE_KEY_UPDATE = " ON DUPLICATE KEY UPDATE ";
         public static final String VALUES_PLACEHOLDER = "VALUES(%s)";
