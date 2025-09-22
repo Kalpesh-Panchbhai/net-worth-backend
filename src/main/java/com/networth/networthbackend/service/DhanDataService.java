@@ -1,6 +1,5 @@
 package com.networth.networthbackend.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -27,26 +26,24 @@ import java.util.Objects;
  * Contains the exact same calculation logic for Dhan account daily data
  */
 public class DhanDataService {
-    
+
     private final String dhanBaseURL = "https://api.dhan.co/v2/";
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final String accessToken;
-    
+
     public DhanDataService() {
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30))
-                .build();
+        this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.accessToken = System.getenv("DHAN_ACCESS_TOKEN");
-        
+
         if (accessToken == null || accessToken.trim().isEmpty()) {
             throw new IllegalStateException("DHAN_ACCESS_TOKEN environment variable is required");
         }
     }
-    
+
     /**
      * Calculate total account value using the exact same logic as ChartService.generateDhanNonBrokerAccountData()
      */
@@ -54,12 +51,12 @@ public class DhanDataService {
         double openPositionsValue = getOpenPositionsValue();
         double openHoldingsValue = getOpenHoldingsValue();
         double fundBalance = getFundBalance();
-        
+
         double totalValue = fundBalance + openPositionsValue + openHoldingsValue;
-        
+
         return new DhanAccountData(totalValue, fundBalance, openHoldingsValue, openPositionsValue);
     }
-    
+
     /**
      * Exact same logic as ChartService.getOpenPositionsValue()
      */
@@ -67,12 +64,9 @@ public class DhanDataService {
         String url = generateDhanURL("positions");
         String response = executeDhanAPI(url);
         List<PositionAPIResponse> positionAPIResponseList = convertStringToListOfObj(response, PositionAPIResponse.class);
-        return positionAPIResponseList.stream()
-                .filter(data -> data.getNetQty() > 0)
-                .mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit())
-                .sum();
+        return positionAPIResponseList.stream().filter(data -> data.getNetQty() > 0).mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
     }
-    
+
     /**
      * Exact same logic as ChartService.getOpenHoldingsValue()
      */
@@ -80,12 +74,9 @@ public class DhanDataService {
         String url = generateDhanURL("holdings");
         String response = executeDhanAPI(url);
         List<HoldingAPIResponse> holdingAPIResponseList = convertStringToListOfObj(response, HoldingAPIResponse.class);
-        return Objects.requireNonNullElse(holdingAPIResponseList, new ArrayList<HoldingAPIResponse>())
-                .stream()
-                .mapToDouble(item -> item.getAvailableQty() * item.getLastTradedPrice())
-                .sum();
+        return Objects.requireNonNullElse(holdingAPIResponseList, new ArrayList<HoldingAPIResponse>()).stream().mapToDouble(item -> item.getAvailableQty() * item.getLastTradedPrice()).sum();
     }
-    
+
     /**
      * Exact same logic as ChartService.getFundBalance()
      */
@@ -95,7 +86,7 @@ public class DhanDataService {
         FundLimitAPIResponse fundLimitAPIResponse = convertStringToObj(response, FundLimitAPIResponse.class);
         return fundLimitAPIResponse.getAvailabelBalance() + fundLimitAPIResponse.getUtilizedAmount();
     }
-    
+
     /**
      * Calculate current invested amount and check for ledger activity in a single API call
      * Returns both invested amount and whether there are ledger records for current date
@@ -103,105 +94,64 @@ public class DhanDataService {
     public LedgerAnalysisResult getCurrentInvestedAmountAndLedgerActivity() throws IOException, InterruptedException {
         List<LedgerAPIResponse> ledgerAPIResponses = executeDhanLedgerAPI("https://api.dhan.co/v2/ledger?from-date=2025-01-01&to-date=2099-12-31");
         LocalDate localDate = LocalDate.now();
-        
-        // Check if there are any ledger records for today (any narration type)
-        boolean hasLedgerRecords = ledgerAPIResponses.stream()
-                .anyMatch(data -> data.getVoucherdate().equals(localDate));
-        
+
         // Filter for funds deposits/withdrawals for today only
-        List<LedgerAPIResponse> fundsTransactions = ledgerAPIResponses.stream()
-                .filter(data -> (data.getNarration().equals("Funds Withdrawal") || data.getNarration().equals("Funds Deposited")))
-                .filter(data -> data.getVoucherdate().equals(localDate))
-                .toList();
-        
+        List<LedgerAPIResponse> fundsTransactions = ledgerAPIResponses.stream().filter(data -> (data.getNarration().equals("Funds Withdrawal") || data.getNarration().equals("Funds Deposited"))).filter(data -> data.getVoucherdate().equals(localDate)).toList();
+
+        boolean hasLedgerRecords = !fundsTransactions.isEmpty();
+
         // Calculate net change (deposits - withdrawals)
-        BigDecimal sum = fundsTransactions.stream()
-                .map(data -> (data.getCredit() != null ? data.getCredit() : BigDecimal.ZERO)
-                        .subtract(data.getDebit() != null ? data.getDebit() : BigDecimal.ZERO))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+        BigDecimal sum = fundsTransactions.stream().map(data -> (data.getCredit() != null ? data.getCredit() : BigDecimal.ZERO).subtract(data.getDebit() != null ? data.getDebit() : BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new LedgerAnalysisResult(sum.doubleValue(), hasLedgerRecords);
     }
-    
+
     /**
      * Backward compatibility method - delegates to new combined method
      */
     public double getCurrentInvestedAmount() throws IOException, InterruptedException {
-        return getCurrentInvestedAmountAndLedgerActivity().getInvestedAmount();
+        return getCurrentInvestedAmountAndLedgerActivity().investedAmount();
     }
-    
-    /**
-     * Result class to hold both invested amount and ledger activity status
-     */
-    public static class LedgerAnalysisResult {
-        private final double investedAmount;
-        private final boolean hasLedgerRecords;
-        
-        public LedgerAnalysisResult(double investedAmount, boolean hasLedgerRecords) {
-            this.investedAmount = investedAmount;
-            this.hasLedgerRecords = hasLedgerRecords;
-        }
-        
-        public double getInvestedAmount() { return investedAmount; }
-        public boolean hasLedgerRecords() { return hasLedgerRecords; }
-    }
-    
+
     private String generateDhanURL(String path) {
         return dhanBaseURL + path;
     }
-    
+
     private String executeDhanAPI(String url) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
-                .header("access-token", accessToken)
-                .timeout(Duration.ofSeconds(30))
-                .GET()
-                .build();
-        
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/json").header("Content-Type", "application/json").header("access-token", accessToken).timeout(Duration.ofSeconds(30)).GET().build();
+
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        
+
         if (response.statusCode() != 200) {
             throw new RuntimeException("Dhan API call failed: HTTP " + response.statusCode() + " - " + response.body());
         }
-        
+
         return response.body();
     }
-    
+
     private List<LedgerAPIResponse> executeDhanLedgerAPI(String url) throws IOException, InterruptedException {
         String response = executeDhanAPI(url);
         return convertStringToListOfObj(response, LedgerAPIResponse.class);
     }
-    
+
     private <T> T convertStringToObj(String jsonString, Class<T> clazz) throws IOException {
         return objectMapper.readValue(jsonString, clazz);
     }
-    
+
     private <T> List<T> convertStringToListOfObj(String jsonString, Class<T> clazz) throws IOException {
         JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
         return objectMapper.readValue(jsonString, listType);
     }
-    
+
     /**
-     * Data class to hold Dhan account calculation results
-     */
-    public static class DhanAccountData {
-        private final double totalValue;
-        private final double fundBalance;
-        private final double holdingsValue;
-        private final double positionsValue;
-        
-        public DhanAccountData(double totalValue, double fundBalance, double holdingsValue, double positionsValue) {
-            this.totalValue = totalValue;
-            this.fundBalance = fundBalance;
-            this.holdingsValue = holdingsValue;
-            this.positionsValue = positionsValue;
-        }
-        
-        public double getTotalValue() { return totalValue; }
-        public double getFundBalance() { return fundBalance; }
-        public double getHoldingsValue() { return holdingsValue; }
-        public double getPositionsValue() { return positionsValue; }
+         * Result class to hold both invested amount and ledger activity status
+         */
+        public record LedgerAnalysisResult(double investedAmount, boolean hasLedgerRecords) {
+    }
+
+    /**
+         * Data class to hold Dhan account calculation results
+         */
+        public record DhanAccountData(double totalValue, double fundBalance, double holdingsValue, double positionsValue) {
     }
 }

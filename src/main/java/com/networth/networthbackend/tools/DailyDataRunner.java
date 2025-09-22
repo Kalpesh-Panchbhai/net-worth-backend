@@ -391,7 +391,7 @@ public class DailyDataRunner {
 
             // Get both invested amount and ledger activity status in single API call
             DhanDataService.LedgerAnalysisResult ledgerResult = dhanDataService.getCurrentInvestedAmountAndLedgerActivity();
-            double currentInvested = ledgerResult.getInvestedAmount();
+            double currentInvested = ledgerResult.investedAmount();
             boolean hasLedgerRecords = ledgerResult.hasLedgerRecords();
 
             // Find last invested amount from account_holding_values_daily and add to current invested
@@ -409,7 +409,7 @@ public class DailyDataRunner {
                 context.upsert().setLong(1, accountId);
                 context.upsert().setLong(2, dhanHoldingId);
                 context.upsert().setDate(3, java.sql.Date.valueOf(context.today()));
-                context.upsert().setBigDecimal(4, BigDecimal.valueOf(dhanAccountData.getTotalValue()));
+                context.upsert().setBigDecimal(4, BigDecimal.valueOf(dhanAccountData.totalValue()));
                 context.upsert().setBigDecimal(5, BigDecimal.valueOf(totalInvested));
                 context.upsert().addBatch();
                 pending++;
