@@ -19,8 +19,6 @@ import java.util.concurrent.Executors;
 
 public class DailyDataRunner {
 
-    // ---- Common data structures ----
-
     public static void main(String[] args) throws Exception {
         System.out.println(LocalDateTime.now());
         run();
@@ -385,11 +383,15 @@ public class DailyDataRunner {
     }
 
     private static int processDhanApiAccount(ProcessingContext context, long accountId, DhanDataService dhanDataService, int pending) throws Exception {
-        try {
-            // Use the exact same calculation logic as ChartService.generateDhanNonBrokerAccountData()
-            DhanDataService.DhanAccountData dhanAccountData = dhanDataService.calculateDhanAccountData();
+        Long dhanHoldingId = findOrCreateDhanHolding(context.conn(), accountId);
+        if (dhanHoldingId == null) {
+            System.err.println("Failed to find or create __ACCT__ holding for account " + accountId);
+            return pending;
+        }
 
-            // Get both invested amount and ledger activity status in single API call
+        try {
+            // Try to fetch data from Dhan API
+            DhanDataService.DhanAccountData dhanAccountData = dhanDataService.calculateDhanAccountData();
             DhanDataService.LedgerAnalysisResult ledgerResult = dhanDataService.getCurrentInvestedAmountAndLedgerActivity();
             double currentInvested = ledgerResult.investedAmount();
             boolean hasLedgerRecords = ledgerResult.hasLedgerRecords();
@@ -398,35 +400,45 @@ public class DailyDataRunner {
             double lastInvestedAmount = getLastInvestedAmount(context.conn(), accountId);
             double totalInvested = currentInvested + lastInvestedAmount;
 
-            // Delete existing data for today for this account
-            deleteDailyForAccountDate(context.conn(), accountId, context.today());
+            // Get last available date from database (excluding today to ensure today is always updated)
+            LocalDate lastAvailableDate = getLastAvailableDateBeforeToday(context.conn(), accountId, context.today());
+            LocalDate startDate = (lastAvailableDate != null) ? lastAvailableDate.plusDays(1) : context.today();
 
-            // Create a single "__ACCT__" holding for the total account value (same as ChartService approach)
-            Long dhanHoldingId = findOrCreateDhanHolding(context.conn(), accountId);
+            // Delete existing data from startDate onwards for this account
+            deleteDailyForAccountFromDate(context.conn(), accountId, startDate);
 
-            if (dhanHoldingId != null) {
-                // Insert the calculated total value as a single holding entry
-                context.upsert().setLong(1, accountId);
-                context.upsert().setLong(2, dhanHoldingId);
-                context.upsert().setDate(3, java.sql.Date.valueOf(context.today()));
-                context.upsert().setBigDecimal(4, BigDecimal.valueOf(dhanAccountData.totalValue()));
-                context.upsert().setBigDecimal(5, BigDecimal.valueOf(totalInvested));
-                context.upsert().addBatch();
-                pending++;
+            // Forward-fill from startDate to today with API values
+            pending = forwardFillDhanData(context, accountId, dhanHoldingId, startDate, context.today(), BigDecimal.valueOf(dhanAccountData.totalValue()), BigDecimal.valueOf(totalInvested), pending);
 
-                // Only insert totalInvested in transactions table if there are ledger records for current date
-                if (hasLedgerRecords) {
-                    insertTransactionRecord(context.conn(), accountId, dhanHoldingId, context.today(), totalInvested);
-                }
-
-                if (pending >= context.batchSize()) {
-                    context.upsert().executeBatch();
-                    pending = 0;
-                }
+            // Only insert totalInvested in transactions table if there are ledger records for current date
+            if (hasLedgerRecords) {
+                insertTransactionRecord(context.conn(), accountId, dhanHoldingId, context.today(), totalInvested);
             }
+
         } catch (Exception e) {
-            System.err.println("Dhan API error for account " + accountId + ": " + e.getMessage());
-            throw e;
+            System.err.println("Dhan API error for account " + accountId + ": " + e.getMessage() + ". Carrying forward last available data.");
+
+            // API failed - carry forward last available data
+            DhanLastData lastData = getLastDhanData(context.conn(), accountId, dhanHoldingId);
+
+            if (lastData != null) {
+                LocalDate startDate = lastData.date().plusDays(1);
+
+                // Only proceed if there are missing dates
+                if (!startDate.isAfter(context.today())) {
+                    System.out.println("Carrying forward data for account " + accountId + " from " + startDate + " to " + context.today() + ": value=" + lastData.value() + ", invested=" + lastData.invested());
+
+                    // Delete existing data from startDate onwards
+                    deleteDailyForAccountFromDate(context.conn(), accountId, startDate);
+
+                    // Forward-fill with last available data
+                    pending = forwardFillDhanData(context, accountId, dhanHoldingId, startDate, context.today(), lastData.value(), lastData.invested(), pending);
+                } else {
+                    System.out.println("No missing dates for account " + accountId + ". Last data date: " + lastData.date());
+                }
+            } else {
+                System.err.println("No historical data available for account " + accountId + ". Cannot carry forward.");
+            }
         }
 
         return pending;
@@ -480,6 +492,104 @@ public class DailyDataRunner {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, accountId);
             ps.setDate(2, java.sql.Date.valueOf(date));
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Get the last available date for an account from account_holding_values_daily table
+     */
+    private static LocalDate getLastAvailableDateForAccount(Connection conn, long accountId) throws SQLException {
+        String sql = Constants.SQL.SELECT + "MAX(" + Constants.DB.AccountHoldingValuesDaily.COL_DATE + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    java.sql.Date date = rs.getDate(1);
+                    return date != null ? date.toLocalDate() : null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the last available date for an account before today (excluding today)
+     * This ensures today's data is always refreshed when API succeeds
+     */
+    private static LocalDate getLastAvailableDateBeforeToday(Connection conn, long accountId, LocalDate today) throws SQLException {
+        String sql = Constants.SQL.SELECT + "MAX(" + Constants.DB.AccountHoldingValuesDaily.COL_DATE + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " < ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setDate(2, java.sql.Date.valueOf(today));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    java.sql.Date date = rs.getDate(1);
+                    return date != null ? date.toLocalDate() : null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the last available data (value and invested) for a Dhan account
+     */
+    private static DhanLastData getLastDhanData(Connection conn, long accountId, long holdingId) throws SQLException {
+        String sql = Constants.SQL.SELECT + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.COMMA_SPACE + Constants.DB.AccountHoldingValuesDaily.COL_CURRENT_DAY_VALUE + Constants.SQL.COMMA_SPACE + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_HOLDING_ID + Constants.SQL.EQ_PARAM + Constants.SQL.ORDER_BY + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " DESC LIMIT 1";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setLong(2, holdingId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    LocalDate date = rs.getDate(1).toLocalDate();
+                    BigDecimal value = rs.getBigDecimal(2);
+                    BigDecimal invested = rs.getBigDecimal(3);
+                    return new DhanLastData(date, value, invested);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Forward-fill Dhan data from startDate to endDate (inclusive)
+     */
+    private static int forwardFillDhanData(ProcessingContext context, long accountId, long holdingId, LocalDate startDate, LocalDate endDate, BigDecimal value, BigDecimal invested, int pending) throws SQLException {
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            context.upsert().setLong(1, accountId);
+            context.upsert().setLong(2, holdingId);
+            context.upsert().setDate(3, java.sql.Date.valueOf(currentDate));
+            context.upsert().setBigDecimal(4, value);
+            context.upsert().setBigDecimal(5, invested);
+            context.upsert().addBatch();
+            pending++;
+
+            if (pending >= context.batchSize()) {
+                context.upsert().executeBatch();
+                pending = 0;
+            }
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        return pending;
+    }
+
+    /**
+     * Delete daily data for an account from a specific date onwards
+     */
+    private static void deleteDailyForAccountFromDate(Connection conn, long accountId, LocalDate fromDate) throws SQLException {
+        String sql = Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.GE + Constants.SQL.PARAM;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            ps.setDate(2, java.sql.Date.valueOf(fromDate));
             ps.executeUpdate();
         }
     }
@@ -538,5 +648,8 @@ public class DailyDataRunner {
     }
 
     private record Holding(long id, String symbol) {
+    }
+
+    private record DhanLastData(LocalDate date, BigDecimal value, BigDecimal invested) {
     }
 }
