@@ -392,13 +392,6 @@ public class DailyDataRunner {
         try {
             // Try to fetch data from Dhan API
             DhanDataService.DhanAccountData dhanAccountData = dhanDataService.calculateDhanAccountData();
-            DhanDataService.LedgerAnalysisResult ledgerResult = dhanDataService.getCurrentInvestedAmountAndLedgerActivity();
-            double currentInvested = ledgerResult.investedAmount();
-            boolean hasLedgerRecords = ledgerResult.hasLedgerRecords();
-
-            // Find last invested amount from account_holding_values_daily and add to current invested
-            double lastInvestedAmount = getLastInvestedAmount(context.conn(), accountId);
-            double totalInvested = currentInvested + lastInvestedAmount;
 
             // Get last available date from database (excluding today to ensure today is always updated)
             LocalDate lastAvailableDate = getLastAvailableDateBeforeToday(context.conn(), accountId, context.today());
@@ -408,12 +401,7 @@ public class DailyDataRunner {
             deleteDailyForAccountFromDate(context.conn(), accountId, startDate);
 
             // Forward-fill from startDate to today with API values
-            pending = forwardFillDhanData(context, accountId, dhanHoldingId, startDate, context.today(), BigDecimal.valueOf(dhanAccountData.totalValue()), BigDecimal.valueOf(totalInvested), pending);
-
-            // Only insert totalInvested in transactions table if there are ledger records for current date
-            if (hasLedgerRecords) {
-                insertTransactionRecord(context.conn(), accountId, dhanHoldingId, context.today(), totalInvested);
-            }
+            pending = forwardFillDhanData(context, accountId, dhanHoldingId, startDate, context.today(), BigDecimal.valueOf(dhanAccountData.totalValue()), BigDecimal.valueOf(dhanAccountData.totalValue()), pending);
 
         } catch (Exception e) {
             System.err.println("Dhan API error for account " + accountId + ": " + e.getMessage() + ". Carrying forward last available data.");
@@ -442,76 +430,6 @@ public class DailyDataRunner {
         }
 
         return pending;
-    }
-
-    private static double getLastInvestedAmount(Connection conn, long accountId) throws SQLException {
-        String sql = Constants.SQL.SELECT + "SUM(" + Constants.DB.AccountHoldingValuesDaily.COL_INVESTED + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + " = (" + Constants.SQL.SELECT + "MAX(" + Constants.DB.AccountHoldingValuesDaily.COL_DATE + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + ")";
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, accountId);
-            ps.setLong(2, accountId);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    BigDecimal result = rs.getBigDecimal(1);
-                    return result != null ? result.doubleValue() : 0.0;
-                }
-            }
-        }
-
-        return 0.0;
-    }
-
-    private static void insertTransactionRecord(Connection conn, long accountId, long holdingId, LocalDate date, double totalInvested) throws SQLException {
-        // First, delete any existing transaction for this account, holding, and date
-        String deleteSql = Constants.SQL.DELETE_FROM + Constants.DB.Transactions.TABLE + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Transactions.COL_HOLDING_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.Transactions.COL_TXN_DATE + Constants.SQL.EQ_PARAM;
-
-        try (PreparedStatement deletePs = conn.prepareStatement(deleteSql)) {
-            deletePs.setLong(1, accountId);
-            deletePs.setLong(2, holdingId);
-            deletePs.setDate(3, java.sql.Date.valueOf(date));
-            deletePs.executeUpdate();
-        }
-
-        // Insert new transaction record with totalInvested amount
-        String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Transactions.TABLE + " (" + Constants.DB.Transactions.COL_ACCOUNT_ID + ", " + Constants.DB.Transactions.COL_HOLDING_ID + ", " + Constants.DB.Transactions.COL_TXN_DATE + ", " + Constants.DB.Transactions.COL_INVESTED + ", " + Constants.DB.Transactions.COL_VALUE + ") VALUES (?, ?, ?, ?, ?)";
-
-        try (PreparedStatement insertPs = conn.prepareStatement(insertSql)) {
-            insertPs.setLong(1, accountId);
-            insertPs.setLong(2, holdingId);
-            insertPs.setDate(3, java.sql.Date.valueOf(date));
-            insertPs.setBigDecimal(4, BigDecimal.valueOf(totalInvested));
-            insertPs.setBigDecimal(5, BigDecimal.valueOf(totalInvested)); // Set value same as invested for Dhan API accounts
-            insertPs.executeUpdate();
-        }
-    }
-
-    private static void deleteDailyForAccountDate(Connection conn, long accountId, LocalDate date) throws SQLException {
-        String sql = Constants.SQL.DELETE_FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM + Constants.SQL.AND + Constants.DB.AccountHoldingValuesDaily.COL_DATE + Constants.SQL.EQ_PARAM;
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, accountId);
-            ps.setDate(2, java.sql.Date.valueOf(date));
-            ps.executeUpdate();
-        }
-    }
-
-    /**
-     * Get the last available date for an account from account_holding_values_daily table
-     */
-    private static LocalDate getLastAvailableDateForAccount(Connection conn, long accountId) throws SQLException {
-        String sql = Constants.SQL.SELECT + "MAX(" + Constants.DB.AccountHoldingValuesDaily.COL_DATE + ")" + Constants.SQL.FROM + Constants.DB.AccountHoldingValuesDaily.TABLE + Constants.SQL.WHERE + Constants.DB.AccountHoldingValuesDaily.COL_ACCOUNT_ID + Constants.SQL.EQ_PARAM;
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, accountId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    java.sql.Date date = rs.getDate(1);
-                    return date != null ? date.toLocalDate() : null;
-                }
-            }
-        }
-        return null;
     }
 
     /**
