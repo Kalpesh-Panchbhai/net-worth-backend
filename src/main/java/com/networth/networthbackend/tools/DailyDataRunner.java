@@ -77,6 +77,17 @@ public class DailyDataRunner {
         return null;
     }
 
+    private static String getAccountName(Connection conn, long accountId) throws SQLException {
+        String sql = Constants.SQL.SELECT + Constants.DB.Accounts.COL_NAME + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString(1);
+            }
+        }
+        return null;
+    }
+
     private static int processAccountsBatch(ProcessingContext context, List<Long> accountIds, boolean isBroker, int pendingBatches) throws Exception {
         int pending = pendingBatches;
 
@@ -107,7 +118,11 @@ public class DailyDataRunner {
 
     private static int processBrokerAccount(ProcessingContext context, long accountId, Map<Long, List<Tx>> txByHolding, int pending) throws Exception {
         String accountCurrency = getAccountCurrency(context.conn(), accountId);
+        String accountName = getAccountName(context.conn(), accountId);
+        boolean isGoldAccount = accountName != null && accountName.toUpperCase().contains("GOLD");
+        
         YahooFinanceClient yf = new YahooFinanceClient();
+        GoldPriceClient goldClient = new GoldPriceClient();
         ConcurrentHashMap<String, Map<LocalDate, BigDecimal>> fxCache = new ConcurrentHashMap<>();
 
         List<Holding> holdings = readHoldings(context.conn(), accountId);
@@ -126,7 +141,12 @@ public class DailyDataRunner {
 
             priceFutures.put(h.id, CompletableFuture.supplyAsync(() -> {
                 try {
-                    return getPriceMapInAccountCurrencyCached(yf, fxCache, h.symbol, accountCurrency, range.start(), range.end());
+                    // Check if this is a gold account (account name contains "GOLD")
+                    if (isGoldAccount) {
+                        return goldClient.getGoldPricesInINR(range.start(), range.end());
+                    } else {
+                        return getPriceMapInAccountCurrencyCached(yf, fxCache, h.symbol, accountCurrency, range.start(), range.end());
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -551,16 +571,15 @@ public class DailyDataRunner {
         return null;
     }
 
+
+    // ---- Data structures ----
+
     private record ProcessingContext(Connection conn, PreparedStatement upsert, PreparedStatement deletePs,
                                      int batchSize, Integer windowDays, LocalDate today) {
     }
 
-    // ---- Remaining helper methods ----
-
     private record DateRange(LocalDate start, LocalDate end) {
     }
-
-    // ---- Data structures ----
 
     private record Tx(LocalDate date, BigDecimal invested, BigDecimal value) {
     }
