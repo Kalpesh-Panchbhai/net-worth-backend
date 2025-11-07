@@ -61,7 +61,7 @@ public class DhanDataService {
         String url = generateDhanURL("positions");
         String response = executeDhanAPI(url);
         List<PositionAPIResponse> positionAPIResponseList = convertStringToListOfObj(response, PositionAPIResponse.class);
-        return positionAPIResponseList.stream().filter(data -> data.getNetQty() > 0).mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
+        return positionAPIResponseList.stream().filter(data -> data.getNetQty() >= 0).mapToDouble(item -> item.getRealizedProfit() + item.getUnrealizedProfit()).sum();
     }
 
     /**
