@@ -102,7 +102,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
             return switch (httpMethod.toUpperCase()) {
                 case "GET" -> Constants.Actions.GET;
                 case "POST" -> Constants.Actions.CREATE;
-                case "PUT" -> Constants.Actions.UPDATE;
+                case "PUT", "PATCH" -> Constants.Actions.UPDATE;
                 case "DELETE" -> Constants.Actions.DELETE;
                 default -> null;
             };

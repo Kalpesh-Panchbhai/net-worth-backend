@@ -2,7 +2,7 @@ package com.networth.networthbackend.main;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.networth.networthbackend.api.ApiRouterHandler;
+import com.networth.networthbackend.api.EntityHandler;
 import com.networth.networthbackend.common.Constants;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Slf4j
 public class HttpServerRunner {
 
-    private final ApiRouterHandler handler = new ApiRouterHandler();
+    private final EntityHandler handler = new EntityHandler();
 
     public void start(int port) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -73,13 +73,15 @@ public class HttpServerRunner {
 
                 Map<String, String> queryParams = parseQuery(uri.getRawQuery());
                 Map<String, String> headers = toSingleValueHeaders(exchange.getRequestHeaders());
+                Map<String, String> pathParams = extractPathParams(path);
 
                 APIGatewayProxyRequestEvent request = new APIGatewayProxyRequestEvent()
                         .withHttpMethod(method)
                         .withPath(path)
                         .withBody(body)
                         .withQueryStringParameters(queryParams)
-                        .withHeaders(headers);
+                        .withHeaders(headers)
+                        .withPathParameters(pathParams);
 
                 APIGatewayProxyResponseEvent response = handler.handleRequest(request, null);
 
@@ -131,6 +133,23 @@ public class HttpServerRunner {
                 }
             }
             return map;
+        }
+
+        /**
+         * Extracts path parameters from URL paths like /entity/123 -> {id: "123"}
+         * Mimics AWS API Gateway path parameter extraction.
+         */
+        private Map<String, String> extractPathParams(String path) {
+            if (path == null || path.isEmpty()) return null;
+            String[] parts = path.split("/");
+            // Expected format: /entity or /entity/{id}
+            // parts[0] = "", parts[1] = entity, parts[2] = id (optional)
+            if (parts.length >= 3 && !parts[2].isEmpty()) {
+                Map<String, String> params = new HashMap<>();
+                params.put("id", parts[2]);
+                return params;
+            }
+            return null;
         }
     }
 
