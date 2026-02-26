@@ -12,6 +12,7 @@ import com.networth.networthbackend.holdings.HoldingApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
+import com.networth.networthbackend.refresh.RefreshApiHandler;
 import com.networth.networthbackend.transactions.TransactionApiHandler;
 import com.networth.networthbackend.users.UserApiHandler;
 import com.networth.networthbackend.watchlists.AccountWatchlistApiHandler;
@@ -128,6 +129,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
             case "account-watchlists", "accountwatchlists" -> new AccountWatchlistApiHandler();
             case "watchlist-accounts", "watchlistaccounts" -> new WatchlistAccountApiHandler();
             case "watchlists", "watchlist" -> new WatchlistApiHandler();
+            case "refresh" -> new RefreshApiHandler();
             default -> null;
         };
     }

@@ -138,6 +138,7 @@ public class Constants {
         public static final String ENTITY_NOT_SUPPORTED = "ENTITY_NOT_SUPPORTED";
         public static final String ACTION_REQUIRED = "ACTION_REQUIRED";
         public static final String ACTION_NOT_SUPPORTED = "ACTION_NOT_SUPPORTED";
+        public static final String REFRESH_FAILED = "REFRESH_FAILED";
     }
 
     @UtilityClass
@@ -178,6 +179,7 @@ public class Constants {
         public static final String ACCOUNT_WATCHLISTS = "account-watchlists";
         public static final String TRANSACTIONS = "transactions";
         public static final String CHART_DATA = "chart-data";
+        public static final String REFRESH = "refresh";
     }
 
     @UtilityClass

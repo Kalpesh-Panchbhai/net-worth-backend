@@ -388,6 +388,10 @@ public class DailyDataRunner {
         }
 
         DhanDataService dhanDataService = new DhanDataService();
+        if (!dhanDataService.isAvailable()) {
+            return pendingBatches;
+        }
+
         int pending = pendingBatches;
 
         for (long accountId : accountIds) {

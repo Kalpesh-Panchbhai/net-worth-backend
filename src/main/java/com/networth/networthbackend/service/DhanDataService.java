@@ -35,10 +35,13 @@ public class DhanDataService {
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         this.accessToken = System.getenv("DHAN_ACCESS_TOKEN");
+    }
 
-        if (accessToken == null || accessToken.trim().isEmpty()) {
-            throw new IllegalStateException("DHAN_ACCESS_TOKEN environment variable is required");
-        }
+    /**
+     * Check if the Dhan API service is available (token is configured)
+     */
+    public boolean isAvailable() {
+        return accessToken != null && !accessToken.trim().isEmpty();
     }
 
     /**
