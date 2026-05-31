@@ -18,6 +18,7 @@ import com.networth.networthbackend.users.UserApiHandler;
 import com.networth.networthbackend.watchlists.AccountWatchlistApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistAccountApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistApiHandler;
+import com.networth.networthbackend.tools.YahooSearchApiHandler;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -130,6 +131,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
             case "watchlist-accounts", "watchlistaccounts" -> new WatchlistAccountApiHandler();
             case "watchlists", "watchlist" -> new WatchlistApiHandler();
             case "refresh" -> new RefreshApiHandler();
+            case "yahoo-search", "yahoosearch" -> new YahooSearchApiHandler();
             default -> null;
         };
     }

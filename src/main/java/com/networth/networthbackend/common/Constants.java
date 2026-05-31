@@ -97,6 +97,7 @@ public class Constants {
         public static final String GT = " > ";
         public static final String LT = " < ";
         public static final String EXISTS_OPEN = "EXISTS (";
+        public static final String NOT_EXISTS_OPEN = "NOT EXISTS (";
     }
 
     @UtilityClass

@@ -217,7 +217,7 @@ public class DailyDataRunner {
     // ---- Common transaction and data access methods ----
 
     private static List<Long> findEligibleNonBrokerAccounts(Connection conn) throws SQLException {
-        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_0 + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN;
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + Constants.SQL.EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN;
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
@@ -371,7 +371,7 @@ public class DailyDataRunner {
     }
 
     private static List<Long> findEligibleDhanApiAccounts(Connection conn) throws SQLException {
-        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_1 + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_IS_ACTIVE + Constants.SQL.EQ_1;
+        String sql = Constants.SQL.SELECT + "a." + Constants.DB.Accounts.COL_ID + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a" + Constants.SQL.WHERE + "a." + Constants.DB.Accounts.COL_TYPE + Constants.SQL.NEQ_PARAM + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA + Constants.SQL.EQ_1 + Constants.SQL.AND + "a." + Constants.DB.Accounts.COL_IS_ACTIVE + Constants.SQL.EQ_1 + Constants.SQL.AND + Constants.SQL.NOT_EXISTS_OPEN + Constants.SQL.SELECT + "1" + Constants.SQL.FROM + Constants.DB.Transactions.TABLE + " t" + Constants.SQL.WHERE + "t." + Constants.DB.Transactions.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID + Constants.SQL.CLOSE_PAREN;
         List<Long> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, Constants.Accounts.TYPE_BROKER);
