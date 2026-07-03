@@ -9,6 +9,7 @@ import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 import com.networth.networthbackend.service.KiteApiClient;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
+import com.zerodhatech.models.Holding;
 import com.zerodhatech.models.MFHolding;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +48,8 @@ public class SyncMfApiHandler extends EntityHandlerBase {
             case "callback" -> handleCallback(request);
             case "preview" -> handlePreview(request);
             case "confirm" -> handleConfirm(request);
+            case "stock-preview" -> handleStockPreview(request);
+            case "stock-confirm" -> handleStockConfirm(request);
             default -> badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
                     String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, "sync-mf", mode));
         };
@@ -225,6 +228,114 @@ public class SyncMfApiHandler extends EntityHandlerBase {
         }
 
         return ok(Map.of("inserted", inserted));
+    }
+
+    private APIGatewayProxyResponseEvent handleStockPreview(APIGatewayProxyRequestEvent request) throws Exception {
+        String accountIdStr = queryParam(request, "accountId");
+        if (accountIdStr == null || accountIdStr.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "accountId is required");
+        }
+        long accountId = Long.parseLong(accountIdStr);
+
+        String accessToken = loadAccessToken();
+        if (accessToken == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "Not logged in to Kite. Please login first.");
+        }
+
+        List<Holding> kiteHoldings;
+        try {
+            kiteHoldings = kiteClient.getStockHoldings(accessToken);
+        } catch (Exception | KiteException e) {
+            log.error("Failed to fetch Kite stock holdings", e);
+            deleteAccessToken();
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "Failed to fetch Kite holdings. Token may be expired. Please login again.");
+        }
+
+        BigDecimal totalInvested = BigDecimal.ZERO;
+        BigDecimal totalValue = BigDecimal.ZERO;
+        for (Holding h : kiteHoldings) {
+            totalInvested = totalInvested.add(BigDecimal.valueOf((long) h.quantity).multiply(BigDecimal.valueOf(h.averagePrice)));
+            totalValue = totalValue.add(BigDecimal.valueOf((long) h.quantity).multiply(BigDecimal.valueOf(h.lastPrice)));
+        }
+        totalInvested = totalInvested.setScale(2, RoundingMode.HALF_UP);
+        totalValue = totalValue.setScale(2, RoundingMode.HALF_UP);
+
+        // Check if today's transaction already exists
+        boolean alreadySynced = false;
+        LocalDate today = LocalDate.now();
+        try (Connection conn = Database.getConnection()) {
+            String sql = "SELECT 1 FROM transactions t JOIN holdings h ON t.holding_id = h.id "
+                    + "WHERE h.account_id = ? AND t.txn_date = ? LIMIT 1";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, accountId);
+                ps.setDate(2, java.sql.Date.valueOf(today));
+                try (ResultSet rs = ps.executeQuery()) {
+                    alreadySynced = rs.next();
+                }
+            }
+        }
+
+        return ok(Map.of(
+                "invested", totalInvested,
+                "value", totalValue,
+                "holdingCount", kiteHoldings.size(),
+                "alreadySynced", alreadySynced,
+                "date", today.toString()
+        ));
+    }
+
+    private APIGatewayProxyResponseEvent handleStockConfirm(APIGatewayProxyRequestEvent request) throws Exception {
+        JsonNode json = getJsonBody(request);
+        if (json == null || !json.hasNonNull("accountId")) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "accountId is required");
+        }
+        long accountId = json.get("accountId").asLong();
+        BigDecimal invested = json.get("invested").decimalValue();
+        BigDecimal value = json.get("value").decimalValue();
+        LocalDate today = LocalDate.now();
+
+        try (Connection conn = Database.getConnection()) {
+            // Get or create default holding for this account
+            long holdingId;
+            String findHolding = "SELECT id FROM holdings WHERE account_id = ? LIMIT 1";
+            try (PreparedStatement ps = conn.prepareStatement(findHolding)) {
+                ps.setLong(1, accountId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        holdingId = rs.getLong("id");
+                    } else {
+                        // Create default holding
+                        String insertHolding = "INSERT INTO holdings (account_id, name, symbol) VALUES (?, ?, ?)";
+                        try (PreparedStatement ips = conn.prepareStatement(insertHolding, Statement.RETURN_GENERATED_KEYS)) {
+                            ips.setLong(1, accountId);
+                            ips.setString(2, "Zerodha Kite");
+                            ips.setString(3, "__ACCT__");
+                            ips.executeUpdate();
+                            try (ResultSet gk = ips.getGeneratedKeys()) {
+                                gk.next();
+                                holdingId = gk.getLong(1);
+                            }
+                        }
+                        log.info("Created default holding for stock account: holdingId={}", holdingId);
+                    }
+                }
+            }
+
+            // Upsert transaction for today
+            String upsertTxn = "INSERT INTO transactions (account_id, holding_id, txn_date, invested, value) VALUES (?, ?, ?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE invested = VALUES(invested), value = VALUES(value)";
+            try (PreparedStatement ps = conn.prepareStatement(upsertTxn)) {
+                ps.setLong(1, accountId);
+                ps.setLong(2, holdingId);
+                ps.setDate(3, java.sql.Date.valueOf(today));
+                ps.setBigDecimal(4, invested);
+                ps.setBigDecimal(5, value);
+                ps.executeUpdate();
+            }
+            log.info("Stock sync: accountId={}, date={}, invested={}, value={}", accountId, today, invested, value);
+        }
+
+        return ok(Map.of("synced", true, "date", today.toString()));
     }
 
     // --- DB helpers ---

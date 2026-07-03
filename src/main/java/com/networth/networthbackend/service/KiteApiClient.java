@@ -2,6 +2,7 @@ package com.networth.networthbackend.service;
 
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
+import com.zerodhatech.models.Holding;
 import com.zerodhatech.models.MFHolding;
 import com.zerodhatech.models.User;
 import lombok.extern.slf4j.Slf4j;
@@ -48,5 +49,10 @@ public class KiteApiClient {
     public List<MFHolding> getMfHoldings(String accessToken) throws KiteException, IOException {
         kiteConnect.setAccessToken(accessToken);
         return kiteConnect.getMFHoldings();
+    }
+
+    public List<Holding> getStockHoldings(String accessToken) throws KiteException, IOException {
+        kiteConnect.setAccessToken(accessToken);
+        return kiteConnect.getHoldings();
     }
 }
