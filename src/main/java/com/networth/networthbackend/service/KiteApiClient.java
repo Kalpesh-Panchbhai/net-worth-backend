@@ -4,11 +4,13 @@ import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 import com.zerodhatech.models.Holding;
 import com.zerodhatech.models.MFHolding;
+import com.zerodhatech.models.Position;
 import com.zerodhatech.models.User;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class KiteApiClient {
@@ -54,5 +56,16 @@ public class KiteApiClient {
     public List<Holding> getStockHoldings(String accessToken) throws KiteException, IOException {
         kiteConnect.setAccessToken(accessToken);
         return kiteConnect.getHoldings();
+    }
+
+    /**
+     * Returns the net open positions for the day (intraday, F&O and same-day
+     * delivery buys that have not yet settled into holdings).
+     */
+    public List<Position> getStockPositions(String accessToken) throws KiteException, IOException {
+        kiteConnect.setAccessToken(accessToken);
+        Map<String, List<Position>> positions = kiteConnect.getPositions();
+        List<Position> net = positions.get("net");
+        return net != null ? net : List.of();
     }
 }

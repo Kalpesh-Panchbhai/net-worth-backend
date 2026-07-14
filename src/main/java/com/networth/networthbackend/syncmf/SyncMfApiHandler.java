@@ -11,6 +11,7 @@ import com.networth.networthbackend.service.KiteApiClient;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 import com.zerodhatech.models.Holding;
 import com.zerodhatech.models.MFHolding;
+import com.zerodhatech.models.Position;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -243,10 +244,12 @@ public class SyncMfApiHandler extends EntityHandlerBase {
         }
 
         List<Holding> kiteHoldings;
+        List<Position> kitePositions;
         try {
             kiteHoldings = kiteClient.getStockHoldings(accessToken);
+            kitePositions = kiteClient.getStockPositions(accessToken);
         } catch (Exception | KiteException e) {
-            log.error("Failed to fetch Kite stock holdings", e);
+            log.error("Failed to fetch Kite stock holdings/positions", e);
             deleteAccessToken();
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "Failed to fetch Kite holdings. Token may be expired. Please login again.");
         }
@@ -257,6 +260,19 @@ public class SyncMfApiHandler extends EntityHandlerBase {
             totalInvested = totalInvested.add(BigDecimal.valueOf((long) h.quantity).multiply(BigDecimal.valueOf(h.averagePrice)));
             totalValue = totalValue.add(BigDecimal.valueOf((long) h.quantity).multiply(BigDecimal.valueOf(h.lastPrice)));
         }
+
+        // Open long positions for the day: same-day delivery (CNC) buys that have not yet
+        // settled into holdings, plus intraday and F&O. Valued at market like holdings.
+        // Only net-long positions count; sold/short (negative) and squared-off (zero) are skipped.
+        int openPositionCount = 0;
+        for (Position p : kitePositions) {
+            if (p.netQuantity <= 0) continue; // only net-long open positions
+            double lastPrice = p.lastPrice != null ? p.lastPrice : p.averagePrice;
+            totalInvested = totalInvested.add(BigDecimal.valueOf(p.netQuantity).multiply(BigDecimal.valueOf(p.averagePrice)));
+            totalValue = totalValue.add(BigDecimal.valueOf(p.netQuantity).multiply(BigDecimal.valueOf(lastPrice)));
+            openPositionCount++;
+        }
+
         totalInvested = totalInvested.setScale(2, RoundingMode.HALF_UP);
         totalValue = totalValue.setScale(2, RoundingMode.HALF_UP);
 
@@ -278,7 +294,7 @@ public class SyncMfApiHandler extends EntityHandlerBase {
         return ok(Map.of(
                 "invested", totalInvested,
                 "value", totalValue,
-                "holdingCount", kiteHoldings.size(),
+                "holdingCount", kiteHoldings.size() + openPositionCount,
                 "alreadySynced", alreadySynced,
                 "date", today.toString()
         ));
