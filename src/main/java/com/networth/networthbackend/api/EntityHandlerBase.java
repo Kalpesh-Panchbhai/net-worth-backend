@@ -44,6 +44,11 @@ public abstract class EntityHandlerBase implements EntityHandlerInterface {
         return request.getPathParameters().get(name);
     }
 
+    /** True if the value is one of the app's supported currency codes. Expects an already-uppercased code. */
+    protected static boolean isValidCurrencyCode(String currency) {
+        return currency != null && Constants.Currency.SUPPORTED.contains(currency);
+    }
+
     @Override
     public abstract APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception;
 }

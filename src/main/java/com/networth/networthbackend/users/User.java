@@ -16,4 +16,5 @@ import com.networth.networthbackend.common.BaseEntity;
 @ToString(callSuper = true)
 public class User extends BaseEntity {
     private String externalUserId;
+    private String preferredCurrency;
 }

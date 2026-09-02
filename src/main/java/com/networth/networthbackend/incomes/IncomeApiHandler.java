@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.users.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -17,6 +18,8 @@ import java.util.List;
 public class IncomeApiHandler extends EntityHandlerBase {
 
     private final IncomeRepository repository = new IncomeRepository();
+    private final UserRepository userRepository = new UserRepository();
+    private final IncomeCurrencyConverter converter = new IncomeCurrencyConverter();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -60,6 +63,10 @@ public class IncomeApiHandler extends EntityHandlerBase {
         if (currency == null || currency.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CURRENCY_REQUIRED);
         }
+        currency = currency.trim().toUpperCase();
+        if (!isValidCurrencyCode(currency)) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.CURRENCY_INVALID);
+        }
         if (creditedDateStr == null || creditedDateStr.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CREDITED_DATE_REQUIRED);
         }
@@ -76,6 +83,7 @@ public class IncomeApiHandler extends EntityHandlerBase {
         } catch (SQLIntegrityConstraintViolationException e) {
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.INCOME_DUPLICATE);
         }
+        converter.enrich(List.of(created), userRepository.getPreferredCurrency(userId));
         return created(created);
     }
 
@@ -86,6 +94,7 @@ public class IncomeApiHandler extends EntityHandlerBase {
         }
         log.debug(Constants.Logs.INCOMES_LIST, userId);
         List<Income> incomes = repository.listByUserId(userId);
+        converter.enrich(incomes, userRepository.getPreferredCurrency(userId));
         log.info(Constants.Logs.INCOMES_LIST_COUNT, incomes.size(), userId);
         return ok(incomes);
     }
@@ -132,6 +141,13 @@ public class IncomeApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_UPDATE_NO_FIELDS);
         }
 
+        if (currency != null) {
+            currency = currency.trim().toUpperCase();
+            if (!isValidCurrencyCode(currency)) {
+                return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.CURRENCY_INVALID);
+            }
+        }
+
         java.time.LocalDate creditedDate = null;
         if (creditedDateStr != null) {
             try {
@@ -155,6 +171,7 @@ public class IncomeApiHandler extends EntityHandlerBase {
         }
         var updated = repository.findById(id).orElse(null);
         if (updated == null) return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.INCOME_NOT_FOUND);
+        converter.enrich(List.of(updated), userRepository.getPreferredCurrency(updated.getUserId()));
         return ok(updated);
     }
 }

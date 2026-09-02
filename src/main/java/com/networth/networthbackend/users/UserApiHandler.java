@@ -23,10 +23,45 @@ public class UserApiHandler extends EntityHandlerBase {
         }
         return switch (action.toLowerCase()) {
             case Constants.Actions.CREATE -> createOrEnsure(request);
+            case Constants.Actions.UPDATE -> updatePreferredCurrency(request);
             case Constants.Actions.DELETE -> deleteUser(request);
             default ->
                     badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, Constants.Entities.USERS, action));
         };
+    }
+
+    private APIGatewayProxyResponseEvent updatePreferredCurrency(APIGatewayProxyRequestEvent request) throws Exception {
+        String idStr = pathParam(request, Constants.Path.ID);
+        if (idStr == null || idStr.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        long id;
+        try {
+            id = Long.parseLong(idStr);
+        } catch (NumberFormatException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        JsonNode json = getJsonBody(request);
+        if (json == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
+        }
+        String currency = json.hasNonNull(Constants.Query.PREFERRED_CURRENCY) ? json.get(Constants.Query.PREFERRED_CURRENCY).asText() : null;
+        if (currency == null || currency.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.USER_PREFERRED_CURRENCY_REQUIRED);
+        }
+        currency = currency.trim().toUpperCase();
+        if (!isValidCurrencyCode(currency)) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.CURRENCY_INVALID);
+        }
+        int affected = userRepository.updatePreferredCurrency(id, currency);
+        if (affected == 0 && userRepository.findById(id).isEmpty()) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND);
+        }
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.USER_NOT_FOUND);
+        }
+        return ok(user);
     }
 
     private APIGatewayProxyResponseEvent createOrEnsure(APIGatewayProxyRequestEvent request) throws Exception {

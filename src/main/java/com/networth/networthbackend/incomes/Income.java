@@ -21,4 +21,10 @@ public class Income extends BaseEntity {
     private BigDecimal taxPaid;
     private String currency;
     private LocalDate creditedDate; // date-only
+
+    // Display-only values converted to the user's preferred currency at the credited date.
+    // Populated on read; not persisted.
+    private BigDecimal convertedNetAmount;
+    private BigDecimal convertedTaxPaid;
+    private String convertedCurrency;
 }

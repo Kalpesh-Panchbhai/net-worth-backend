@@ -2,6 +2,8 @@ package com.networth.networthbackend.common;
 
 import lombok.experimental.UtilityClass;
 
+import java.util.Set;
+
 @UtilityClass
 public class Constants {
 
@@ -148,6 +150,7 @@ public class Constants {
     public static class Query {
         public static final String USER_ID = "userId";
         public static final String EXTERNAL_USER_ID = "externalUserId";
+        public static final String PREFERRED_CURRENCY = "preferredCurrency";
         public static final String NAME = "name";
         public static final String IS_DEFAULT = "isDefault";
         public static final String INCOME_SOURCE_ID = "incomeSourceId";
@@ -202,12 +205,20 @@ public class Constants {
     }
 
     @UtilityClass
+    public static class Currency {
+        public static final String DEFAULT = "INR";
+        // The only currencies supported across the app. Keep in sync with the web CURRENCIES list.
+        public static final Set<String> SUPPORTED = Set.of("INR", "USD", "EUR", "GBP");
+    }
+
+    @UtilityClass
     public static class DB {
         @UtilityClass
         public static class Users {
             public static final String TABLE = "users";
             public static final String COL_ID = "id";
             public static final String COL_EXTERNAL_USER_ID = "external_user_id";
+            public static final String COL_PREFERRED_CURRENCY = "preferred_currency";
         }
 
         @UtilityClass
@@ -588,6 +599,7 @@ public class Constants {
 
         // Users
         public static final String EXTERNAL_USER_ID_REQUIRED = "externalUserId is required in JSON body";
+        public static final String USER_PREFERRED_CURRENCY_REQUIRED = "preferredCurrency is required in JSON body";
         public static final String USER_NOT_FOUND = "User not found";
         public static final String USER_FETCH_AFTER_UPSERT_FAILED = "Failed to fetch user after upsert";
         public static final String PATH_ID_REQUIRED = "Path parameter 'id' is required";
@@ -611,6 +623,7 @@ public class Constants {
         public static final String INCOME_TAG_ID_REQUIRED = "incomeTagId is required";
         public static final String INCOME_NET_AMOUNT_REQUIRED = "netAmount is required";
         public static final String INCOME_CURRENCY_REQUIRED = "currency is required";
+        public static final String CURRENCY_INVALID = "currency must be one of: INR, USD, EUR, GBP";
         public static final String INCOME_CREDITED_DATE_REQUIRED = "creditedDate is required 'YYYY-MM-DD' format";
         public static final String INCOME_DUPLICATE = "Income for the same date, source and tag already exists.";
         public static final String INCOME_NOT_FOUND = "Income not found";
@@ -693,6 +706,7 @@ public class Constants {
         public static final String USER_ENSURED = "User ensured: id={}, externalUserId={}";
         public static final String USER_UPSERT_AFFECTED = "Upsert users affected rows: {} for externalUserId={} ";
         public static final String USER_DELETE_AFFECTED = "Delete users affected rows: {} for id={}";
+        public static final String USER_CURRENCY_UPDATE_AFFECTED = "Update preferred_currency affected rows: {} for id={}, currency={}";
 
         // Income Tags
         public static final String INCOME_TAGS_LIST = "Listing income tags for userId={}";

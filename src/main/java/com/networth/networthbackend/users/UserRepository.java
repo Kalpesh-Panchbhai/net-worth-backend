@@ -11,16 +11,39 @@ import java.util.Optional;
 
 @Slf4j
 public class UserRepository extends JdbcRepository<User> {
-    private static final String SQL_SELECT_BY_EXTERNAL_USER_ID = SqlBuilder.selectByUnique(Constants.DB.Users.TABLE, new String[]{Constants.DB.Users.COL_ID, Constants.DB.Users.COL_EXTERNAL_USER_ID}, Constants.DB.Users.COL_EXTERNAL_USER_ID);
+    private static final String[] COLUMNS = new String[]{Constants.DB.Users.COL_ID, Constants.DB.Users.COL_EXTERNAL_USER_ID, Constants.DB.Users.COL_PREFERRED_CURRENCY};
+
+    private static final String SQL_SELECT_BY_EXTERNAL_USER_ID = SqlBuilder.selectByUnique(Constants.DB.Users.TABLE, COLUMNS, Constants.DB.Users.COL_EXTERNAL_USER_ID);
+
+    private static final String SQL_SELECT_BY_ID = SqlBuilder.selectByUnique(Constants.DB.Users.TABLE, COLUMNS, Constants.DB.Users.COL_ID);
 
     private static final String SQL_INSERT_IGNORE = SqlBuilder.insertIgnore(Constants.DB.Users.TABLE, new String[]{Constants.DB.Users.COL_EXTERNAL_USER_ID});
 
     private static final String SQL_DELETE_BY_ID = Constants.SQL.DELETE_FROM + Constants.DB.Users.TABLE + Constants.SQL.WHERE + Constants.DB.Users.COL_ID + Constants.SQL.EQ_PARAM; // DELETE FROM users WHERE id = ?
 
-    private static final RowMapper<User> MAPPER = rs -> User.builder().id(rs.getLong(Constants.DB.Users.COL_ID)).externalUserId(rs.getString(Constants.DB.Users.COL_EXTERNAL_USER_ID)).build();
+    private static final String SQL_UPDATE_PREFERRED_CURRENCY = Constants.SQL.UPDATE + Constants.DB.Users.TABLE + Constants.SQL.SET + Constants.DB.Users.COL_PREFERRED_CURRENCY + " = " + Constants.SQL.PARAM + Constants.SQL.WHERE + Constants.DB.Users.COL_ID + Constants.SQL.EQ_PARAM;
+
+    private static final RowMapper<User> MAPPER = rs -> User.builder().id(rs.getLong(Constants.DB.Users.COL_ID)).externalUserId(rs.getString(Constants.DB.Users.COL_EXTERNAL_USER_ID)).preferredCurrency(rs.getString(Constants.DB.Users.COL_PREFERRED_CURRENCY)).build();
 
     public Optional<User> findByExternalUserId(String externalUserId) throws SQLException {
         return queryOne(SQL_SELECT_BY_EXTERNAL_USER_ID, ps -> ps.setString(1, externalUserId), MAPPER);
+    }
+
+    public Optional<User> findById(long id) throws SQLException {
+        return queryOne(SQL_SELECT_BY_ID, ps -> ps.setLong(1, id), MAPPER);
+    }
+
+    public String getPreferredCurrency(long userId) throws SQLException {
+        return findById(userId).map(User::getPreferredCurrency).orElse(null);
+    }
+
+    public int updatePreferredCurrency(long id, String currency) throws SQLException {
+        int updated = execute(SQL_UPDATE_PREFERRED_CURRENCY, ps -> {
+            ps.setString(1, currency);
+            ps.setLong(2, id);
+        });
+        log.debug(Constants.Logs.USER_CURRENCY_UPDATE_AFFECTED, updated, id, currency);
+        return updated;
     }
 
     public int deleteById(long id) throws SQLException {

@@ -13,8 +13,9 @@ USE net_worth_dev;
 
 CREATE TABLE users
 (
-    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    external_user_id VARCHAR(100)    NOT NULL,
+    id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    external_user_id   VARCHAR(100)    NOT NULL,
+    preferred_currency CHAR(3)         NOT NULL DEFAULT 'INR',
     PRIMARY KEY (id),
     UNIQUE KEY uk_users_external_user_id (external_user_id)
 ) ENGINE = InnoDB
