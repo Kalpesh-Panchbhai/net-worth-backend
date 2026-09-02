@@ -2,6 +2,8 @@ package com.networth.networthbackend.tools;
 
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
+import com.networth.networthbackend.fx.FxRateBackfillService;
+import com.networth.networthbackend.fx.FxService;
 import com.networth.networthbackend.service.DhanDataService;
 
 import java.math.BigDecimal;
@@ -32,6 +34,11 @@ public class DailyDataRunner {
         int batchSize = Integer.parseInt(batchSizeStr);
         LocalDate today = LocalDate.now();
         Integer windowDays = Constants.DailyDataRunner.MODE_ALL.equals(mode) ? null : Constants.DailyDataRunner.WINDOW_DAYS_7D;
+
+        // Refresh FX first. Read requests convert display currencies straight out of fx_rates_daily
+        // and never call an FX provider themselves, so this job is what keeps them current.
+        int fxRows = new FxRateBackfillService().refresh();
+        if (fxRows > 0) FxService.invalidate();
 
         try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);
@@ -153,18 +160,22 @@ public class DailyDataRunner {
             }, ex));
         }
 
-        // Process holdings sequentially with fetched prices
-        for (Holding h : holdings) {
-            if (!txByHolding.containsKey(h.id)) continue;
+        // Process holdings sequentially with fetched prices. The shutdown must be in a finally:
+        // the pool's threads are non-daemon, and a price fetch throwing (now routine, since the
+        // provider calls have a request timeout) would otherwise leak them and leave the JVM alive.
+        try {
+            for (Holding h : holdings) {
+                if (!txByHolding.containsKey(h.id)) continue;
 
-            Map<LocalDate, BigDecimal> priceMap = priceFutures.get(h.id).get();
-            List<Tx> txs = txByHolding.get(h.id);
-            DateRange range = rangeByHolding.get(h.id);
+                Map<LocalDate, BigDecimal> priceMap = priceFutures.get(h.id).get();
+                List<Tx> txs = txByHolding.get(h.id);
+                DateRange range = rangeByHolding.get(h.id);
 
-            pending = processHoldingWithRange(context, accountId, h.id, txs, range, pending, priceMap);
+                pending = processHoldingWithRange(context, accountId, h.id, txs, range, pending, priceMap);
+            }
+        } finally {
+            ex.shutdownNow();
         }
-
-        ex.shutdown();
         return pending;
     }
 

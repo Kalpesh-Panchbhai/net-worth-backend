@@ -185,7 +185,29 @@ CREATE TABLE account_holding_values_daily
         FOREIGN KEY (holding_id) REFERENCES holdings (id)
             ON DELETE CASCADE,
     KEY idx_ahvd_account_date (account_id, date),
-    KEY idx_ahvd_holding_date (holding_id, date)
+    KEY idx_ahvd_holding_date (holding_id, date),
+    KEY idx_ahvd_date_account (date, account_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE fx_rates_daily
+(
+    base_currency  CHAR(3)         NOT NULL,
+    quote_currency CHAR(3)         NOT NULL,
+    date           DATE            NOT NULL,
+    rate           DECIMAL(24, 10) NOT NULL,
+    PRIMARY KEY (base_currency, quote_currency, date)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE kite_sessions
+(
+    api_key      VARCHAR(50)  NOT NULL,
+    access_token VARCHAR(200) NOT NULL,
+    created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (api_key)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
@@ -204,5 +226,10 @@ INSERT INTO net_worth_dev.transactions SELECT * FROM net_worth.transactions;
 INSERT INTO net_worth_dev.watchlists SELECT * FROM net_worth.watchlists;
 INSERT INTO net_worth_dev.watchlist_accounts SELECT * FROM net_worth.watchlist_accounts;
 INSERT INTO net_worth_dev.account_holding_values_daily SELECT * FROM net_worth.account_holding_values_daily;
+-- FX rates are market data, not user data: copying them saves dev the bootstrap fetch on first read.
+INSERT INTO net_worth_dev.fx_rates_daily SELECT * FROM net_worth.fx_rates_daily;
+
+-- kite_sessions is deliberately NOT copied: the rows are live broker access tokens. Dev re-auths
+-- through the Kite login flow and writes its own row.
 
 SELECT 'Clone complete: net_worth → net_worth_dev' AS status;

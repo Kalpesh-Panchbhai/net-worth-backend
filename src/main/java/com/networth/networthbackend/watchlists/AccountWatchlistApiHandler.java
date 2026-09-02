@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AccountWatchlistApiHandler extends EntityHandlerBase {
 
-    private final WatchlistRepository repository = new WatchlistRepository();
+    private final WatchlistSummaryService summaryService = new WatchlistSummaryService();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -30,7 +30,7 @@ public class AccountWatchlistApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
         }
         log.debug(Constants.Logs.ACCOUNT_WATCHLISTS_LIST, accountId);
-        var list = repository.listSummariesByAccountId(accountId);
+        var list = summaryService.summariesByAccountId(accountId);
         log.info(Constants.Logs.ACCOUNT_WATCHLISTS_LIST_COUNT, list.size(), accountId);
         return ok(list);
     }

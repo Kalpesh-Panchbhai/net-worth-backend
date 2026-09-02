@@ -3,8 +3,13 @@ package com.networth.networthbackend.chartdata;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.accounts.Account;
+import com.networth.networthbackend.accounts.AccountRepository;
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.users.UserRepository;
+import com.networth.networthbackend.watchlists.Watchlist;
+import com.networth.networthbackend.watchlists.WatchlistRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -14,6 +19,9 @@ public class ChartDataApiHandler extends EntityHandlerBase {
 
     private final ChartDataService service = new ChartDataService();
     private final ChartDataValidationService validationService = new ChartDataValidationService();
+    private final AccountRepository accountRepository = new AccountRepository();
+    private final WatchlistRepository watchlistRepository = new WatchlistRepository();
+    private final UserRepository userRepository = new UserRepository();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -46,12 +54,12 @@ public class ChartDataApiHandler extends EntityHandlerBase {
         EntityType entityType = EntityType.fromCode(entityTypeParam).get(); // Safe since validation passed
         long entityId = Long.parseLong(entityIdParam); // Safe since validation passed
 
-        // Get chart data using generic method
+        // Get chart data using generic method, then convert to the owner's preferred display currency.
         List<ChartData> chartData;
         try {
             log.debug("Fetching chart data for {}: entityId={}, timePeriod={}", entityType.getCode(), entityId, timePeriod);
 
-            chartData = service.getChartData(entityType, entityId, timePeriod);
+            chartData = fetchConvertedChartData(entityType, entityId, timePeriod);
 
             log.info("Successfully fetched {} chart data points for {} with ID {}", chartData.size(), entityType.getCode(), entityId);
 
@@ -61,5 +69,37 @@ public class ChartDataApiHandler extends EntityHandlerBase {
             log.error("Error fetching chart data for {} with ID {}: {}", entityType.getCode(), entityId, e.getMessage(), e);
             throw e;
         }
+    }
+
+    /**
+     * Every branch returns amounts in the owner's display currency, or an empty series. An unknown
+     * entity id yields nothing rather than falling through to the raw SQL, whose watchlist variant
+     * sums member accounts without any FX conversion.
+     */
+    private List<ChartData> fetchConvertedChartData(EntityType entityType, long entityId, String timePeriod) throws Exception {
+        return switch (entityType) {
+            case HOLDING -> convertSingleAccountSeries(
+                    accountRepository.findByHoldingId(entityId).orElse(null), entityType, entityId, timePeriod);
+            case ACCOUNT -> convertSingleAccountSeries(
+                    accountRepository.findById(entityId).orElse(null), entityType, entityId, timePeriod);
+            case WATCHLIST -> {
+                Watchlist watchlist = watchlistRepository.findById(entityId).orElse(null);
+                if (watchlist == null) {
+                    log.warn("No watchlist with id {}; returning an empty chart series", entityId);
+                    yield List.of();
+                }
+                yield service.getWatchlistChartDataConverted(
+                        entityId, timePeriod, userRepository.getPreferredCurrency(watchlist.getUserId()));
+            }
+        };
+    }
+
+    private List<ChartData> convertSingleAccountSeries(Account account, EntityType entityType, long entityId, String timePeriod) throws Exception {
+        if (account == null) {
+            log.warn("No account behind {} id {}; returning an empty chart series", entityType.getCode(), entityId);
+            return List.of();
+        }
+        List<ChartData> data = service.getChartData(entityType, entityId, timePeriod);
+        return service.convertSeries(data, account.getCurrency(), userRepository.getPreferredCurrency(account.getUserId()));
     }
 }

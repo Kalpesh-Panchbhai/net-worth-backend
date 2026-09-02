@@ -1,97 +1,80 @@
 package com.networth.networthbackend.incomes;
 
-import com.networth.networthbackend.tools.YahooFinanceClient;
+import com.networth.networthbackend.fx.FxRates;
+import com.networth.networthbackend.fx.FxService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 
 /**
- * Enriches incomes with display values converted to the user's preferred currency,
- * using the FX rate as of each income's credited date. Original stored amounts are
- * left untouched; only the {@code converted*} fields are populated.
+ * Fills each income's {@code converted*} fields in the user's preferred currency, using the FX
+ * rate on its credited date. Stored amounts are left untouched.
+ * <p>
+ * {@code convertedCurrency} is always populated — with the preferred currency on success, or the
+ * income's own currency when no rate exists — so a client can total the converted fields without
+ * ever having to fall back to a native amount and mislabel it.
  */
 @Slf4j
 public final class IncomeCurrencyConverter {
 
-    private static final String DEFAULT_CURRENCY = "INR";
     private static final int DISPLAY_SCALE = 2;
 
-    private final YahooFinanceClient yahoo;
-
-    public IncomeCurrencyConverter() {
-        this(new YahooFinanceClient());
-    }
-
-    public IncomeCurrencyConverter(YahooFinanceClient yahoo) {
-        this.yahoo = yahoo;
-    }
-
-    /**
-     * Populates converted* fields on each income in place.
-     * If an FX rate cannot be resolved, the converted fields are left null and the
-     * frontend falls back to the original amount.
-     */
+    /** Populates the converted fields on every income in place. */
     public void enrich(List<Income> incomes, String preferredCurrency) {
         if (incomes == null || incomes.isEmpty()) return;
-        String pref = normalize(preferredCurrency);
+        String preferred = FxService.normalize(preferredCurrency);
 
-        // Group by source currency so we fetch one FX series per (source -> preferred) pair.
-        Map<String, List<Income>> byCurrency = new HashMap<>();
+        Set<String> sources = new HashSet<>();
+        LocalDate min = null;
+        LocalDate max = null;
         for (Income inc : incomes) {
-            String src = normalize(inc.getCurrency());
-            byCurrency.computeIfAbsent(src, k -> new ArrayList<>()).add(inc);
+            sources.add(FxService.normalize(inc.getCurrency()));
+            LocalDate d = inc.getCreditedDate();
+            if (d == null) continue;
+            if (min == null || d.isBefore(min)) min = d;
+            if (max == null || d.isAfter(max)) max = d;
         }
+        if (min == null) min = LocalDate.now();
+        if (max == null) max = LocalDate.now();
 
-        for (Map.Entry<String, List<Income>> entry : byCurrency.entrySet()) {
-            String source = entry.getKey();
-            List<Income> group = entry.getValue();
+        Map<String, FxRates> ratesBySource = FxService.rates(sources, preferred, min, max);
+        Map<String, Integer> unconverted = new HashMap<>();
 
-            if (source.equalsIgnoreCase(pref)) {
-                for (Income inc : group) applyRate(inc, pref, BigDecimal.ONE);
-                continue;
-            }
+        for (Income inc : incomes) {
+            String source = FxService.normalize(inc.getCurrency());
+            FxRates rates = ratesBySource.getOrDefault(source, FxRates.unavailable());
+            LocalDate date = inc.getCreditedDate() == null ? LocalDate.now() : inc.getCreditedDate();
 
-            LocalDate min = group.stream().map(Income::getCreditedDate).min(Comparator.naturalOrder()).orElse(null);
-            LocalDate max = group.stream().map(Income::getCreditedDate).max(Comparator.naturalOrder()).orElse(null);
-            if (min == null || max == null) continue;
-
-            TreeMap<LocalDate, BigDecimal> fx;
-            try {
-                fx = new TreeMap<>(yahoo.getFxCalendarFilled(source, pref, min, max));
-            } catch (Exception e) {
-                log.warn("FX fetch failed for {}->{} [{}..{}]: {}", source, pref, min, max, e.getMessage());
-                continue; // leave converted fields null
-            }
-
-            for (Income inc : group) {
-                BigDecimal rate = rateFor(fx, inc.getCreditedDate());
-                if (rate != null) applyRate(inc, pref, rate);
+            BigDecimal net = rates.convertAsOf(inc.getNetAmount(), date);
+            BigDecimal tax = rates.convertAsOf(inc.getTaxPaid(), date);
+            if (net == null || tax == null) {
+                unconverted.merge(source, 1, Integer::sum);
+                apply(inc, nz(inc.getNetAmount()), nz(inc.getTaxPaid()), source);
+            } else {
+                apply(inc, net, tax, preferred);
             }
         }
+        unconverted.forEach((source, count) ->
+                log.warn("{} income row(s) left in {}; no FX rate to {}", count, source, preferred));
     }
 
-    private static void applyRate(Income inc, String pref, BigDecimal rate) {
-        inc.setConvertedNetAmount(scale(nz(inc.getNetAmount()).multiply(rate)));
-        inc.setConvertedTaxPaid(scale(nz(inc.getTaxPaid()).multiply(rate)));
-        inc.setConvertedCurrency(pref);
+    /** Enriches a single income, e.g. the row echoed back by a create or update. */
+    public void enrich(Income income, String preferredCurrency) {
+        if (income != null) enrich(List.of(income), preferredCurrency);
     }
 
-    private static BigDecimal rateFor(TreeMap<LocalDate, BigDecimal> fx, LocalDate date) {
-        if (fx.isEmpty()) return null;
-        BigDecimal exact = fx.get(date);
-        if (exact != null) return exact;
-        Map.Entry<LocalDate, BigDecimal> floor = fx.floorEntry(date);
-        if (floor != null) return floor.getValue();
-        Map.Entry<LocalDate, BigDecimal> ceil = fx.ceilingEntry(date);
-        return ceil != null ? ceil.getValue() : null;
+    private static void apply(Income inc, BigDecimal net, BigDecimal tax, String currency) {
+        inc.setConvertedNetAmount(scale(net));
+        inc.setConvertedTaxPaid(scale(tax));
+        inc.setConvertedGrossAmount(scale(net.add(tax)));
+        inc.setConvertedCurrency(currency);
     }
 
     private static BigDecimal scale(BigDecimal v) {
@@ -100,9 +83,5 @@ public final class IncomeCurrencyConverter {
 
     private static BigDecimal nz(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
-    }
-
-    private static String normalize(String currency) {
-        return (currency == null || currency.isBlank()) ? DEFAULT_CURRENCY : currency.trim().toUpperCase();
     }
 }

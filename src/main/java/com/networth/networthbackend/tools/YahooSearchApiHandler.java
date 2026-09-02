@@ -19,7 +19,12 @@ import java.nio.charset.StandardCharsets;
 public class YahooSearchApiHandler extends EntityHandlerBase {
 
     private static final String YAHOO_SEARCH_URL = "https://query1.finance.yahoo.com/v1/finance/search";
-    private final HttpClient http = HttpClient.newHttpClient();
+    private static final java.time.Duration REQUEST_TIMEOUT = java.time.Duration.ofSeconds(10);
+    // Timeouts matter now that this handler is shared: a hung socket would otherwise hold a
+    // worker thread (or the whole Lambda invocation) indefinitely.
+    private final HttpClient http = HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(5))
+            .build();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -40,6 +45,7 @@ public class YahooSearchApiHandler extends EntityHandlerBase {
         HttpRequest yahooReq = HttpRequest.newBuilder(URI.create(url))
                 .header("User-Agent", "Mozilla/5.0")
                 .header("Accept", "application/json")
+                .timeout(REQUEST_TIMEOUT)
                 .GET()
                 .build();
 

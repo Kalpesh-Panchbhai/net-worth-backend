@@ -140,7 +140,7 @@
                     "userId": 1,
                     "incomeSourceId": 1,
                     "incomeTagId": 1,
-                    "netAmount": 1800.50,
+                    "netAmount": 1800.5,
                     "taxPaid": 180.25,
                     "currency": "INR",
                     "creditedDate": "2025-08-26"
@@ -909,7 +909,7 @@
                     "incomeSourceId": 1,
                     "incomeTagId": 1,
                     "netAmount": 1750.25,
-                    "taxPaid": 170.00,
+                    "taxPaid": 170.0,
                     "currency": "INR",
                     "creditedDate": "2025-09-01"
                   }
@@ -2153,14 +2153,14 @@
                         {
                           "id": 1,
                           "date": "2024-08-01",
-                          "value": 1000.50,
-                          "invested": 950.00
+                          "value": 1000.5,
+                          "invested": 950.0
                         },
                         {
                           "id": 2,
                           "date": "2024-08-02",
                           "value": 1025.75,
-                          "invested": 950.00
+                          "invested": 950.0
                         }
                       ]
                     }
@@ -2174,13 +2174,13 @@
                           "id": 1,
                           "date": "2024-08-01",
                           "value": 2500.25,
-                          "invested": 2300.00
+                          "invested": 2300.0
                         },
                         {
                           "id": 2,
                           "date": "2024-08-02",
-                          "value": 2575.50,
-                          "invested": 2300.00
+                          "value": 2575.5,
+                          "invested": 2300.0
                         }
                       ]
                     }
@@ -2194,13 +2194,13 @@
                           "id": 1,
                           "date": "2024-08-01",
                           "value": 5000.75,
-                          "invested": 4800.00
+                          "invested": 4800.0
                         },
                         {
                           "id": 2,
                           "date": "2024-08-02",
                           "value": 5125.25,
-                          "invested": 4800.00
+                          "invested": 4800.0
                         }
                       ]
                     }
@@ -2258,7 +2258,7 @@
                     "accountId": 1,
                     "holdingId": 1,
                     "txnDate": "2025-08-29",
-                    "invested": 1.00,
+                    "invested": 1.0,
                     "value": 10.25,
                     "mode": "add"
                   }
@@ -2284,7 +2284,7 @@
                         "accountId": 1,
                         "holdingId": 1,
                         "txnDate": "2025-08-29",
-                        "invested": 1.00,
+                        "invested": 1.0,
                         "value": 10.25
                       }
                     }
@@ -2416,16 +2416,16 @@
                           "accountId": 1,
                           "holdingId": 1,
                           "txnDate": "2025-08-20",
-                          "invested": 100.00,
-                          "value": 120.00
+                          "invested": 100.0,
+                          "value": 120.0
                         },
                         {
                           "id": 2,
                           "accountId": 1,
                           "holdingId": 2,
                           "txnDate": "2025-08-19",
-                          "invested": 50.00,
-                          "value": 60.00
+                          "invested": 50.0,
+                          "value": 60.0
                         }
                       ]
                     }
@@ -2440,16 +2440,16 @@
                           "accountId": 1,
                           "holdingId": 1,
                           "txnDate": "2025-08-29",
-                          "invested": 1.00,
-                          "value": 10.00
+                          "invested": 1.0,
+                          "value": 10.0
                         },
                         {
                           "id": 2,
                           "accountId": 1,
                           "holdingId": 1,
                           "txnDate": "2025-08-28",
-                          "invested": 1.00,
-                          "value": 9.50
+                          "invested": 1.0,
+                          "value": 9.5
                         }
                       ]
                     }
@@ -2794,6 +2794,31 @@
             "type": "string",
             "format": "date",
             "description": "Date-only (YYYY-MM-DD)"
+          },
+          "convertedNetAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "netAmount converted at the credited date's FX rate."
+          },
+          "convertedTaxPaid": {
+            "type": "number",
+            "format": "double",
+            "description": "taxPaid converted at the credited date's FX rate."
+          },
+          "convertedGrossAmount": {
+            "type": "number",
+            "format": "double",
+            "description": "convertedNetAmount + convertedTaxPaid."
+          },
+          "convertedCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code the converted* fields are expressed in. Always present on read responses."
           }
         },
         "required": [
@@ -2843,11 +2868,35 @@
           },
           "invested": {
             "type": "number",
-            "description": "Total invested amount after this transaction"
+            "description": "Cumulative invested for the holding as of txnDate. On reads this is the running sum of the converted deltas, so it equals the sum of investedDelta up to and including this row."
           },
           "value": {
             "type": "number",
             "description": "Total units/value after this transaction"
+          },
+          "displayCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code the money fields are expressed in. The preferred currency on reads; the account's native currency on the row echoed back by a create, which is what was stored."
+          },
+          "valueInUnits": {
+            "type": "boolean",
+            "description": "True when `value` is a unit count rather than money, so it is never FX-converted."
+          },
+          "investedDelta": {
+            "type": "number",
+            "format": "double",
+            "description": "This row's own change in invested, converted at this row's own date. Use this instead of subtracting two rows' cumulative amounts, which were translated at different dates."
+          },
+          "valueDelta": {
+            "type": "number",
+            "format": "double",
+            "description": "This row's own change in value (units when valueInUnits is true, else converted money)."
           }
         },
         "required": [
@@ -2863,7 +2912,7 @@
           "accountId": 1,
           "holdingId": 1,
           "txnDate": "2025-08-29",
-          "invested": 1000.00,
+          "invested": 1000.0,
           "value": 10.25
         }
       },
@@ -3105,6 +3154,32 @@
           "invested": {
             "type": "number",
             "description": "Total invested amount across all linked accounts"
+          },
+          "gain": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - invested, in displayCurrency. Computed server-side."
+          },
+          "dayChange": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - previousDayValue, in displayCurrency. Computed server-side."
+          },
+          "xirr": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Money-weighted annualised return as a fraction (0.12 = 12%), in displayCurrency. Null when not computable."
+          },
+          "displayCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code the monetary fields are expressed in: the owner's preferred currency, or the native currency when no FX rate could be resolved. Always present on read responses."
           }
         },
         "required": [
@@ -3294,7 +3369,7 @@
           },
           "units": {
             "type": "number",
-            "description": "Number of units held (from latest transaction)"
+            "description": "From the latest transaction. A share/unit count when `unitsAreShares` is true; otherwise a money balance in `displayCurrency`."
           },
           "currentDayValue": {
             "type": "number",
@@ -3307,6 +3382,36 @@
           "invested": {
             "type": "number",
             "description": "Total invested amount"
+          },
+          "gain": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - invested, in displayCurrency. Computed server-side."
+          },
+          "dayChange": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - previousDayValue, in displayCurrency. Computed server-side."
+          },
+          "xirr": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Money-weighted annualised return as a fraction (0.12 = 12%), in displayCurrency. Null when not computable."
+          },
+          "displayCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code the monetary fields are expressed in: the owner's preferred currency, or the native currency when no FX rate could be resolved. Always present on read responses."
+          },
+          "unitsAreShares": {
+            "type": "boolean",
+            "description": "True when `units` is a share/unit count. False for non-broker accounts, where the underlying column holds a money balance; in that case `units` is money and is expressed in `displayCurrency` like every other amount here."
           }
         },
         "required": [
@@ -3424,6 +3529,32 @@
           "invested": {
             "type": "number",
             "description": "Total invested amount across all holdings"
+          },
+          "gain": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - invested, in displayCurrency. Computed server-side."
+          },
+          "dayChange": {
+            "type": "number",
+            "format": "double",
+            "description": "currentDayValue - previousDayValue, in displayCurrency. Computed server-side."
+          },
+          "xirr": {
+            "type": "number",
+            "format": "double",
+            "nullable": true,
+            "description": "Money-weighted annualised return as a fraction (0.12 = 12%), in displayCurrency. Null when not computable."
+          },
+          "displayCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code the monetary fields are expressed in: the owner's preferred currency, or the native currency when no FX rate could be resolved. Always present on read responses."
           }
         },
         "required": [
@@ -3486,6 +3617,16 @@
           "invested": {
             "type": "number",
             "description": "Total invested amount as of this date (uses forward fill for missing dates)"
+          },
+          "displayCurrency": {
+            "type": "string",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ],
+            "description": "ISO code `value` and `invested` are expressed in. Each point is converted at its own date's FX rate."
           }
         },
         "required": [
@@ -3497,8 +3638,8 @@
         "example": {
           "id": 1,
           "date": "2024-08-01",
-          "value": 1000.50,
-          "invested": 950.00
+          "value": 1000.5,
+          "invested": 950.0
         }
       },
       "ApiResponseChartDataList": {
@@ -3545,7 +3686,13 @@
           },
           "currency": {
             "type": "string",
-            "description": "Account currency code (e.g., INR, USD)"
+            "description": "Native currency of the account. Must be a supported code; anything else is rejected with a 400.",
+            "enum": [
+              "INR",
+              "USD",
+              "EUR",
+              "GBP"
+            ]
           },
           "isActive": {
             "type": "boolean",

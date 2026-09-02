@@ -67,6 +67,58 @@ public class ChartDataRepository {
         }
     }
 
+    /**
+     * Per-member-account daily series for a watchlist, in one query.
+     * <p>
+     * A multi-currency watchlist must be converted account-by-account before its accounts are
+     * summed, which used to mean one query (and one fresh connection) per member account. This
+     * returns every member's series at once, already carrying the account's native currency, so
+     * the aggregation costs a single round trip regardless of how many accounts are linked.
+     * <p>
+     * Rows are ordered by (account_id, date) so callers can forward-fill in a single pass.
+     */
+    public List<AccountSeriesRow> getWatchlistSeriesByAccount(long watchlistId, LocalDate startDate, LocalDate endDate) {
+        String sql = """
+                SELECT ahvd.account_id, a.currency, ahvd.date,
+                       SUM(ahvd.value) AS value, SUM(ahvd.invested) AS invested
+                FROM account_holding_values_daily ahvd
+                INNER JOIN watchlist_accounts wa ON wa.account_id = ahvd.account_id
+                INNER JOIN accounts a ON a.id = ahvd.account_id
+                WHERE wa.watchlist_id = ? AND ahvd.date >= ? AND ahvd.date <= ?
+                GROUP BY ahvd.account_id, a.currency, ahvd.date
+                ORDER BY ahvd.account_id, ahvd.date ASC
+                """;
+        List<AccountSeriesRow> rows = new ArrayList<>();
+        try (var connection = Database.getConnection(); var statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, watchlistId);
+            statement.setDate(2, Date.valueOf(startDate));
+            statement.setDate(3, Date.valueOf(endDate));
+            try (var rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new AccountSeriesRow(
+                            rs.getLong("account_id"),
+                            rs.getString("currency"),
+                            rs.getDate("date").toLocalDate(),
+                            nz(rs.getBigDecimal("value")),
+                            nz(rs.getBigDecimal("invested"))));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error loading watchlist {} per-account series [{}..{}]: {}. Returning empty list.",
+                    watchlistId, startDate, endDate, e.getMessage());
+            return new ArrayList<>();
+        }
+        return rows;
+    }
+
+    /** One member account's totals on one date, in the account's native currency. */
+    public record AccountSeriesRow(long accountId, String currency, LocalDate date, BigDecimal value, BigDecimal invested) {
+    }
+
+    private static BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
     private List<ChartData> executeChartDataQuery(PreparedStatement statement) throws Exception {
         List<ChartData> chartDataList = new ArrayList<>();
 

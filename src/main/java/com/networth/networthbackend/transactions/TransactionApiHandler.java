@@ -3,19 +3,47 @@ package com.networth.networthbackend.transactions;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.networth.networthbackend.accounts.Account;
+import com.networth.networthbackend.accounts.AccountRepository;
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.users.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 public class TransactionApiHandler extends EntityHandlerBase {
 
     private final TransactionRepository repository = new TransactionRepository();
+    private final AccountRepository accountRepository = new AccountRepository();
+    private final UserRepository userRepository = new UserRepository();
+    private final TransactionCurrencyConverter currencyConverter = new TransactionCurrencyConverter();
+
+    /**
+     * True when an account's transaction {@code value} column holds units rather than money.
+     * Broker accounts store unit counts; a non-broker account flagged {@code needsDailyData} is
+     * fed from a broker API that reports a balance, so its {@code value} is money.
+     */
+    private static boolean valueIsUnits(Account account) {
+        return Constants.Accounts.TYPE_BROKER.equalsIgnoreCase(account.getType());
+    }
+
+    private void convert(List<Transaction> txns, Account account) throws java.sql.SQLException {
+        if (txns.isEmpty()) return;
+        if (account == null) {
+            // Should not happen (the rows were fetched via the account), but the contract says
+            // displayCurrency is always set, so label the rows rather than emitting nulls.
+            log.warn("No account for {} transaction(s); labelling them with the default currency", txns.size());
+            for (Transaction t : txns) currencyConverter.labelNative(t, null, false);
+            return;
+        }
+        currencyConverter.convert(txns, account.getCurrency(), userRepository.getPreferredCurrency(account.getUserId()), valueIsUnits(account));
+    }
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -82,6 +110,12 @@ public class TransactionApiHandler extends EntityHandlerBase {
         } catch (SQLIntegrityConstraintViolationException e) {
             return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT, Constants.ErrorCodes.CONFLICT, Constants.Messages.TRANSACTION_DUPLICATE);
         }
+        // The echoed row is exactly what was stored, i.e. the account's native currency. Label it
+        // as such so a client cannot mistake it for a display-currency figure and write it back.
+        Account account = accountRepository.findById(accountId).orElse(null);
+        if (account != null) {
+            currencyConverter.labelNative(created, account.getCurrency(), valueIsUnits(account));
+        }
         log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value, m);
         return created(created);
     }
@@ -96,12 +130,14 @@ public class TransactionApiHandler extends EntityHandlerBase {
             long holdingId = Long.parseLong(holdingIdStr);
             log.debug(Constants.Logs.TRANSACTIONS_LIST, Constants.Query.HOLDING_ID, holdingId);
             var list = repository.listByHoldingId(holdingId);
+            convert(list, accountRepository.findByHoldingId(holdingId).orElse(null));
             log.info(Constants.Logs.TRANSACTIONS_LIST_COUNT, list.size(), Constants.Query.HOLDING_ID, holdingId);
             return ok(list);
         }
         long accountId = Long.parseLong(accountIdStr);
         log.debug(Constants.Logs.TRANSACTIONS_LIST, Constants.Query.ACCOUNT_ID, accountId);
         var list = repository.listByAccountId(accountId);
+        convert(list, accountRepository.findById(accountId).orElse(null));
         log.info(Constants.Logs.TRANSACTIONS_LIST_COUNT, list.size(), Constants.Query.ACCOUNT_ID, accountId);
         return ok(list);
     }

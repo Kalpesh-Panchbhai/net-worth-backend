@@ -22,22 +22,69 @@ import com.networth.networthbackend.syncmf.SyncMfApiHandler;
 import com.networth.networthbackend.tools.YahooSearchApiHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
 @Slf4j
 public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+
+    /**
+     * Handlers are stateless (they hold only repositories and converters), so one instance each is
+     * built when the class loads and shared across requests. Constructing them per request also
+     * rebuilt every repository and HTTP client on every call.
+     */
+    private static final Map<String, EntityHandlerBase> HANDLERS = handlers();
+
+    private static Map<String, EntityHandlerBase> handlers() {
+        Map<String, EntityHandlerBase> map = new HashMap<>();
+        register(map, AccountApiHandler::new, "accounts", "account");
+        register(map, ChartDataApiHandler::new, "chart-data", "chartdata");
+        register(map, HoldingApiHandler::new, "holdings", "holding");
+        register(map, IncomeApiHandler::new, "incomes", "income");
+        register(map, IncomeSourceApiHandler::new, "income-sources", "incomesources");
+        register(map, IncomeTagApiHandler::new, "income-tags", "incometags");
+        register(map, TransactionApiHandler::new, "transactions", "transaction");
+        register(map, UserApiHandler::new, "users", "user");
+        register(map, AccountWatchlistApiHandler::new, "account-watchlists", "accountwatchlists");
+        register(map, WatchlistAccountApiHandler::new, "watchlist-accounts", "watchlistaccounts");
+        register(map, WatchlistApiHandler::new, "watchlists", "watchlist");
+        register(map, RefreshApiHandler::new, "refresh");
+        register(map, YahooSearchApiHandler::new, "yahoo-search", "yahoosearch");
+        register(map, SyncMfApiHandler::new, "sync-mf", "syncmf");
+        return Map.copyOf(map);
+    }
+
+    /**
+     * Builds one handler and registers it under its aliases. A constructor that throws is logged
+     * and skipped: because this runs in a static initialiser, letting it escape would become an
+     * {@link ExceptionInInitializerError} that {@link #handleRequest}'s {@code catch (Exception)}
+     * cannot catch, taking every other endpoint down with it for the container's whole lifetime.
+     * The affected routes then return "unsupported entity type" instead.
+     */
+    private static void register(Map<String, EntityHandlerBase> map, Supplier<EntityHandlerBase> factory, String... aliases) {
+        try {
+            EntityHandlerBase handler = factory.get();
+            for (String alias : aliases) map.put(alias, handler);
+        } catch (RuntimeException | LinkageError e) {
+            log.error("Could not construct the handler for {}; those routes will be unavailable", String.join(", ", aliases), e);
+        }
+    }
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
         try {
-            // Debug logging to understand the request structure
-            log.info("Request details - Path: {}, Resource: {}, HttpMethod: {}", request.getPath(), request.getResource(), request.getHttpMethod());
-            log.info("Path parameters: {}", request.getPathParameters());
-            log.info("Query parameters: {}", request.getQueryStringParameters());
+            if (log.isDebugEnabled()) {
+                log.debug("Request details - Path: {}, Resource: {}, HttpMethod: {}, PathParams: {}, QueryParams: {}",
+                        request.getPath(), request.getResource(), request.getHttpMethod(),
+                        request.getPathParameters(), request.getQueryStringParameters());
+            }
 
             // Extract entity type from path or resource ONLY (do not use query params to avoid conflicts)
             String entityType = extractEntityType(request);
             String action = extractAction(request);
 
-            log.info("Processing request for entityType: {}, action: {}", entityType, action);
+            log.debug("Processing request for entityType: {}, action: {}", entityType, action);
 
             // Route to appropriate handler based on entity type
             EntityHandlerBase handler = getHandlerForEntity(entityType);
@@ -115,26 +162,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
     }
 
     private EntityHandlerBase getHandlerForEntity(String entityType) {
-        if (entityType == null) {
-            return null;
-        }
-
-        return switch (entityType.toLowerCase()) {
-            case "accounts", "account" -> new AccountApiHandler();
-            case "chart-data", "chartdata" -> new ChartDataApiHandler();
-            case "holdings", "holding" -> new HoldingApiHandler();
-            case "incomes", "income" -> new IncomeApiHandler();
-            case "income-sources", "incomesources" -> new IncomeSourceApiHandler();
-            case "income-tags", "incometags" -> new IncomeTagApiHandler();
-            case "transactions", "transaction" -> new TransactionApiHandler();
-            case "users", "user" -> new UserApiHandler();
-            case "account-watchlists", "accountwatchlists" -> new AccountWatchlistApiHandler();
-            case "watchlist-accounts", "watchlistaccounts" -> new WatchlistAccountApiHandler();
-            case "watchlists", "watchlist" -> new WatchlistApiHandler();
-            case "refresh" -> new RefreshApiHandler();
-            case "yahoo-search", "yahoosearch" -> new YahooSearchApiHandler();
-            case "sync-mf", "syncmf" -> new SyncMfApiHandler();
-            default -> null;
-        };
+        if (entityType == null) return null;
+        return HANDLERS.get(entityType.toLowerCase());
     }
 }

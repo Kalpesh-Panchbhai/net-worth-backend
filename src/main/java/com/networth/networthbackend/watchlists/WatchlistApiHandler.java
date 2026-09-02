@@ -15,6 +15,7 @@ import java.util.List;
 public class WatchlistApiHandler extends EntityHandlerBase {
 
     private final WatchlistRepository repository = new WatchlistRepository();
+    private final WatchlistSummaryService summaryService = new WatchlistSummaryService();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -37,7 +38,7 @@ public class WatchlistApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
         }
         log.debug(Constants.Logs.WATCHLISTS_LIST, userId);
-        List<WatchlistSummary> list = repository.listSummariesByUserId(userId);
+        List<WatchlistSummary> list = summaryService.summariesByUserId(userId);
         log.info(Constants.Logs.WATCHLISTS_LIST_COUNT, list.size(), userId);
         return ok(list);
     }

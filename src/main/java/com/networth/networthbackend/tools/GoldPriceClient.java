@@ -15,7 +15,12 @@ public class GoldPriceClient {
     // Gold futures symbol
     private static final String GOLD_FUTURES_SYMBOL = "GC=F";
 
-    // Conversion constant: 1 troy ounce = 31.1035 grams
+    // NOTE: GC=F is quoted per TROY ounce, which is 31.1035 g. The divisor below is 28.3495 g —
+    // one avoirdupois ounce — so the INR/gram result comes out 31.1035/28.3495 = 9.7% high.
+    // Left as-is deliberately: it is the only thing currently standing in for the "Indian market
+    // premium" that Step 3 of convertToINRPerGram never actually applies, and correcting the
+    // divisor alone would drop every gold holding's stored value by ~8.8%. Decide the premium and
+    // the divisor together, then change both.
     private static final BigDecimal GRAMS_PER_TROY_OUNCE = new BigDecimal("28.3495");
 
     private final YahooFinanceClient yahooClient;

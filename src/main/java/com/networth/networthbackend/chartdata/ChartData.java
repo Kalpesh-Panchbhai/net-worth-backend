@@ -17,4 +17,6 @@ public class ChartData extends BaseEntity {
     private LocalDate date;
     private BigDecimal value;
     private BigDecimal invested;
+    // Display currency the value/invested are expressed in (user's preferred currency).
+    private String displayCurrency;
 }

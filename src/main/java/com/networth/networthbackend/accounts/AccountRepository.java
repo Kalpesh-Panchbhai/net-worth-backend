@@ -39,6 +39,22 @@ public class AccountRepository extends JdbcRepository<Account> {
         return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
     }
 
+    public Optional<Account> findByHoldingId(long holdingId) throws SQLException {
+        final String sql = Constants.SQL.SELECT + String.join(Constants.SQL.COMMA_SPACE,
+                "a." + Constants.DB.Accounts.COL_ID,
+                "a." + Constants.DB.Accounts.COL_USER_ID,
+                "a." + Constants.DB.Accounts.COL_NAME,
+                "a." + Constants.DB.Accounts.COL_TYPE,
+                "a." + Constants.DB.Accounts.COL_IS_ACTIVE,
+                "a." + Constants.DB.Accounts.COL_NEEDS_DAILY_DATA,
+                "a." + Constants.DB.Accounts.COL_CURRENCY)
+                + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + " a"
+                + " INNER JOIN " + Constants.DB.Holdings.TABLE + " h ON h." + Constants.DB.Holdings.COL_ACCOUNT_ID + " = a." + Constants.DB.Accounts.COL_ID
+                + Constants.SQL.WHERE + "h." + Constants.DB.Holdings.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, holdingId), MAPPER);
+    }
+
     public Account create(long userId, String name, String type, boolean isActive, boolean needsDailyData, String currency) throws SQLException {
         final String insertSql = Constants.SQL.INSERT_INTO + Constants.DB.Accounts.TABLE + Constants.SQL.OPEN_PAREN
                 + String.join(Constants.SQL.COMMA_SPACE,

@@ -2,6 +2,7 @@ package com.networth.networthbackend.tools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networth.networthbackend.common.Jsons;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -9,6 +10,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -25,13 +27,22 @@ public class YahooFinanceClient {
 
     private static final String BASE = "https://query1.finance.yahoo.com/v8/finance/chart/";
     private static final int EXTRA_PAST_DAYS = 14; // fetch a cushion to cover holidays/weekends before start
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
+
+    /**
+     * Shared across instances: an {@link HttpClient} owns a selector thread and a connection pool,
+     * and a new one per caller meant no connection reuse and a thread leak per request. A request
+     * timeout is mandatory here — without one a hung socket blocks the whole invocation.
+     */
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
 
     private final HttpClient http;
     private final ObjectMapper mapper;
 
     public YahooFinanceClient() {
-        this.http = HttpClient.newHttpClient();
-        this.mapper = new ObjectMapper();
+        this.http = HTTP;
+        this.mapper = Jsons.MAPPER;
     }
 
     private static String encodeSymbol(String symbol) {
@@ -84,7 +95,7 @@ public class YahooFinanceClient {
             }
             return ones;
         }
-        String pair = (fromCcy + toCcy + "=X").toUpperCase();
+        String pair = (fromCcy + toCcy + "=X").toUpperCase(java.util.Locale.ROOT);
         return getDailyCloseCalendarFilled(pair, start, end);
     }
 
@@ -95,7 +106,11 @@ public class YahooFinanceClient {
         long period2 = end.plusDays(1).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
 
         String url = BASE + encodeSymbol(symbol) + "?interval=1d&period1=" + period1 + "&period2=" + period2;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", "MyYahooClient/1.0 Net-Worth API").header("Accept", "application/json").GET().build();
+        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                .header("User-Agent", "MyYahooClient/1.0 Net-Worth API")
+                .header("Accept", "application/json")
+                .timeout(REQUEST_TIMEOUT)
+                .GET().build();
         HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
         if (resp.statusCode() / 100 != 2) {
             throw new IOException("Yahoo API status=" + resp.statusCode() + " body=" + resp.body());

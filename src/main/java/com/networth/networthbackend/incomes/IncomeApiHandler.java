@@ -63,7 +63,7 @@ public class IncomeApiHandler extends EntityHandlerBase {
         if (currency == null || currency.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.INCOME_CURRENCY_REQUIRED);
         }
-        currency = currency.trim().toUpperCase();
+        currency = currency.trim().toUpperCase(java.util.Locale.ROOT);
         if (!isValidCurrencyCode(currency)) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.CURRENCY_INVALID);
         }
@@ -142,7 +142,7 @@ public class IncomeApiHandler extends EntityHandlerBase {
         }
 
         if (currency != null) {
-            currency = currency.trim().toUpperCase();
+            currency = currency.trim().toUpperCase(java.util.Locale.ROOT);
             if (!isValidCurrencyCode(currency)) {
                 return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.CURRENCY_INVALID);
             }

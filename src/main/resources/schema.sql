@@ -202,7 +202,24 @@ CREATE TABLE IF NOT EXISTS account_holding_values_daily
             ON DELETE CASCADE,
 
     KEY idx_ahvd_account_date (account_id, date),
-    KEY idx_ahvd_holding_date (holding_id, date)
+    KEY idx_ahvd_holding_date (holding_id, date),
+    -- Leads with `date` for the "today and yesterday" summary lookups; no other index does, so
+    -- those predicates would otherwise scan the table.
+    KEY idx_ahvd_date_account (date, account_id)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+-- Daily FX close rates. Filled by the daily data job so that API requests never call an
+-- external FX provider: display-currency conversion is a keyed lookup against this table.
+CREATE TABLE IF NOT EXISTS fx_rates_daily
+(
+    base_currency  CHAR(3)         NOT NULL,
+    quote_currency CHAR(3)         NOT NULL,
+    date           DATE            NOT NULL,
+    rate           DECIMAL(24, 10) NOT NULL,
+
+    PRIMARY KEY (base_currency, quote_currency, date)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;

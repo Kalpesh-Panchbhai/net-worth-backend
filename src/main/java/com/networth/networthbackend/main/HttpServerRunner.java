@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 @Slf4j
 public class HttpServerRunner {
@@ -32,9 +33,28 @@ public class HttpServerRunner {
         server.createContext("/openapi.json", new OpenApiHandler());
         server.createContext("/docs", new SwaggerUiHandler());
         server.createContext("/", new LambdaHttpHandler());
-        server.setExecutor(null); // default executor
-        log.info("HTTP server started on port {}", port);
+        // The default executor is single-threaded, so every request the UI fires in parallel was
+        // queued behind the one before it. Serve them concurrently instead.
+        int threads = threadCount();
+        server.setExecutor(Executors.newFixedThreadPool(threads));
+        log.info("HTTP server started on port {} with {} worker threads", port, threads);
         server.start();
+    }
+
+    private static int threadCount() {
+        String configured = System.getenv(Constants.Env.HTTP_SERVER_THREADS);
+        if (configured != null && !configured.isBlank()) {
+            try {
+                int value = Integer.parseInt(configured.trim());
+                if (value > 0) return value;
+            } catch (NumberFormatException e) {
+                log.warn("Ignoring invalid {}={}", Constants.Env.HTTP_SERVER_THREADS, configured);
+            }
+        }
+        // Requests are I/O bound, but almost every one needs a pooled DB connection, so sizing the
+        // workers far above DB_POOL_MAX_SIZE just moves the queue: surplus threads would each sit
+        // out the full pool-acquire timeout. Stay close to the pool and raise both together.
+        return Math.max(Constants.DB.Pool.DEFAULT_MAX_SIZE, Runtime.getRuntime().availableProcessors() * 2);
     }
 
     private class OpenApiHandler implements HttpHandler {

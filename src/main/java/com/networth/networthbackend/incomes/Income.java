@@ -22,9 +22,13 @@ public class Income extends BaseEntity {
     private String currency;
     private LocalDate creditedDate; // date-only
 
-    // Display-only values converted to the user's preferred currency at the credited date.
-    // Populated on read; not persisted.
+    // Display-only amounts converted at the credited date's FX rate. Populated on read, not
+    // persisted. `convertedCurrency` is always set: it names the currency the converted* fields
+    // are in, which is the user's preferred currency, or the income's own currency when no rate
+    // could be resolved. It is never null, so a client never has to guess.
     private BigDecimal convertedNetAmount;
     private BigDecimal convertedTaxPaid;
+    // net + tax, converted. Sent so a client can total gross without re-deriving it.
+    private BigDecimal convertedGrossAmount;
     private String convertedCurrency;
 }

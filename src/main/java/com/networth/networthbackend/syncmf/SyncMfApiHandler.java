@@ -29,8 +29,11 @@ import java.util.*;
 @Slf4j
 public class SyncMfApiHandler extends EntityHandlerBase {
 
+    /** Kite is an Indian broker: everything it returns is denominated in INR. */
+    private static final String KITE_CURRENCY = "INR";
+
     private final KiteApiClient kiteClient = new KiteApiClient();
-    private final HttpClient http = HttpClient.newHttpClient();
+    private final HttpClient http = HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(5)).build();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -164,7 +167,10 @@ public class SyncMfApiHandler extends EntityHandlerBase {
             diffs.add(diff);
         }
 
-        return ok(Map.of("diffs", diffs, "accountId", accountId));
+        // Kite reports in INR and these figures are shown for reconciliation against the stored
+        // values, so they are deliberately NOT converted. Name the currency explicitly rather than
+        // letting the client fall back to a default and label INR amounts with something else.
+        return ok(Map.of("diffs", diffs, "accountId", accountId, "currency", KITE_CURRENCY));
     }
 
     private APIGatewayProxyResponseEvent handleConfirm(APIGatewayProxyRequestEvent request) throws Exception {
@@ -291,9 +297,12 @@ public class SyncMfApiHandler extends EntityHandlerBase {
             }
         }
 
+        // Kite's own INR figures, shown as-is for reconciliation; labelled so the client does not
+        // render them with the user's display-currency symbol.
         return ok(Map.of(
                 "invested", totalInvested,
                 "value", totalValue,
+                "currency", KITE_CURRENCY,
                 "holdingCount", kiteHoldings.size() + openPositionCount,
                 "alreadySynced", alreadySynced,
                 "date", today.toString()
@@ -433,6 +442,7 @@ public class SyncMfApiHandler extends EntityHandlerBase {
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .header("User-Agent", "Mozilla/5.0")
                     .header("Accept", "application/json")
+                    .timeout(java.time.Duration.ofSeconds(10))
                     .GET().build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() / 100 != 2) return null;

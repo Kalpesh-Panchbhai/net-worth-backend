@@ -6,11 +6,17 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.common.SummaryCurrencyConverter;
+import com.networth.networthbackend.common.XirrService;
+import com.networth.networthbackend.users.UserRepository;
 import com.networth.networthbackend.watchlists.WatchlistAccountRepository;
 import com.networth.networthbackend.watchlists.WatchlistRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class AccountApiHandler extends EntityHandlerBase {
@@ -18,6 +24,9 @@ public class AccountApiHandler extends EntityHandlerBase {
     private final AccountRepository repository = new AccountRepository();
     private final WatchlistRepository watchlistRepository = new WatchlistRepository();
     private final WatchlistAccountRepository watchlistAccountRepository = new WatchlistAccountRepository();
+    private final UserRepository userRepository = new UserRepository();
+    private final SummaryCurrencyConverter currencyConverter = new SummaryCurrencyConverter();
+    private final XirrService xirrService = new XirrService();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -41,8 +50,35 @@ public class AccountApiHandler extends EntityHandlerBase {
         }
         log.debug(Constants.Logs.ACCOUNTS_LIST, userId);
         var list = repository.listSummariesByUserId(userId);
+        String preferred = userRepository.getPreferredCurrency(userId);
+        currencyConverter.convert(list, AccountSummary::getCurrency, preferred);
+        applyXirr(list, preferred);
         log.info(Constants.Logs.ACCOUNTS_LIST_COUNT, list.size(), userId);
         return ok(list);
+    }
+
+    /**
+     * Fills each XIRR-eligible account's {@code xirr} and {@code cashFlows} from one grouped
+     * cash-flow query. The client used to fetch every account's transactions to do this itself;
+     * the flows travel with the summary so it can still pool an exact figure for whatever subset
+     * the user has filtered to.
+     */
+    private void applyXirr(List<AccountSummary> accounts, String preferredCurrency) {
+        Map<Long, String> currencyByAccount = new LinkedHashMap<>();
+        for (AccountSummary a : accounts) {
+            if (!XirrService.isEligible(a.getType(), a.isNeedsDailyData())) continue;
+            if (!SummaryCurrencyConverter.convertedToPreferred(a, preferredCurrency)) continue;
+            currencyByAccount.put(a.getId(), a.getCurrency());
+        }
+        if (currencyByAccount.isEmpty()) return;
+
+        var flowsByAccount = xirrService.flowsByAccount(currencyByAccount, preferredCurrency);
+        for (AccountSummary a : accounts) {
+            var flows = flowsByAccount.get(a.getId());
+            if (flows == null || flows.isEmpty()) continue;
+            a.setCashFlows(XirrService.toWire(flows));
+            a.setXirr(xirrService.solve(flows, a.getCurrentDayValue()));
+        }
     }
 
     private APIGatewayProxyResponseEvent create(APIGatewayProxyRequestEvent request) throws Exception {
@@ -69,6 +105,12 @@ public class AccountApiHandler extends EntityHandlerBase {
         if (currency == null || currency.isBlank()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_CURRENCY_REQUIRED);
         }
+        // An unsupported code has no FX series, so every value on this account would be stuck in
+        // its native currency for good. Reject at the door instead of degrading silently later.
+        currency = currency.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!isValidCurrencyCode(currency)) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.ACCOUNT_CURRENCY_UNSUPPORTED);
+        }
         log.debug(Constants.Logs.ACCOUNT_CREATE, userId, name, type, currency, isActive);
         Account created;
         try {
@@ -80,9 +122,10 @@ public class AccountApiHandler extends EntityHandlerBase {
         log.info(Constants.Logs.ACCOUNT_CREATED, created.getId(), created.getUserId(), created.getName(), created.getType(), created.getCurrency(), created.isActive());
 
         var wlOpt = watchlistRepository.findByUserIdAndName(created.getUserId(), Constants.Messages.WATCHLIST_NAME_ALL);
-        long watchlistId = wlOpt.get().getId();
-        if (watchlistId > 0) {
-            watchlistAccountRepository.link(watchlistId, created.getId());
+        if (wlOpt.isPresent()) {
+            watchlistAccountRepository.link(wlOpt.get().getId(), created.getId());
+        } else {
+            log.warn(Constants.Logs.ACCOUNT_ALL_WATCHLIST_MISSING, Constants.Messages.WATCHLIST_NAME_ALL, created.getUserId(), created.getId());
         }
         return created(created);
     }

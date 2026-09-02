@@ -14,6 +14,9 @@ public class Constants {
         public static final String DB_PASSWORD = "DB_PASSWORD";
         public static final String KITE_API_KEY = "KITE_API_KEY";
         public static final String KITE_API_SECRET = "KITE_API_SECRET";
+        public static final String DB_POOL_MAX_SIZE = "DB_POOL_MAX_SIZE";
+        public static final String DB_POOL_MIN_IDLE = "DB_POOL_MIN_IDLE";
+        public static final String HTTP_SERVER_THREADS = "HTTP_SERVER_THREADS";
     }
 
     @UtilityClass
@@ -227,6 +230,31 @@ public class Constants {
         }
 
         @UtilityClass
+        public static class Pool {
+            public static final String NAME = "net-worth-pool";
+            public static final int DEFAULT_MAX_SIZE = 8;
+            public static final int DEFAULT_MIN_IDLE = 1;
+            public static final long CONNECTION_TIMEOUT_MS = 10_000L;
+            public static final long VALIDATION_TIMEOUT_MS = 3_000L;
+            public static final long IDLE_TIMEOUT_MS = 300_000L;      // 5 min
+            public static final long MAX_LIFETIME_MS = 1_500_000L;    // 25 min
+            public static final long KEEPALIVE_MS = 120_000L;         // 2 min
+            // Driver-level, not pool-level: Connector/J's socketTimeout default is infinite.
+            public static final int SOCKET_CONNECT_TIMEOUT_MS = 5_000;
+            public static final int SOCKET_READ_TIMEOUT_MS = 30_000;
+        }
+
+        /** Daily FX close rates, one row per (base, quote, date). Keeps FX off the request path. */
+        @UtilityClass
+        public static class FxRatesDaily {
+            public static final String TABLE = "fx_rates_daily";
+            public static final String COL_BASE_CURRENCY = "base_currency";
+            public static final String COL_QUOTE_CURRENCY = "quote_currency";
+            public static final String COL_DATE = "date";
+            public static final String COL_RATE = "rate";
+        }
+
+        @UtilityClass
         public static class IncomeTags {
             public static final String TABLE = "income_tags";
             public static final String COL_ID = "id";
@@ -263,110 +291,6 @@ public class Constants {
             public static final String COL_ID = "id";
             public static final String COL_USER_ID = "user_id";
             public static final String COL_NAME = "name";
-
-            public static final String SQL_LIST_SUMMARIES_BY_USER_ID = """
-                    WITH
-                      user_watchlists AS (
-                        SELECT w.id, w.user_id, w.name
-                        FROM watchlists w
-                        WHERE w.user_id = ?
-                      ),
-                      watchlist_holdings AS (
-                        SELECT 
-                          uw.id AS watchlist_id,
-                          h.id AS holding_id
-                        FROM user_watchlists uw
-                        LEFT JOIN watchlist_accounts wa ON wa.watchlist_id = uw.id
-                        LEFT JOIN accounts a ON a.id = wa.account_id
-                        LEFT JOIN holdings h ON h.account_id = a.id
-                      ),
-                      holding_daily_values AS (
-                        SELECT 
-                          wh.watchlist_id,
-                          SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.value ELSE 0 END) AS current_day_value,
-                          SUM(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.value ELSE 0 END) AS previous_day_value
-                        FROM watchlist_holdings wh
-                        INNER JOIN account_holding_values_daily ahvd ON ahvd.holding_id = wh.holding_id
-                        WHERE ahvd.date IN (CURRENT_DATE, CURRENT_DATE - INTERVAL 1 DAY)
-                        GROUP BY wh.watchlist_id
-                      ),
-                      holding_invested AS (
-                        SELECT 
-                          wh.watchlist_id,
-                          SUM(ai.invested) AS invested
-                        FROM watchlist_holdings wh
-                        INNER JOIN (
-                          SELECT ahvd.holding_id, MAX(ahvd.date) AS max_date
-                          FROM account_holding_values_daily ahvd
-                          GROUP BY ahvd.holding_id
-                        ) aim ON aim.holding_id = wh.holding_id
-                        INNER JOIN account_holding_values_daily ai ON ai.holding_id = wh.holding_id AND ai.date = aim.max_date
-                        GROUP BY wh.watchlist_id
-                      )
-                    SELECT
-                      uw.id,
-                      uw.user_id,
-                      uw.name,
-                      COALESCE(hdv.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(hdv.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(hi.invested, CAST(0 AS DECIMAL(10,4))) AS invested
-                    FROM user_watchlists uw
-                    LEFT JOIN holding_daily_values hdv ON hdv.watchlist_id = uw.id
-                    LEFT JOIN holding_invested hi ON hi.watchlist_id = uw.id
-                    WHERE uw.user_id = ?
-                    ORDER BY uw.id
-                    """;
-
-            public static final String SQL_LIST_SUMMARIES_BY_ACCOUNT_ID = """
-                    WITH
-                      acc AS (
-                        SELECT ? AS id
-                      ),
-                      watchlists_for_account AS (
-                        SELECT w.id, w.user_id, w.name
-                        FROM watchlist_accounts wa
-                        JOIN watchlists w ON w.id = wa.watchlist_id
-                        WHERE wa.account_id = (SELECT id FROM acc)
-                      ),
-                      wfa_accounts AS (
-                        SELECT wfa.id AS watchlist_id, wa.account_id
-                        FROM watchlists_for_account wfa
-                        JOIN watchlist_accounts wa ON wa.watchlist_id = wfa.id
-                      ),
-                      daily_agg AS (
-                        SELECT
-                          wa.watchlist_id,
-                          SUM(CASE WHEN ahvd.date = CURRENT_DATE THEN ahvd.value ELSE 0 END) AS current_day_value,
-                          SUM(CASE WHEN ahvd.date = CURRENT_DATE - INTERVAL 1 DAY THEN ahvd.value ELSE 0 END) AS previous_day_value
-                        FROM wfa_accounts wa
-                        JOIN account_holding_values_daily ahvd ON ahvd.account_id = wa.account_id
-                        WHERE ahvd.date IN (CURRENT_DATE, CURRENT_DATE - INTERVAL 1 DAY)
-                        GROUP BY wa.watchlist_id
-                      ),
-                      invested_latest AS (
-                        SELECT
-                          wa.watchlist_id,
-                          SUM(x.invested) AS invested
-                        FROM wfa_accounts wa
-                        JOIN (
-                          SELECT t.account_id, t.holding_id, t.invested,
-                                 ROW_NUMBER() OVER (PARTITION BY t.account_id, t.holding_id ORDER BY t.txn_date DESC) rn
-                          FROM transactions t
-                        ) x ON x.account_id = wa.account_id AND x.rn = 1
-                        GROUP BY wa.watchlist_id
-                      )
-                    SELECT
-                      wfa.id,
-                      wfa.user_id,
-                      wfa.name,
-                      COALESCE(d.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(d.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(il.invested, CAST(0 AS DECIMAL(10,4))) AS invested
-                    FROM watchlists_for_account wfa
-                    LEFT JOIN daily_agg d ON d.watchlist_id = wfa.id
-                    LEFT JOIN invested_latest il ON il.watchlist_id = wfa.id
-                    ORDER BY wfa.id
-                    """;
         }
 
         @UtilityClass
@@ -419,9 +343,9 @@ public class Constants {
                       ua.is_active,
                       ua.needs_daily_data,
                       ua.currency,
-                      COALESCE(adv.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(adv.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(ai.invested, CAST(0 AS DECIMAL(10,4))) AS invested
+                      COALESCE(adv.current_day_value, CAST(0 AS DECIMAL(24,4))) AS current_day_value,
+                      COALESCE(adv.previous_day_value, CAST(0 AS DECIMAL(24,4))) AS previous_day_value,
+                      COALESCE(ai.invested, CAST(0 AS DECIMAL(24,4))) AS invested
                     FROM user_accounts ua
                     LEFT JOIN account_daily_values adv ON adv.account_id = ua.id
                     LEFT JOIN account_invested ai ON ai.account_id = ua.id
@@ -469,9 +393,9 @@ public class Constants {
                       wa.is_active,
                       wa.needs_daily_data,
                       wa.currency,
-                      COALESCE(wadv.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(wadv.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(wai.invested, CAST(0 AS DECIMAL(10,4))) AS invested
+                      COALESCE(wadv.current_day_value, CAST(0 AS DECIMAL(24,4))) AS current_day_value,
+                      COALESCE(wadv.previous_day_value, CAST(0 AS DECIMAL(24,4))) AS previous_day_value,
+                      COALESCE(wai.invested, CAST(0 AS DECIMAL(24,4))) AS invested
                     FROM watch_accounts wa
                     LEFT JOIN watchlist_account_daily_values wadv ON wadv.account_id = wa.id
                     LEFT JOIN watchlist_account_invested wai ON wai.account_id = wa.id
@@ -534,10 +458,10 @@ public class Constants {
                       ah.account_id,
                       ah.name,
                       ah.symbol,
-                      COALESCE(lu.units, CAST(0 AS DECIMAL(10,4))) AS units,
-                      COALESCE(dv.current_day_value, CAST(0 AS DECIMAL(10,4))) AS current_day_value,
-                      COALESCE(dv.previous_day_value, CAST(0 AS DECIMAL(10,4))) AS previous_day_value,
-                      COALESCE(li.invested, CAST(0 AS DECIMAL(10,4))) AS invested
+                      COALESCE(lu.units, CAST(0 AS DECIMAL(24,4))) AS units,
+                      COALESCE(dv.current_day_value, CAST(0 AS DECIMAL(24,4))) AS current_day_value,
+                      COALESCE(dv.previous_day_value, CAST(0 AS DECIMAL(24,4))) AS previous_day_value,
+                      COALESCE(li.invested, CAST(0 AS DECIMAL(24,4))) AS invested
                     FROM account_holdings ah
                     LEFT JOIN latest_units lu ON lu.holding_id = ah.id
                     LEFT JOIN daily_values dv ON dv.holding_id = ah.id
@@ -589,6 +513,7 @@ public class Constants {
         public static final String INTERNAL_ERROR = "Internal error";
         public static final String SERIALIZATION_ERROR_FMT = "Serialization error: %s";
         public static final String DB_URL_NOT_SET = "DB_URL env var is not set";
+        public static final String REFRESH_ALREADY_RUNNING = "A data refresh is already running; wait for it to finish";
 
         // Routing / actions
         public static final String UNKNOWN_ROUTE = "Unknown route";
@@ -641,6 +566,7 @@ public class Constants {
         public static final String ACCOUNT_NAME_REQUIRED = "name is required to create account";
         public static final String ACCOUNT_TYPE_REQUIRED = "type is required to create account";
         public static final String ACCOUNT_CURRENCY_REQUIRED = "currency is required to create account";
+        public static final String ACCOUNT_CURRENCY_UNSUPPORTED = "currency must be one of INR, USD, EUR, GBP";
         public static final String ACCOUNT_NAME_TYPE_DUPLICATE = "Account with the same name and type already exists.";
         public static final String ACCOUNT_NOT_FOUND = "Account not found";
         public static final String ACCOUNT_UPDATE_NO_FIELDS = "At least one editable field (name, isActive) must be provided";
@@ -765,6 +691,7 @@ public class Constants {
         public static final String ACCOUNT_UPDATE_AFFECTED = "Update accounts affected rows: {} for id={}";
         public static final String ACCOUNTS_LIST = "Listing accounts for userId={}";
         public static final String ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for userId={}";
+        public static final String ACCOUNT_ALL_WATCHLIST_MISSING = "No '{}' watchlist for userId={}; account id={} left unlinked";
         public static final String WATCHLIST_ACCOUNTS_LIST = "Listing accounts for watchlistId={}";
         public static final String WATCHLIST_ACCOUNTS_LIST_COUNT = "Accounts fetched: count={} for watchlistId={}";
 

@@ -4,11 +4,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import com.networth.networthbackend.api.EntityHandlerBase;
+import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.tools.DailyDataRunner;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class RefreshApiHandler extends EntityHandlerBase {
@@ -26,7 +28,20 @@ public class RefreshApiHandler extends EntityHandlerBase {
         };
     }
 
+    /**
+     * Only one refresh at a time. The job rewrites daily rows and holds a write transaction for its
+     * whole duration, so two concurrent runs would contend on the same rows and burn two pooled
+     * connections. The local HTTP server used to serialise this accidentally by being
+     * single-threaded; now that it has a real worker pool, the guard has to be explicit.
+     */
+    private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
+
     private APIGatewayProxyResponseEvent refreshData() {
+        if (!RUNNING.compareAndSet(false, true)) {
+            log.info("Refresh already in progress; rejecting the concurrent request");
+            return ApiGatewayResponses.error(Constants.Http.Status.CONFLICT,
+                    Constants.ErrorCodes.CONFLICT, Constants.Messages.REFRESH_ALREADY_RUNNING);
+        }
         long startTime = System.currentTimeMillis();
 
         try {
@@ -46,6 +61,8 @@ public class RefreshApiHandler extends EntityHandlerBase {
             log.error("Manual data refresh failed after {} ms: {}", durationMs, e.getMessage(), e);
 
             return badRequest(Constants.ErrorCodes.REFRESH_FAILED, "Data refresh failed: " + e.getMessage());
+        } finally {
+            RUNNING.set(false);
         }
     }
 }
