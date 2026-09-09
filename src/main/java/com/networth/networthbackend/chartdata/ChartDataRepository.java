@@ -79,13 +79,13 @@ public class ChartDataRepository {
      */
     public List<AccountSeriesRow> getWatchlistSeriesByAccount(long watchlistId, LocalDate startDate, LocalDate endDate) {
         String sql = """
-                SELECT ahvd.account_id, a.currency, ahvd.date,
+                SELECT ahvd.account_id, a.currency, a.type, a.needs_daily_data, ahvd.date,
                        SUM(ahvd.value) AS value, SUM(ahvd.invested) AS invested
                 FROM account_holding_values_daily ahvd
                 INNER JOIN watchlist_accounts wa ON wa.account_id = ahvd.account_id
                 INNER JOIN accounts a ON a.id = ahvd.account_id
                 WHERE wa.watchlist_id = ? AND ahvd.date >= ? AND ahvd.date <= ?
-                GROUP BY ahvd.account_id, a.currency, ahvd.date
+                GROUP BY ahvd.account_id, a.currency, a.type, a.needs_daily_data, ahvd.date
                 ORDER BY ahvd.account_id, ahvd.date ASC
                 """;
         List<AccountSeriesRow> rows = new ArrayList<>();
@@ -98,6 +98,8 @@ public class ChartDataRepository {
                     rows.add(new AccountSeriesRow(
                             rs.getLong("account_id"),
                             rs.getString("currency"),
+                            rs.getString("type"),
+                            rs.getBoolean("needs_daily_data"),
                             rs.getDate("date").toLocalDate(),
                             nz(rs.getBigDecimal("value")),
                             nz(rs.getBigDecimal("invested"))));
@@ -112,7 +114,8 @@ public class ChartDataRepository {
     }
 
     /** One member account's totals on one date, in the account's native currency. */
-    public record AccountSeriesRow(long accountId, String currency, LocalDate date, BigDecimal value, BigDecimal invested) {
+    public record AccountSeriesRow(long accountId, String currency, String type, boolean needsDailyData,
+                                   LocalDate date, BigDecimal value, BigDecimal invested) {
     }
 
     private static BigDecimal nz(BigDecimal v) {

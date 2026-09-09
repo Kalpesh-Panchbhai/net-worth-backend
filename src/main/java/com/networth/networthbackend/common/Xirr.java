@@ -44,6 +44,11 @@ public final class Xirr {
         List<Flow> sorted = new ArrayList<>(flows);
         sorted.sort(Comparator.comparing(Flow::date));
         LocalDate t0 = sorted.get(0).date();
+        // All flows fall on one date: the return spans zero elapsed time, so xnpv is constant in
+        // the rate and there is no IRR to annualise. Returning early avoids handing back the Newton
+        // seed as a bogus rate when those flows happen to net to zero at it (e.g. a chart point on
+        // the same day as the only investment, with value still equal to what was put in).
+        if (t0.equals(sorted.get(sorted.size() - 1).date())) return null;
 
         Double newton = newtonRaphson(sorted, t0);
         if (newton != null) return newton;

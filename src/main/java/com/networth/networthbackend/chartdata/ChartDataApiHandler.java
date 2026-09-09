@@ -99,7 +99,10 @@ public class ChartDataApiHandler extends EntityHandlerBase {
             log.warn("No account behind {} id {}; returning an empty chart series", entityType.getCode(), entityId);
             return List.of();
         }
+        String preferred = userRepository.getPreferredCurrency(account.getUserId());
         List<ChartData> data = service.getChartData(entityType, entityId, timePeriod);
-        return service.convertSeries(data, account.getCurrency(), userRepository.getPreferredCurrency(account.getUserId()));
+        service.convertSeries(data, account.getCurrency(), preferred);
+        service.applyAccountSeriesXirr(data, account, entityType, entityId, preferred);
+        return data;
     }
 }

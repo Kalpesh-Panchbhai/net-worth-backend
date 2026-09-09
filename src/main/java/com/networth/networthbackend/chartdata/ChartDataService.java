@@ -1,5 +1,8 @@
 package com.networth.networthbackend.chartdata;
 
+import com.networth.networthbackend.accounts.Account;
+import com.networth.networthbackend.common.Xirr;
+import com.networth.networthbackend.common.XirrService;
 import com.networth.networthbackend.fx.FxRates;
 import com.networth.networthbackend.fx.FxService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,7 @@ public class ChartDataService {
     private static final int DISPLAY_SCALE = 2;
 
     private final ChartDataRepository repository = new ChartDataRepository();
+    private final XirrService xirrService = new XirrService();
 
     /**
      * Converts a single-currency chart series (holding or account) into the preferred currency,
@@ -51,6 +55,48 @@ public class ChartDataService {
     }
 
     /**
+     * Sets each point's {@code xirr} to the money-weighted return from inception up to that point's
+     * date, closed with the point's (already preferred-currency) value. This is the same figure the
+     * account/holding summary carries, but evaluated at every point on the line instead of only at
+     * today, so the chart can show "XIRR until this date" on hover.
+     * <p>
+     * A no-op when XIRR does not apply to the account, or the entity has no cash flows. The flows
+     * are loaded from inception — not just the visible window — so an early point's rate still
+     * reflects every investment made before it. Mutates {@code series}.
+     */
+    public void applyAccountSeriesXirr(List<ChartData> series, Account account, EntityType entityType,
+                                       long entityId, String preferredCurrency) {
+        if (series == null || series.isEmpty()) return;
+        if (!XirrService.isEligible(account.getType(), account.isNeedsDailyData())) return;
+
+        Map<Long, List<Xirr.Flow>> flowsById = entityType == EntityType.HOLDING
+                ? xirrService.flowsByHolding(account.getId(), account.getCurrency(), preferredCurrency)
+                : xirrService.flowsByAccount(Map.of(account.getId(), account.getCurrency()), preferredCurrency);
+        long key = entityType == EntityType.HOLDING ? entityId : account.getId();
+        List<Xirr.Flow> flows = flowsById.get(key);
+        if (flows == null || flows.isEmpty()) return;
+
+        applyRunningXirr(series, flows, preferredCurrency);
+    }
+
+    /**
+     * Closes {@code flows} at each point of {@code series} with that point's value. A point the FX
+     * layer left in its native currency (no rate) is closed with a null value, so it reports no
+     * XIRR rather than mixing a native amount into a preferred-currency flow set.
+     */
+    private void applyRunningXirr(List<ChartData> series, List<Xirr.Flow> flows, String preferredCurrency) {
+        String preferred = FxService.normalize(preferredCurrency);
+        List<LocalDate> dates = new ArrayList<>(series.size());
+        List<BigDecimal> values = new ArrayList<>(series.size());
+        for (ChartData cd : series) {
+            dates.add(cd.getDate());
+            values.add(preferred.equals(FxService.normalize(cd.getDisplayCurrency())) ? cd.getValue() : null);
+        }
+        List<Double> rates = xirrService.runningXirr(flows, dates, values);
+        for (int i = 0; i < series.size(); i++) series.get(i).setXirr(rates.get(i));
+    }
+
+    /**
      * Builds a watchlist chart series in the preferred currency, converting each member account's
      * native series per date <em>before</em> summing across accounts.
      * <p>
@@ -73,18 +119,37 @@ public class ChartDataService {
 
             Map<Long, List<ChartData>> byAccount = new LinkedHashMap<>();
             Map<Long, String> currencyByAccount = new LinkedHashMap<>();
+            // Members XIRR applies to (broker / daily-data), keyed by native currency. The watchlist's
+            // money-weighted return is the IRR of these members' pooled flows — savings and loans have
+            // no invested capital and must not dilute it, exactly as the watchlist summary computes it.
+            Map<Long, String> currencyByEligible = new LinkedHashMap<>();
             for (ChartDataRepository.AccountSeriesRow row : rows) {
                 currencyByAccount.putIfAbsent(row.accountId(), row.currency());
+                if (XirrService.isEligible(row.type(), row.needsDailyData())) {
+                    currencyByEligible.putIfAbsent(row.accountId(), row.currency());
+                }
                 byAccount.computeIfAbsent(row.accountId(), id -> new ArrayList<>())
                         .add(ChartData.builder().date(row.date()).value(row.value()).invested(row.invested()).build());
             }
 
+            // Pooled cash flows for the eligible members, from inception. flowsByAccount drops any
+            // member whose flows cannot be fully converted, so its keySet is the members that both
+            // contribute flows and should contribute their value to each date's XIRR closing.
+            Map<Long, List<Xirr.Flow>> flowsByEligible = currencyByEligible.isEmpty()
+                    ? Map.of() : xirrService.flowsByAccount(currencyByEligible, preferred);
+            List<Xirr.Flow> pooledFlows = new ArrayList<>();
+            flowsByEligible.values().forEach(pooledFlows::addAll);
+            Set<Long> flowAccounts = flowsByEligible.keySet();
+
             Map<String, FxRates> ratesBySource = FxService.rates(currencyByAccount.values(), preferred, startDate, endDate);
 
             TreeMap<LocalDate, BigDecimal[]> totals = new TreeMap<>();
+            // Per-date sum of the flow members' values only — the closing inflow for the pooled XIRR.
+            TreeMap<LocalDate, BigDecimal> eligibleValueByDate = new TreeMap<>();
             Set<String> unconvertible = new HashSet<>();
             for (Map.Entry<Long, List<ChartData>> entry : byAccount.entrySet()) {
                 String source = FxService.normalize(currencyByAccount.get(entry.getKey()));
+                boolean isFlowAccount = flowAccounts.contains(entry.getKey());
                 FxRates rates = ratesBySource.getOrDefault(source, FxRates.unavailable());
                 if (!rates.isResolvable()) {
                     unconvertible.add(source);
@@ -100,6 +165,7 @@ public class ChartDataService {
                     BigDecimal[] sums = totals.computeIfAbsent(cd.getDate(), d -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
                     sums[0] = sums[0].add(value);
                     sums[1] = sums[1].add(invested);
+                    if (isFlowAccount) eligibleValueByDate.merge(cd.getDate(), value, BigDecimal::add);
                 }
             }
             if (!unconvertible.isEmpty()) {
@@ -113,6 +179,17 @@ public class ChartDataService {
                 result.add(ChartData.builder().id(id++).date(e.getKey())
                         .value(scale(e.getValue()[0])).invested(scale(e.getValue()[1]))
                         .displayCurrency(preferred).build());
+            }
+
+            if (!pooledFlows.isEmpty()) {
+                List<LocalDate> dates = new ArrayList<>(result.size());
+                List<BigDecimal> closing = new ArrayList<>(result.size());
+                for (ChartData cd : result) {
+                    dates.add(cd.getDate());
+                    closing.add(eligibleValueByDate.get(cd.getDate()));
+                }
+                List<Double> xirrs = xirrService.runningXirr(pooledFlows, dates, closing);
+                for (int i = 0; i < result.size(); i++) result.get(i).setXirr(xirrs.get(i));
             }
             return result;
         } catch (Exception e) {

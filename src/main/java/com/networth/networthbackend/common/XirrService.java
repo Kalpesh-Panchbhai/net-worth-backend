@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -126,6 +127,42 @@ public class XirrService {
     /** XIRR for one already-converted cash-flow list, closing it with today's value. */
     public Double solve(List<Xirr.Flow> flows, BigDecimal currentValue) {
         return closeAndSolve(flows, currentValue, LocalDate.now());
+    }
+
+    /**
+     * Running XIRR over a chronological series: for the point at {@code dates.get(i)} the rate is
+     * the IRR of every flow dated on or before it, closed with {@code closingValues.get(i)} as an
+     * inflow on that date. This is {@link #solve} evaluated at each date instead of only today, so
+     * a chart can show the money-weighted return the entity had earned as of any point on the line.
+     * <p>
+     * {@code flows} may be unsorted; {@code dates} must be ascending and the same length as
+     * {@code closingValues}. The returned list aligns to {@code dates}; an entry is null wherever a
+     * rate is not computable — before the first flow, or a closing value that is null (a point left
+     * unconverted) or non-positive with no other inflow to give the flows a sign change.
+     */
+    public List<Double> runningXirr(List<Xirr.Flow> flows, List<LocalDate> dates, List<BigDecimal> closingValues) {
+        int n = dates == null ? 0 : dates.size();
+        if (flows == null || flows.isEmpty() || n == 0) return Collections.nCopies(n, null);
+
+        List<Xirr.Flow> sorted = new ArrayList<>(flows);
+        sorted.sort(Comparator.comparing(Xirr.Flow::date));
+
+        List<Double> out = new ArrayList<>(n);
+        List<Xirr.Flow> prefix = new ArrayList<>();
+        int idx = 0;
+        for (int i = 0; i < n; i++) {
+            LocalDate d = dates.get(i);
+            while (idx < sorted.size() && !sorted.get(idx).date().isAfter(d)) prefix.add(sorted.get(idx++));
+            if (prefix.isEmpty()) {
+                out.add(null);
+                continue;
+            }
+            List<Xirr.Flow> closed = new ArrayList<>(prefix);
+            BigDecimal v = closingValues.get(i);
+            if (v != null && v.signum() > 0) closed.add(new Xirr.Flow(d, v.doubleValue()));
+            out.add(Xirr.of(closed));
+        }
+        return out;
     }
 
     /** The wire form of a cash-flow list, for clients that need to pool their own groups. */

@@ -3627,6 +3627,11 @@
               "GBP"
             ],
             "description": "ISO code `value` and `invested` are expressed in. Each point is converted at its own date's FX rate."
+          },
+          "xirr": {
+            "type": "number",
+            "nullable": true,
+            "description": "Money-weighted return (fraction, 0.12 = 12%) from inception up to this point's date, closed with this point's `value`. Null before the first investment or where XIRR does not apply. The last point equals the summary's `xirr`."
           }
         },
         "required": [
