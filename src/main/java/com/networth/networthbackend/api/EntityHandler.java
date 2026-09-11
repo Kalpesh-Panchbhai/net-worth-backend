@@ -10,6 +10,7 @@ import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.holdings.HoldingApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
+import com.networth.networthbackend.insights.InsightsConfigApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
 import com.networth.networthbackend.refresh.RefreshApiHandler;
@@ -42,6 +43,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, ChartDataApiHandler::new, "chart-data", "chartdata");
         register(map, HoldingApiHandler::new, "holdings", "holding");
         register(map, IncomeApiHandler::new, "incomes", "income");
+        register(map, InsightsConfigApiHandler::new, "insights-config", "insightsconfig");
         register(map, IncomeSourceApiHandler::new, "income-sources", "incomesources");
         register(map, IncomeTagApiHandler::new, "income-tags", "incometags");
         register(map, TransactionApiHandler::new, "transactions", "transaction");
