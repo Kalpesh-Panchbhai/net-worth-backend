@@ -233,22 +233,9 @@ CREATE TABLE IF NOT EXISTS kite_sessions
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS insights_layout
-(
-    user_id     BIGINT UNSIGNED NOT NULL,
-    layout_json JSON            NOT NULL,
-    updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id),
-
-    CONSTRAINT fk_insights_layout_user
-        FOREIGN KEY (user_id) REFERENCES users (id)
-            ON DELETE CASCADE
-) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_unicode_ci;
-
--- Generic per-user configuration store: goals, FIRE assumptions, Simulator inputs, and future
--- client settings, so they sync across devices. One JSON document per (user_id, config_key).
+-- Generic per-user configuration store: the Insights dashboard layout, goals, FIRE assumptions,
+-- Simulator inputs, and future client settings, so they sync across devices. One JSON document per
+-- (user_id, config_key). Replaces the former dedicated insights_layout table.
 CREATE TABLE IF NOT EXISTS user_config
 (
     user_id     BIGINT UNSIGNED NOT NULL,

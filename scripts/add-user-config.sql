@@ -1,6 +1,7 @@
--- Adds a generic per-user configuration store so client-side settings (goals, FIRE assumptions,
--- the What-If Simulator inputs, and anything added later) sync across devices. One row per
--- (user_id, config_key); the value is an opaque JSON document persisted and returned verbatim.
+-- Adds a generic per-user configuration store so client-side settings (the Insights dashboard
+-- layout, goals, FIRE assumptions, the What-If Simulator inputs, and anything added later) sync
+-- across devices. One row per (user_id, config_key); the value is an opaque JSON document persisted
+-- and returned verbatim.
 -- Idempotent (CREATE TABLE IF NOT EXISTS) — safe to run more than once. Also present in
 -- src/main/resources/schema.sql. Run this against the database before deploying the backend change.
 
