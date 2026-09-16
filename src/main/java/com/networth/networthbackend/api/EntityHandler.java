@@ -15,6 +15,7 @@ import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
 import com.networth.networthbackend.refresh.RefreshApiHandler;
 import com.networth.networthbackend.transactions.TransactionApiHandler;
+import com.networth.networthbackend.userconfig.UserConfigApiHandler;
 import com.networth.networthbackend.users.UserApiHandler;
 import com.networth.networthbackend.watchlists.AccountWatchlistApiHandler;
 import com.networth.networthbackend.watchlists.WatchlistAccountApiHandler;
@@ -48,6 +49,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, IncomeTagApiHandler::new, "income-tags", "incometags");
         register(map, TransactionApiHandler::new, "transactions", "transaction");
         register(map, UserApiHandler::new, "users", "user");
+        register(map, UserConfigApiHandler::new, "user-config", "userconfig");
         register(map, AccountWatchlistApiHandler::new, "account-watchlists", "accountwatchlists");
         register(map, WatchlistAccountApiHandler::new, "watchlist-accounts", "watchlistaccounts");
         register(map, WatchlistApiHandler::new, "watchlists", "watchlist");

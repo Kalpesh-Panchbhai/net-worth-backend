@@ -246,3 +246,20 @@ CREATE TABLE IF NOT EXISTS insights_layout
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+-- Generic per-user configuration store: goals, FIRE assumptions, Simulator inputs, and future
+-- client settings, so they sync across devices. One JSON document per (user_id, config_key).
+CREATE TABLE IF NOT EXISTS user_config
+(
+    user_id     BIGINT UNSIGNED NOT NULL,
+    config_key  VARCHAR(64)     NOT NULL,
+    config_json JSON            NOT NULL,
+    updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, config_key),
+
+    CONSTRAINT fk_user_config_user
+        FOREIGN KEY (user_id) REFERENCES users (id)
+            ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
