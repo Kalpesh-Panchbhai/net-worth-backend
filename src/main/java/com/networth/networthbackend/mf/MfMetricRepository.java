@@ -193,6 +193,75 @@ public class MfMetricRepository {
         return out;
     }
 
+    /** A leaderboard row assembled server-side: the rank, its metric value, and the fund's identity. */
+    public record LeaderboardRow(int rank, int schemeCode, String name, String amc, double value,
+                                 LocalDate launchDate, LocalDate lastNavDate, int peerCount) {
+    }
+
+    /**
+     * The top {@code limit} funds of a category on one (horizon, metric), best first, with the value
+     * and scheme identity each carries — everything the leaderboard renders, in one indexed read.
+     * <p>
+     * Joins the rank to its metric value (same {@code as_of}) and to the scheme master, so the
+     * caller does not fan out into per-fund lookups. This is the read the whole precompute exists to
+     * make cheap: ≤{@code limit} rows instead of every peer's NAV series.
+     */
+    public List<LeaderboardRow> topInCategoryDetailed(String subCategory, MfMetricKey.Horizon horizon,
+                                                      MfMetricKey.Metric metric, int limit) throws SQLException {
+        String s = Constants.DB.MfSchemes.TABLE;
+        String sql = "SELECT r." + R_RANK + ", r." + R_CODE + ", s." + Constants.DB.MfSchemes.COL_NAME
+                + ", s." + Constants.DB.MfSchemes.COL_AMC + ", m." + M_VALUE
+                + ", s." + Constants.DB.MfSchemes.COL_LAUNCH_DATE + ", s." + Constants.DB.MfSchemes.COL_LAST_NAV_DATE
+                + ", r." + R_PEERS
+                + " FROM " + RT + " r"
+                + " JOIN " + s + " s ON s." + Constants.DB.MfSchemes.COL_SCHEME_CODE + " = r." + R_CODE
+                + " JOIN " + MT + " m ON m." + M_CODE + " = r." + R_CODE
+                + " AND m." + M_AS_OF + " = r." + R_AS_OF
+                + " AND m." + M_HORIZON + " = r." + R_HORIZON
+                + " AND m." + M_METRIC + " = r." + R_METRIC
+                + " WHERE r." + R_SUB + " = ? AND r." + R_HORIZON + " = ? AND r." + R_METRIC + " = ?"
+                + " AND r." + R_AS_OF + " = (SELECT MAX(" + R_AS_OF + ") FROM " + RT + ")"
+                + " ORDER BY r." + R_RANK + " LIMIT ?";
+
+        List<LeaderboardRow> out = new ArrayList<>();
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, subCategory);
+            ps.setString(2, horizon.code);
+            ps.setString(3, metric.code);
+            ps.setInt(4, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Date launch = rs.getDate(6);
+                    Date lastNav = rs.getDate(7);
+                    out.add(new LeaderboardRow(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4),
+                            rs.getDouble(5),
+                            launch == null ? null : launch.toLocalDate(),
+                            lastNav == null ? null : lastNav.toLocalDate(),
+                            rs.getInt(8)));
+                }
+            }
+        }
+        return out;
+    }
+
+    /** How many funds were rankable on one (horizon, metric) at the newest as_of — the "of N" numerator. */
+    public int countRanked(String subCategory, MfMetricKey.Horizon horizon, MfMetricKey.Metric metric)
+            throws SQLException {
+        String sql = "SELECT COUNT(*) FROM " + RT
+                + " WHERE " + R_SUB + " = ? AND " + R_HORIZON + " = ? AND " + R_METRIC + " = ?"
+                + " AND " + R_AS_OF + " = (SELECT MAX(" + R_AS_OF + ") FROM " + RT + ")";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, subCategory);
+            ps.setString(2, horizon.code);
+            ps.setString(3, metric.code);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
     private static RankRow readRank(ResultSet rs) throws SQLException {
         return new RankRow(
                 rs.getString(1),

@@ -4,9 +4,11 @@ import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 import com.networth.networthbackend.fx.FxRateBackfillService;
 import com.networth.networthbackend.fx.FxService;
+import com.networth.networthbackend.mf.MfMetricsRecomputeService;
 import com.networth.networthbackend.mf.MfNavDailySyncService;
 import com.networth.networthbackend.mf.MfSchemeSyncService;
 import com.networth.networthbackend.service.DhanDataService;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -21,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@Slf4j
 public class DailyDataRunner {
 
     public static void main(String[] args) throws Exception {
@@ -48,6 +51,17 @@ public class DailyDataRunner {
         // launched today is already known when its first NAV arrives.
         new MfSchemeSyncService().refresh();
         new MfNavDailySyncService().refresh();
+
+        // Recompute the analyser's metric/rank tables off the freshly synced NAVs, so leaderboard
+        // and fund-detail reads are one indexed lookup rather than a live NAV scan. It fetches every
+        // fund's history (~2 minutes) — fine on this out-of-band job, which is invoked directly and
+        // not behind API Gateway's 29-second timeout. Isolated so a failure here leaves yesterday's
+        // metrics in place rather than aborting the holdings valuation below.
+        try {
+            new MfMetricsRecomputeService().recompute();
+        } catch (Exception e) {
+            log.warn("MF metrics recompute failed; keeping previous metrics: {}", e.getMessage());
+        }
 
         try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);

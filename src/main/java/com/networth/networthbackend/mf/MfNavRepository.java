@@ -179,6 +179,35 @@ public class MfNavRepository {
     public record Coverage(int points, LocalDate from, LocalDate to) {
     }
 
+    /** Row count and date span for one scheme, or null if it has no NAV. Backs the fund-detail read. */
+    public Coverage coverageFor(int schemeCode) throws SQLException {
+        String sql = "SELECT COUNT(*), MIN(" + C_DATE + "), MAX(" + C_DATE + ")"
+                + " FROM " + T + " WHERE " + C_CODE + " = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, schemeCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                int points = rs.getInt(1);
+                if (points == 0) return null;
+                return new Coverage(points, rs.getDate(2).toLocalDate(), rs.getDate(3).toLocalDate());
+            }
+        }
+    }
+
+    /** Newest NAV date across all schemes, or null when {@code mf_nav} is empty. The metrics {@code as_of}. */
+    public LocalDate latestNavDate() throws SQLException {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT MAX(" + C_DATE + ") FROM " + T);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                Date d = rs.getDate(1);
+                return d == null ? null : d.toLocalDate();
+            }
+            return null;
+        }
+    }
+
     /** Total stored NAV rows. */
     public long totalRows() throws SQLException {
         try (Connection conn = Database.getConnection();
