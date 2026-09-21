@@ -35,10 +35,29 @@ public class MfAnalysisApiHandler extends EntityHandlerBase {
         return switch (resolved) {
             case "categories" -> ok(service.categories());
             case "leaderboard" -> leaderboard(request);
+            case "table" -> table(request);
             case "fund" -> fund(request);
             default -> badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
                     String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, "mf-analysis", action));
         };
+    }
+
+    /**
+     * A sortable grid of funds with every column metric at one horizon. Omit {@code subCategory} for
+     * all live funds, or pass one to scope to a category.
+     * <pre>
+     *   GET /mf-analysis?action=table&horizon=5Y
+     *   GET /mf-analysis?action=table&subCategory=Large Cap&horizon=5Y
+     * </pre>
+     */
+    private APIGatewayProxyResponseEvent table(APIGatewayProxyRequestEvent request) throws Exception {
+        String subCategory = queryParam(request, "subCategory");
+        String horizon = orDefault(queryParam(request, "horizon"), DEFAULT_HORIZON);
+        try {
+            return ok(service.table(subCategory, horizon));
+        } catch (IllegalArgumentException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, e.getMessage());
+        }
     }
 
     private APIGatewayProxyResponseEvent leaderboard(APIGatewayProxyRequestEvent request) throws Exception {

@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -115,6 +116,37 @@ public class MfAnalysisService {
         return fundLive(scheme, schemeCode);
     }
 
+    /**
+     * The metrics shown as columns in the browse table — the same set the leaderboard's metric
+     * picker offers, so "sort by CAGR / Sharpe / …" works against the same numbers.
+     */
+    private static final List<Metric> TABLE_METRICS = List.of(
+            Metric.CAGR, Metric.ROLLING_AVG, Metric.ROLLING_WORST, Metric.ROLLING_SHARE_ABOVE_12,
+            Metric.VOLATILITY, Metric.SHARPE, Metric.SORTINO, Metric.MAX_DRAWDOWN);
+
+    /**
+     * Every fund (optionally scoped to one sub-category) with all the column metrics at one horizon,
+     * for the sortable browse table. Read straight from the precomputed tables; the client does the
+     * sorting and paging. A blank {@code subCategory} spans all live funds.
+     */
+    public Table table(String subCategory, String horizonCode) throws SQLException {
+        Horizon horizon = MfMetricKey.horizon(horizonCode);
+        String scope = (subCategory == null || subCategory.isBlank()) ? null : subCategory;
+
+        List<MfMetricRepository.TableMetricRow> flat = metricRepository.tableRows(scope, horizon, TABLE_METRICS);
+
+        // Group the (fund, metric, value) rows into one row per fund, preserving first-seen order.
+        LinkedHashMap<Integer, TableRow> byScheme = new LinkedHashMap<>();
+        for (MfMetricRepository.TableMetricRow r : flat) {
+            TableRow row = byScheme.computeIfAbsent(r.schemeCode(), k -> new TableRow(
+                    r.schemeCode(), r.name(), r.amc(), r.assetClass(), r.subCategory(), new LinkedHashMap<>()));
+            row.values().put(r.metric(), r.value());
+        }
+
+        List<String> metricCodes = TABLE_METRICS.stream().map(m -> m.code).toList();
+        return new Table(horizon.code, metricCodes, new ArrayList<>(byScheme.values()));
+    }
+
     // ---- Live fallbacks: compute straight off mf_nav ----
 
     /**
@@ -200,5 +232,14 @@ public class MfAnalysisService {
     public record FundDetail(int schemeCode, String name, String amc, String assetClass, String subCategory,
                              LocalDate launchDate, LocalDate firstNavDate, LocalDate lastNavDate,
                              int navPoints, List<FundMetric> metrics) {
+    }
+
+    /** One fund's row in the browse table: its identity plus a metric-code → value map. */
+    public record TableRow(int schemeCode, String name, String amc, String assetClass, String subCategory,
+                           Map<String, Double> values) {
+    }
+
+    /** The browse table at one horizon: the metric columns present, and one row per fund. */
+    public record Table(String horizon, List<String> metrics, List<TableRow> rows) {
     }
 }

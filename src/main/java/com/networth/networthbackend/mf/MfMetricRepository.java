@@ -245,6 +245,49 @@ public class MfMetricRepository {
         return out;
     }
 
+    /** One (fund, metric, value) at a horizon, before the service groups them into per-fund rows. */
+    public record TableMetricRow(int schemeCode, String name, String amc, String assetClass,
+                                 String subCategory, String metric, double value) {
+    }
+
+    /**
+     * Every requested metric at one horizon for a set of funds, for the sortable browse table. Pass
+     * {@code subCategory == null} to span all live Direct+Growth funds; pass one to scope to a
+     * category. One indexed read of the newest as_of — the whole grid a table renders.
+     */
+    public List<TableMetricRow> tableRows(String subCategory, MfMetricKey.Horizon horizon,
+                                          List<MfMetricKey.Metric> metrics) throws SQLException {
+        if (metrics == null || metrics.isEmpty()) return new ArrayList<>();
+        String s = Constants.DB.MfSchemes.TABLE;
+        String metricPlaceholders = String.join(", ", java.util.Collections.nCopies(metrics.size(), "?"));
+        String sql = "SELECT s." + Constants.DB.MfSchemes.COL_SCHEME_CODE + ", s." + Constants.DB.MfSchemes.COL_NAME
+                + ", s." + Constants.DB.MfSchemes.COL_AMC + ", s." + Constants.DB.MfSchemes.COL_ASSET_CLASS
+                + ", s." + Constants.DB.MfSchemes.COL_SUB_CATEGORY + ", m." + M_METRIC + ", m." + M_VALUE
+                + " FROM " + MT + " m"
+                + " JOIN " + s + " s ON s." + Constants.DB.MfSchemes.COL_SCHEME_CODE + " = m." + M_CODE
+                + " WHERE m." + M_AS_OF + " = (SELECT MAX(" + M_AS_OF + ") FROM " + MT + ")"
+                + " AND m." + M_HORIZON + " = ?"
+                + " AND m." + M_METRIC + " IN (" + metricPlaceholders + ")"
+                + " AND s." + Constants.DB.MfSchemes.COL_IS_LIVE + " = 1"
+                + (subCategory == null ? "" : " AND s." + Constants.DB.MfSchemes.COL_SUB_CATEGORY + " = ?");
+
+        List<TableMetricRow> out = new ArrayList<>();
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            int i = 1;
+            ps.setString(i++, horizon.code);
+            for (MfMetricKey.Metric m : metrics) ps.setString(i++, m.code);
+            if (subCategory != null) ps.setString(i, subCategory);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new TableMetricRow(rs.getInt(1), rs.getString(2), rs.getString(3),
+                            rs.getString(4), rs.getString(5), rs.getString(6), rs.getDouble(7)));
+                }
+            }
+        }
+        return out;
+    }
+
     /** How many funds were rankable on one (horizon, metric) at the newest as_of — the "of N" numerator. */
     public int countRanked(String subCategory, MfMetricKey.Horizon horizon, MfMetricKey.Metric metric)
             throws SQLException {
