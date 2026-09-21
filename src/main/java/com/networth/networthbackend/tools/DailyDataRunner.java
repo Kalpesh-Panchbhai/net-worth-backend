@@ -4,6 +4,7 @@ import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 import com.networth.networthbackend.fx.FxRateBackfillService;
 import com.networth.networthbackend.fx.FxService;
+import com.networth.networthbackend.meta.AppMetaRepository;
 import com.networth.networthbackend.mf.MfMetricsRecomputeService;
 import com.networth.networthbackend.mf.MfNavDailySyncService;
 import com.networth.networthbackend.mf.MfSchemeSyncService;
@@ -92,6 +93,10 @@ public class DailyDataRunner {
             // Single commit at the end for both phases
             conn.commit();
         }
+
+        // Stamp the successful completion so the UI can show data freshness. Best-effort: a failure
+        // here must not fail a refresh that already committed.
+        new AppMetaRepository().stampRefreshNow();
     }
 
     // ---- Public entrypoints ----

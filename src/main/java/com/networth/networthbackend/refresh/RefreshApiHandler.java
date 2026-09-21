@@ -6,14 +6,18 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.meta.AppMetaRepository;
 import com.networth.networthbackend.tools.DailyDataRunner;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class RefreshApiHandler extends EntityHandlerBase {
+
+    private final AppMetaRepository appMeta = new AppMetaRepository();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context) throws Exception {
@@ -23,9 +27,18 @@ public class RefreshApiHandler extends EntityHandlerBase {
 
         return switch (action.toLowerCase()) {
             case Constants.Actions.CREATE -> refreshData();
+            case Constants.Actions.GET -> lastRefreshed();
             default ->
                     badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, "refresh", action));
         };
+    }
+
+    /** GET /refresh — epoch millis of the last successful refresh, or null if it has never run. */
+    private APIGatewayProxyResponseEvent lastRefreshed() throws Exception {
+        String stored = appMeta.get(AppMetaRepository.KEY_LAST_REFRESH_AT);
+        Map<String, Object> body = new HashMap<>();
+        body.put("lastRefreshedAt", stored == null ? null : Long.parseLong(stored));
+        return ok(body);
     }
 
     /**
@@ -53,7 +66,8 @@ public class RefreshApiHandler extends EntityHandlerBase {
 
             return ok(Map.of(
                     "message", "Data refreshed successfully",
-                    "durationMs", durationMs
+                    "durationMs", durationMs,
+                    "lastRefreshedAt", System.currentTimeMillis()
             ));
 
         } catch (Exception e) {
