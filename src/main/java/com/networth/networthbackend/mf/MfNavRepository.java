@@ -195,6 +195,26 @@ public class MfNavRepository {
         }
     }
 
+    /** Latest NAV value per scheme among those passed in, keyed by scheme code. */
+    public Map<Integer, BigDecimal> latestNavFor(List<Integer> schemeCodes) throws SQLException {
+        Map<Integer, BigDecimal> out = new LinkedHashMap<>();
+        if (schemeCodes == null || schemeCodes.isEmpty()) return out;
+        String placeholders = String.join(", ", java.util.Collections.nCopies(schemeCodes.size(), "?"));
+        String sql = "SELECT n." + C_CODE + ", n." + C_NAV + " FROM " + T + " n"
+                + " JOIN (SELECT " + C_CODE + ", MAX(" + C_DATE + ") md FROM " + T
+                + " WHERE " + C_CODE + " IN (" + placeholders + ") GROUP BY " + C_CODE + ") t"
+                + " ON t." + C_CODE + " = n." + C_CODE + " AND t.md = n." + C_DATE;
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            int i = 1;
+            for (Integer code : schemeCodes) ps.setInt(i++, code);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.put(rs.getInt(1), rs.getBigDecimal(2));
+            }
+        }
+        return out;
+    }
+
     /** Newest NAV date across all schemes, or null when {@code mf_nav} is empty. The metrics {@code as_of}. */
     public LocalDate latestNavDate() throws SQLException {
         try (Connection conn = Database.getConnection();

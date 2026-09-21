@@ -288,6 +288,30 @@ public class MfMetricRepository {
         return out;
     }
 
+    /** One fund's standing on a (horizon, metric): where it sits in its category. */
+    public record SchemeRank(MfMetricKey.Horizon horizon, MfMetricKey.Metric metric, int rank,
+                             double percentile, int peerCount) {
+    }
+
+    /** Every (horizon, metric) ranking for one fund at the newest as_of. Backs the fund-detail badges. */
+    public List<SchemeRank> ranksForScheme(int schemeCode) throws SQLException {
+        String sql = "SELECT " + R_HORIZON + ", " + R_METRIC + ", " + R_RANK + ", " + R_PERCENTILE + ", " + R_PEERS
+                + " FROM " + RT + " WHERE " + R_CODE + " = ?"
+                + " AND " + R_AS_OF + " = (SELECT MAX(" + R_AS_OF + ") FROM " + RT + ")";
+        List<SchemeRank> out = new ArrayList<>();
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, schemeCode);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new SchemeRank(MfMetricKey.horizon(rs.getString(1)), MfMetricKey.metric(rs.getString(2)),
+                            rs.getInt(3), rs.getDouble(4), rs.getInt(5)));
+                }
+            }
+        }
+        return out;
+    }
+
     /** How many funds were rankable on one (horizon, metric) at the newest as_of — the "of N" numerator. */
     public int countRanked(String subCategory, MfMetricKey.Horizon horizon, MfMetricKey.Metric metric)
             throws SQLException {

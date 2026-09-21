@@ -37,9 +37,43 @@ public class MfAnalysisApiHandler extends EntityHandlerBase {
             case "leaderboard" -> leaderboard(request);
             case "table" -> table(request);
             case "fund" -> fund(request);
+            case "nav" -> nav(request);
+            case "portfolio" -> portfolio(request);
             default -> badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED,
                     String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, "mf-analysis", action));
         };
+    }
+
+    /** GET /mf-analysis?action=nav&schemeCode=118269 — the fund's NAV curve for charts/calculators. */
+    private APIGatewayProxyResponseEvent nav(APIGatewayProxyRequestEvent request) throws Exception {
+        String schemeCodeParam = queryParam(request, "schemeCode");
+        if (schemeCodeParam == null || schemeCodeParam.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "schemeCode is required");
+        }
+        int schemeCode;
+        try {
+            schemeCode = Integer.parseInt(schemeCodeParam.trim());
+        } catch (NumberFormatException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "schemeCode must be an integer");
+        }
+        MfAnalysisService.NavSeries series = service.navSeries(schemeCode);
+        if (series == null) return notFound(Constants.ErrorCodes.NOT_FOUND, "No NAV history for scheme code " + schemeCode);
+        return ok(series);
+    }
+
+    /** GET /mf-analysis?action=portfolio&userId=1 — the user's held funds, ranked, for the X-ray. */
+    private APIGatewayProxyResponseEvent portfolio(APIGatewayProxyRequestEvent request) throws Exception {
+        String userIdParam = queryParam(request, "userId");
+        if (userIdParam == null || userIdParam.isBlank()) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "userId is required");
+        }
+        long userId;
+        try {
+            userId = Long.parseLong(userIdParam.trim());
+        } catch (NumberFormatException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "userId must be a number");
+        }
+        return ok(service.portfolio(userId));
     }
 
     /**

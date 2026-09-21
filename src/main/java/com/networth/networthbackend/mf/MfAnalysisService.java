@@ -31,16 +31,21 @@ public class MfAnalysisService {
     private final MfSchemeRepository schemeRepository;
     private final MfNavRepository navRepository;
     private final MfMetricRepository metricRepository;
+    private final MfPortfolioRepository portfolioRepository;
+
+    /** Charts and calculators need a bounded series; NAV history is capped to this many points. */
+    private static final int MAX_NAV_POINTS = 800;
 
     public MfAnalysisService() {
-        this(new MfSchemeRepository(), new MfNavRepository(), new MfMetricRepository());
+        this(new MfSchemeRepository(), new MfNavRepository(), new MfMetricRepository(), new MfPortfolioRepository());
     }
 
     public MfAnalysisService(MfSchemeRepository schemeRepository, MfNavRepository navRepository,
-                             MfMetricRepository metricRepository) {
+                             MfMetricRepository metricRepository, MfPortfolioRepository portfolioRepository) {
         this.schemeRepository = schemeRepository;
         this.navRepository = navRepository;
         this.metricRepository = metricRepository;
+        this.portfolioRepository = portfolioRepository;
     }
 
     // ---- Public API ----
@@ -110,7 +115,7 @@ public class MfAnalysisService {
                 }
                 return new FundDetail(scheme.schemeCode(), scheme.name(), scheme.amc(),
                         scheme.assetClass().name(), scheme.subCategory(), scheme.launchDate(),
-                        coverage.from(), coverage.to(), coverage.points(), metrics);
+                        coverage.from(), coverage.to(), coverage.points(), metrics, ranksFor(schemeCode));
             }
         }
         return fundLive(scheme, schemeCode);
@@ -204,7 +209,97 @@ public class MfAnalysisService {
 
         return new FundDetail(scheme.schemeCode(), scheme.name(), scheme.amc(),
                 scheme.assetClass().name(), scheme.subCategory(), scheme.launchDate(),
-                series.firstKey(), series.lastKey(), series.size(), metrics);
+                series.firstKey(), series.lastKey(), series.size(), metrics, List.of());
+    }
+
+    /** The fund's category standings, as response DTOs. Empty when ranks are not yet computed. */
+    private List<FundRank> ranksFor(int schemeCode) throws SQLException {
+        List<FundRank> out = new ArrayList<>();
+        for (MfMetricRepository.SchemeRank r : metricRepository.ranksForScheme(schemeCode)) {
+            out.add(new FundRank(r.horizon().code, r.metric().code, r.rank(), r.percentile(), r.peerCount()));
+        }
+        return out;
+    }
+
+    // ---- NAV series (growth chart + return calculators) ----
+
+    /**
+     * A fund's NAV history, downsampled to at most {@link #MAX_NAV_POINTS} evenly-spaced points
+     * (first and last always kept). Enough resolution for a growth chart and an indicative SIP /
+     * lumpsum calculation, without shipping every daily point.
+     */
+    public NavSeries navSeries(int schemeCode) throws SQLException {
+        MfScheme scheme = schemeRepository.findByCode(schemeCode).orElse(null);
+        if (scheme == null) return null;
+        TreeMap<LocalDate, BigDecimal> raw = navRepository.loadSeries(schemeCode, null, null);
+        if (raw.isEmpty()) return null;
+
+        List<LocalDate> dates = new ArrayList<>(raw.keySet());
+        int n = dates.size();
+        int step = Math.max(1, (int) Math.ceil((double) n / MAX_NAV_POINTS));
+        List<NavPoint> points = new ArrayList<>();
+        for (int i = 0; i < n; i += step) {
+            LocalDate d = dates.get(i);
+            points.add(new NavPoint(d.toString(), raw.get(d).doubleValue()));
+        }
+        // Always anchor on the true latest NAV so the chart and "current value" end at today's value.
+        LocalDate last = dates.get(n - 1);
+        if (!points.get(points.size() - 1).date().equals(last.toString())) {
+            points.add(new NavPoint(last.toString(), raw.get(last).doubleValue()));
+        }
+        return new NavSeries(scheme.schemeCode(), scheme.name(), points);
+    }
+
+    // ---- Portfolio: the user's own funds, ranked (analysis applied to holdings) ----
+
+    /**
+     * The user's mutual-fund holdings, each enriched with its category standing and headline
+     * metrics, plus current value from the latest NAV. Powers "how do my funds rank" and the
+     * portfolio X-ray. Funds whose name does not resolve to a scheme are omitted.
+     */
+    public Portfolio portfolio(long userId) throws SQLException {
+        List<MfPortfolioRepository.HeldScheme> held = portfolioRepository.heldSchemes(userId);
+        if (held.isEmpty()) return new Portfolio(BigDecimal.ZERO, BigDecimal.ZERO, List.of());
+
+        List<Integer> codes = held.stream().map(MfPortfolioRepository.HeldScheme::schemeCode).toList();
+        Map<Integer, BigDecimal> latestNav = navRepository.latestNavFor(codes);
+
+        List<PortfolioHolding> holdings = new ArrayList<>();
+        BigDecimal totalInvested = BigDecimal.ZERO;
+        BigDecimal totalValue = BigDecimal.ZERO;
+
+        for (MfPortfolioRepository.HeldScheme h : held) {
+            BigDecimal nav = latestNav.get(h.schemeCode());
+            BigDecimal units = h.units() == null ? BigDecimal.ZERO : h.units();
+            BigDecimal invested = h.invested() == null ? BigDecimal.ZERO : h.invested();
+            BigDecimal currentValue = nav == null ? invested : units.multiply(nav);
+
+            Map<Horizon, Map<Metric, Double>> m = metricRepository.loadForScheme(h.schemeCode());
+            Double cagr5y = metricValue(m, Horizon.Y5, Metric.CAGR);
+            Double cagrSi = metricValue(m, Horizon.SI, Metric.CAGR);
+            Double sharpe3y = metricValue(m, Horizon.Y3, Metric.SHARPE);
+
+            // Headline standing: 5-year CAGR percentile within the fund's category.
+            Integer rank = null, peerCount = null;
+            Double percentile = null;
+            for (MfMetricRepository.SchemeRank r : metricRepository.ranksForScheme(h.schemeCode())) {
+                if (r.horizon() == Horizon.Y5 && r.metric() == Metric.CAGR) {
+                    rank = r.rank(); peerCount = r.peerCount(); percentile = r.percentile();
+                }
+            }
+
+            totalInvested = totalInvested.add(invested);
+            totalValue = totalValue.add(currentValue);
+            holdings.add(new PortfolioHolding(h.schemeCode(), h.name(), h.amc(), h.assetClass(), h.subCategory(),
+                    units, invested, currentValue, cagr5y, cagrSi, sharpe3y, rank, percentile, peerCount));
+        }
+
+        return new Portfolio(totalInvested, totalValue, holdings);
+    }
+
+    private static Double metricValue(Map<Horizon, Map<Metric, Double>> m, Horizon h, Metric metric) {
+        Map<Metric, Double> byMetric = m.get(h);
+        return byMetric == null ? null : byMetric.get(metric);
     }
 
     // ---- Response shapes ----
@@ -228,10 +323,14 @@ public class MfAnalysisService {
     public record FundMetric(String horizon, String metric, double value) {
     }
 
-    /** Everything computed for a single fund. */
+    /** One fund's category standing on a (horizon, metric): 1 = best, percentile 100 = best. */
+    public record FundRank(String horizon, String metric, int rank, double percentile, int peerCount) {
+    }
+
+    /** Everything computed for a single fund, including where it ranks in its category. */
     public record FundDetail(int schemeCode, String name, String amc, String assetClass, String subCategory,
                              LocalDate launchDate, LocalDate firstNavDate, LocalDate lastNavDate,
-                             int navPoints, List<FundMetric> metrics) {
+                             int navPoints, List<FundMetric> metrics, List<FundRank> ranks) {
     }
 
     /** One fund's row in the browse table: its identity plus a metric-code → value map. */
@@ -241,5 +340,24 @@ public class MfAnalysisService {
 
     /** The browse table at one horizon: the metric columns present, and one row per fund. */
     public record Table(String horizon, List<String> metrics, List<TableRow> rows) {
+    }
+
+    /** One point on a fund's NAV curve. Date is ISO (yyyy-MM-dd) so the client renders it directly. */
+    public record NavPoint(String date, double nav) {
+    }
+
+    /** A fund's (downsampled) NAV history for charts and return calculators. */
+    public record NavSeries(int schemeCode, String name, List<NavPoint> points) {
+    }
+
+    /** One held fund with its current value, headline metrics and category standing. */
+    public record PortfolioHolding(int schemeCode, String name, String amc, String assetClass, String subCategory,
+                                   BigDecimal units, BigDecimal invested, BigDecimal currentValue,
+                                   Double cagr5y, Double cagrSi, Double sharpe3y,
+                                   Integer rank, Double percentile, Integer peerCount) {
+    }
+
+    /** The user's mutual-fund portfolio: totals plus per-fund detail for ranking and the X-ray. */
+    public record Portfolio(BigDecimal totalInvested, BigDecimal totalValue, List<PortfolioHolding> holdings) {
     }
 }
