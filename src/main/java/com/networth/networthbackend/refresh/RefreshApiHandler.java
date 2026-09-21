@@ -82,7 +82,10 @@ public class RefreshApiHandler extends EntityHandlerBase {
 
         try {
             log.info("Starting manual data refresh");
-            DailyDataRunner.run();
+            // Skip the heavy MF-analyser maintenance (AMFI sync + ~2-min recompute): it would blow
+            // API Gateway's 29s timeout and does not affect the user's displayed portfolio values.
+            // The 8-hourly scheduled run keeps the analyser catalog fresh.
+            DailyDataRunner.run(false);
             long durationMs = System.currentTimeMillis() - startTime;
 
             log.info("Manual data refresh completed successfully in {} ms", durationMs);

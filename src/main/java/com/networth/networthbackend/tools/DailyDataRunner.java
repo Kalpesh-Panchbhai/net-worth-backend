@@ -33,7 +33,19 @@ public class DailyDataRunner {
         System.out.println(LocalDateTime.now());
     }
 
+    /** Full run: portfolio valuation plus MF-analyser maintenance. Used by the scheduled job and CLI. */
     public static void run() throws Exception {
+        run(true);
+    }
+
+    /**
+     * @param includeMfMaintenance when false, skips the MF-analyser catalog work (AMFI scheme/NAV
+     *   sync and the ~2-minute metrics recompute). The manual {@code POST /refresh} passes false:
+     *   it must finish inside API Gateway's 29-second timeout, and the user's portfolio values come
+     *   from broker/Yahoo prices + FX — not from {@code mf_nav} — so skipping MF maintenance leaves
+     *   displayed numbers correct while the 8-hourly scheduled run keeps the analyser fresh.
+     */
+    public static void run(boolean includeMfMaintenance) throws Exception {
         String batchSizeStr = firstNonEmpty(System.getenv(Constants.DailyDataRunner.ENV_BATCH_SIZE), Constants.DailyDataRunner.DEFAULT_BATCH_SIZE);
         String mode = firstNonEmpty(System.getenv(Constants.DailyDataRunner.ENV_MODE), Constants.DailyDataRunner.DEFAULT_MODE).toLowerCase(Locale.ROOT);
 
@@ -46,22 +58,23 @@ public class DailyDataRunner {
         int fxRows = new FxRateBackfillService().refresh();
         if (fxRows > 0) FxService.invalidate();
 
-        // Refresh the AMFI scheme master, then today's NAVs. Independent of the account work below,
-        // and self-contained: neither throws, so a bad AMFI response leaves yesterday's MF data in
-        // place rather than failing holdings valuation. The scheme sync runs first so a fund that
-        // launched today is already known when its first NAV arrives.
-        new MfSchemeSyncService().refresh();
-        new MfNavDailySyncService().refresh();
+        if (includeMfMaintenance) {
+            // Refresh the AMFI scheme master, then today's NAVs. Independent of the account work
+            // below, and self-contained: neither throws, so a bad AMFI response leaves yesterday's
+            // MF data in place. The scheme sync runs first so a fund that launched today is already
+            // known when its first NAV arrives.
+            new MfSchemeSyncService().refresh();
+            new MfNavDailySyncService().refresh();
 
-        // Recompute the analyser's metric/rank tables off the freshly synced NAVs, so leaderboard
-        // and fund-detail reads are one indexed lookup rather than a live NAV scan. It fetches every
-        // fund's history (~2 minutes) — fine on this out-of-band job, which is invoked directly and
-        // not behind API Gateway's 29-second timeout. Isolated so a failure here leaves yesterday's
-        // metrics in place rather than aborting the holdings valuation below.
-        try {
-            new MfMetricsRecomputeService().recompute();
-        } catch (Exception e) {
-            log.warn("MF metrics recompute failed; keeping previous metrics: {}", e.getMessage());
+            // Recompute the analyser's metric/rank tables off the freshly synced NAVs, so leaderboard
+            // and fund-detail reads are one indexed lookup rather than a live NAV scan. It fetches
+            // every fund's history (~2 minutes), which is why it stays out of the manual path.
+            // Isolated so a failure here leaves yesterday's metrics in place.
+            try {
+                new MfMetricsRecomputeService().recompute();
+            } catch (Exception e) {
+                log.warn("MF metrics recompute failed; keeping previous metrics: {}", e.getMessage());
+            }
         }
 
         try (Connection conn = Database.getConnection()) {
