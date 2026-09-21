@@ -4,6 +4,8 @@ import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 import com.networth.networthbackend.fx.FxRateBackfillService;
 import com.networth.networthbackend.fx.FxService;
+import com.networth.networthbackend.mf.MfNavDailySyncService;
+import com.networth.networthbackend.mf.MfSchemeSyncService;
 import com.networth.networthbackend.service.DhanDataService;
 
 import java.math.BigDecimal;
@@ -39,6 +41,13 @@ public class DailyDataRunner {
         // and never call an FX provider themselves, so this job is what keeps them current.
         int fxRows = new FxRateBackfillService().refresh();
         if (fxRows > 0) FxService.invalidate();
+
+        // Refresh the AMFI scheme master, then today's NAVs. Independent of the account work below,
+        // and self-contained: neither throws, so a bad AMFI response leaves yesterday's MF data in
+        // place rather than failing holdings valuation. The scheme sync runs first so a fund that
+        // launched today is already known when its first NAV arrives.
+        new MfSchemeSyncService().refresh();
+        new MfNavDailySyncService().refresh();
 
         try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);

@@ -12,6 +12,7 @@ import com.networth.networthbackend.holdings.HoldingApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
 import com.networth.networthbackend.incomesources.IncomeSourceApiHandler;
 import com.networth.networthbackend.incometags.IncomeTagApiHandler;
+import com.networth.networthbackend.mf.MfAnalysisApiHandler;
 import com.networth.networthbackend.refresh.RefreshApiHandler;
 import com.networth.networthbackend.transactions.TransactionApiHandler;
 import com.networth.networthbackend.userconfig.UserConfigApiHandler;
@@ -54,6 +55,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, RefreshApiHandler::new, "refresh");
         register(map, YahooSearchApiHandler::new, "yahoo-search", "yahoosearch");
         register(map, SyncMfApiHandler::new, "sync-mf", "syncmf");
+        register(map, MfAnalysisApiHandler::new, "mf-analysis", "mfanalysis");
         return Map.copyOf(map);
     }
 

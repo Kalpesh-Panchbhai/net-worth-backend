@@ -254,6 +254,76 @@ public class Constants {
             public static final String COL_RATE = "rate";
         }
 
+        /**
+         * AMFI mutual-fund scheme master, one row per Direct+Growth share class.
+         * See {@code scripts/add-mf-schemes.sql} for why the ingest is scoped that narrowly.
+         */
+        @UtilityClass
+        public static class MfSchemes {
+            public static final String TABLE = "mf_schemes";
+            public static final String COL_SCHEME_CODE = "scheme_code";
+            public static final String COL_ISIN = "isin";
+            public static final String COL_AMC = "amc";
+            public static final String COL_NAME = "name";
+            public static final String COL_NAV_NAME = "nav_name";
+            public static final String COL_RAW_CATEGORY = "raw_category";
+            public static final String COL_ASSET_CLASS = "asset_class";
+            public static final String COL_SUB_CATEGORY = "sub_category";
+            public static final String COL_PLAN = "plan";
+            /** Quoted in SQL: {@code option} is a MySQL keyword. */
+            public static final String COL_OPTION = "`option`";
+            public static final String COL_LAUNCH_DATE = "launch_date";
+            public static final String COL_IS_LIVE = "is_live";
+            public static final String COL_LAST_NAV_DATE = "last_nav_date";
+            /** When full history was last pulled, so an interrupted backfill resumes. */
+            public static final String COL_NAV_BACKFILLED_AT = "nav_backfilled_at";
+        }
+
+        /** Daily NAV history, one row per (scheme, date). */
+        @UtilityClass
+        public static class MfNav {
+            public static final String TABLE = "mf_nav";
+            public static final String COL_SCHEME_CODE = "scheme_code";
+            public static final String COL_NAV_DATE = "nav_date";
+            public static final String COL_NAV = "nav";
+        }
+
+        /**
+         * Precomputed per-fund metrics, one row per (scheme, as_of, horizon, metric).
+         * Long/narrow so a new metric is an INSERT rather than a schema change.
+         */
+        @UtilityClass
+        public static class MfMetric {
+            public static final String TABLE = "mf_metric";
+            public static final String COL_SCHEME_CODE = "scheme_code";
+            public static final String COL_AS_OF = "as_of";
+            public static final String COL_HORIZON = "horizon";
+            public static final String COL_METRIC = "metric";
+            public static final String COL_VALUE = "value";
+        }
+
+        /** Per-category rankings, kept apart from metrics because a rank is a peer-group property. */
+        @UtilityClass
+        public static class MfRank {
+            public static final String TABLE = "mf_rank";
+            public static final String COL_SUB_CATEGORY = "sub_category";
+            public static final String COL_AS_OF = "as_of";
+            public static final String COL_HORIZON = "horizon";
+            public static final String COL_METRIC = "metric";
+            public static final String COL_SCHEME_CODE = "scheme_code";
+            public static final String COL_RANK = "rank_in_category";
+            public static final String COL_PERCENTILE = "percentile";
+            public static final String COL_PEER_COUNT = "peer_count";
+        }
+
+        /** AMFI category strings the resolver does not recognise, so new ones surface as a gap. */
+        @UtilityClass
+        public static class MfCategoryUnmapped {
+            public static final String TABLE = "mf_category_unmapped";
+            public static final String COL_RAW_CATEGORY = "raw_category";
+            public static final String COL_SCHEME_COUNT = "scheme_count";
+        }
+
         @UtilityClass
         public static class IncomeTags {
             public static final String TABLE = "income_tags";
