@@ -279,19 +279,29 @@ public class MfAnalysisService {
             Double cagrSi = metricValue(m, Horizon.SI, Metric.CAGR);
             Double sharpe3y = metricValue(m, Horizon.Y3, Metric.SHARPE);
 
-            // Headline standing: 5-year CAGR percentile within the fund's category.
+            // Headline standing on CAGR, using the best available horizon: a fund younger than five
+            // years has no 5Y rank, so fall back to 4Y, then shorter, then since inception — rather
+            // than reporting it "unranked".
+            List<MfMetricRepository.SchemeRank> ranks = metricRepository.ranksForScheme(h.schemeCode());
             Integer rank = null, peerCount = null;
-            Double percentile = null;
-            for (MfMetricRepository.SchemeRank r : metricRepository.ranksForScheme(h.schemeCode())) {
-                if (r.horizon() == Horizon.Y5 && r.metric() == Metric.CAGR) {
-                    rank = r.rank(); peerCount = r.peerCount(); percentile = r.percentile();
+            Double percentile = null, rankCagr = null;
+            String rankHorizon = null;
+            outer:
+            for (Horizon pref : List.of(Horizon.Y5, Horizon.Y4, Horizon.Y3, Horizon.Y2, Horizon.Y1, Horizon.SI)) {
+                for (MfMetricRepository.SchemeRank r : ranks) {
+                    if (r.metric() == Metric.CAGR && r.horizon() == pref) {
+                        rank = r.rank(); peerCount = r.peerCount(); percentile = r.percentile();
+                        rankHorizon = pref.code; rankCagr = metricValue(m, pref, Metric.CAGR);
+                        break outer;
+                    }
                 }
             }
 
             totalInvested = totalInvested.add(invested);
             totalValue = totalValue.add(currentValue);
             holdings.add(new PortfolioHolding(h.schemeCode(), h.name(), h.amc(), h.assetClass(), h.subCategory(),
-                    units, invested, currentValue, cagr5y, cagrSi, sharpe3y, rank, percentile, peerCount));
+                    units, invested, currentValue, cagr5y, cagrSi, sharpe3y, rank, percentile, peerCount,
+                    rankHorizon, rankCagr));
         }
 
         return new Portfolio(totalInvested, totalValue, holdings);
@@ -350,11 +360,16 @@ public class MfAnalysisService {
     public record NavSeries(int schemeCode, String name, List<NavPoint> points) {
     }
 
-    /** One held fund with its current value, headline metrics and category standing. */
+    /**
+     * One held fund with its current value, headline metrics and category standing.
+     * {@code rankHorizon} is the CAGR horizon the standing was measured over (best available, e.g.
+     * "4Y" for a fund too young for a 5Y figure); {@code rankCagr} is the CAGR at that horizon.
+     */
     public record PortfolioHolding(int schemeCode, String name, String amc, String assetClass, String subCategory,
                                    BigDecimal units, BigDecimal invested, BigDecimal currentValue,
                                    Double cagr5y, Double cagrSi, Double sharpe3y,
-                                   Integer rank, Double percentile, Integer peerCount) {
+                                   Integer rank, Double percentile, Integer peerCount,
+                                   String rankHorizon, Double rankCagr) {
     }
 
     /** The user's mutual-fund portfolio: totals plus per-fund detail for ranking and the X-ray. */
