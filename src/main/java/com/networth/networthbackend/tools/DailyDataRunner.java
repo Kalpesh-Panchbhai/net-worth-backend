@@ -9,6 +9,7 @@ import com.networth.networthbackend.mf.MfMetricsRecomputeService;
 import com.networth.networthbackend.mf.MfNavDailySyncService;
 import com.networth.networthbackend.mf.MfSchemeSyncService;
 import com.networth.networthbackend.service.DhanDataService;
+import com.networth.networthbackend.stock.StockSignalRefreshService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -75,6 +76,12 @@ public class DailyDataRunner {
             } catch (Exception e) {
                 log.warn("MF metrics recompute failed; keeping previous metrics: {}", e.getMessage());
             }
+
+            // Refresh the stock analyzer's signal snapshot: replay each sector's winning strategy
+            // over live Yahoo bars for the full universe (~a few minutes). Kept out of the manual
+            // 29-second path for the same reason as the MF recompute, and self-contained (never
+            // throws), so a Yahoo outage leaves yesterday's signals in place.
+            new StockSignalRefreshService().refresh();
         }
 
         try (Connection conn = Database.getConnection()) {

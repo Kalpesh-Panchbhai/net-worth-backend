@@ -1,0 +1,12 @@
+Sector,Strategy,Composite,IS_Full_CAGR,IS_Early_CAGR,OOS_Hist_CAGR,OOS_Recent_CAGR,MinCAGR,MaxMDD,MinPF,MinWR,PortSharpe,DSR_Vest,StocksUsed
+communication_services,RF:communication_services,0.6975,21.32,29.60,25.50,85.00,21.32,46.69,7.21,89.58,0.8027,0.0474,23
+consumer_discretionary,RF:consumer_discretionary,0.6950,24.47,47.39,24.50,57.96,24.47,53.59,6.78,88.25,0.8233,0.2816,47
+consumer_staples,RF:consumer_staples,0.6686,15.21,18.72,16.87,32.25,15.21,39.40,6.24,80.00,0.5975,0.0853,34
+energy,RF:energy,0.5885,9.23,9.97,8.83,18.07,8.83,40.77,5.93,62.95,0.6002,0.1082,21
+financials,RF:financials,0.6916,19.05,27.21,30.04,118.14,19.05,43.12,7.74,90.00,0.6798,0.4727,76
+health_care,RF:health_care,0.6328,11.06,15.71,15.69,33.40,11.06,37.36,8.40,89.32,0.7925,0.2890,59
+industrials,RF:industrials,0.7746,31.38,31.37,34.24,69.84,31.37,50.57,9.03,80.00,0.8497,0.3121,79
+information_technology,RF:information_technology,0.7728,30.02,38.12,36.26,88.18,30.02,50.89,7.31,80.00,1.0854,0.1818,74
+materials,RF:materials,0.6242,15.43,22.40,19.50,67.71,15.43,47.85,9.38,80.00,0.5936,0.1864,26
+real_estate,RF:real_estate,0.6204,13.55,16.04,13.73,37.59,13.55,44.68,7.56,89.05,0.5961,0.1928,31
+utilities,RF:utilities,0.6850,21.48,19.72,20.36,70.91,19.72,45.68,8.84,88.30,0.6869,0.4765,31

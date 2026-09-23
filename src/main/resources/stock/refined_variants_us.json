@@ -1,0 +1,178 @@
+{
+  "RF:communication_services" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "adx_threshold" : 31.5,
+      "trail_activation_pct" : 23.25,
+      "ha_flip_exit" : false,
+      "rsi_entry" : 69.5,
+      "adx_filter" : true,
+      "entry_mode" : "rsi_pullback",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 3.0,
+      "rsi_period" : 2,
+      "variant_name" : "RF:communication_services",
+      "atr_period" : 30
+    }
+  },
+  "RF:consumer_discretionary" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "adx_threshold" : 24.191896264871716,
+      "ha_flip_exit" : false,
+      "entry_mode" : "rsi_pullback",
+      "variant_name" : "RF:consumer_discretionary",
+      "atr_period" : 22,
+      "tp_atr_mult" : 21.14356703979661,
+      "trail_activation_pct" : 29.18689107353263,
+      "rsi_entry" : 59.798397381972805,
+      "adx_filter" : true,
+      "trailing_stop" : true,
+      "trail_atr_mult" : 6.047943536256349,
+      "rsi_period" : 2
+    }
+  },
+  "RF:consumer_staples" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "tp_atr_mult" : 15.0,
+      "adx_threshold" : 28.5,
+      "trail_activation_pct" : 30.0,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 3.0,
+      "variant_name" : "RF:consumer_staples",
+      "atr_period" : 9
+    }
+  },
+  "RF:energy" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "adx_threshold" : 8.0,
+      "ha_flip_exit" : false,
+      "entry_mode" : "pullback",
+      "bb_filter" : true,
+      "variant_name" : "RF:energy",
+      "cooldown_bars" : 59,
+      "atr_period" : 11,
+      "bb_min_width" : 4.13722605517737,
+      "tp_atr_mult" : 0.0,
+      "trail_activation_pct" : 5.642361357001568,
+      "adx_filter" : true,
+      "trailing_stop" : true,
+      "trail_atr_mult" : 4.357942803383734,
+      "min_trend_bars" : 7,
+      "max_pullback_bars" : 2
+    }
+  },
+  "RF:financials" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "adx_threshold" : 30.83437728771842,
+      "trail_activation_pct" : 43.55066450628153,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 2.57805143409273,
+      "variant_name" : "RF:financials",
+      "atr_period" : 17
+    }
+  },
+  "RF:health_care" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "ha_flip_exit" : false,
+      "entry_mode" : "regime",
+      "bb_filter" : true,
+      "regime_window" : 15,
+      "variant_name" : "RF:health_care",
+      "atr_period" : 18,
+      "bb_min_width" : 6.0,
+      "tp_atr_mult" : 16.653802446458393,
+      "trail_activation_pct" : 16.25,
+      "rsi_entry" : 31.75,
+      "trailing_stop" : true,
+      "trail_atr_mult" : 4.747050423570085,
+      "regime_threshold" : 0.8787420640325955
+    }
+  },
+  "RF:industrials" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "adx_threshold" : 25.0,
+      "trail_activation_pct" : 49.584090659675404,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 4.186886851408997,
+      "bb_filter" : true,
+      "variant_name" : "RF:industrials",
+      "atr_period" : 14,
+      "bb_min_width" : 5.327234300329765
+    }
+  },
+  "RF:information_technology" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "tp_atr_mult" : 31.34982910535152,
+      "adx_threshold" : 30.178279076413283,
+      "trail_activation_pct" : 44.16898043271737,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 5.51319212001399,
+      "variant_name" : "RF:information_technology",
+      "atr_period" : 21
+    }
+  },
+  "RF:materials" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "tp_atr_mult" : 15.0,
+      "adx_threshold" : 30.0,
+      "trail_activation_pct" : 30.0,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 5.375,
+      "variant_name" : "RF:materials",
+      "atr_period" : 14
+    }
+  },
+  "RF:real_estate" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "tp_atr_mult" : 10.0,
+      "adx_threshold" : 35.0,
+      "trail_activation_pct" : 47.55494602230845,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 3.6041547278093273,
+      "variant_name" : "RF:real_estate",
+      "atr_period" : 7
+    }
+  },
+  "RF:utilities" : {
+    "class" : "HeikinAshiStrategy",
+    "params" : {
+      "tp_atr_mult" : 35.0,
+      "adx_threshold" : 30.0,
+      "trail_activation_pct" : 31.25,
+      "ha_flip_exit" : false,
+      "adx_filter" : true,
+      "entry_mode" : "flip",
+      "trailing_stop" : true,
+      "trail_atr_mult" : 2.5,
+      "variant_name" : "RF:utilities",
+      "atr_period" : 14
+    }
+  }
+}

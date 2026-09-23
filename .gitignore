@@ -90,3 +90,23 @@ nb-configuration.xml
 *.log
 *.csv
 *.xlsx
+
+##############################
+## Stock analysis (local optimizers) — large price cache + generated reports.
+## These live at the repo root and are read/written by the com.stock.analyzer
+## optimizer main classes when run locally; they must never be committed
+## (the price cache alone is ~428MB).
+##############################
+/strategies/
+/sector_all_phases/
+/sector_detail_report/
+/sector_portfolio_compare/
+/sector_csv/
+/sector_csv_oos/
+/sector_results_final/
+/factor_research/
+/framework_runs/
+
+# ...but the winners snapshots bundled as classpath resources ARE required by the
+# deployed Lambda scanner, so force-track them despite the global *.csv ignore.
+!src/main/resources/stock/*.csv

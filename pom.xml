@@ -77,6 +77,13 @@
             <artifactId>kiteconnect</artifactId>
             <version>3.5.0</version>
         </dependency>
+        <!-- OpenCSV: used only by the local stock-analysis optimizers/reports (SectorAllPhasesOptimizer,
+             ranking.Scorer), never on the Lambda request path. POI (already above) covers XLSX output. -->
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.8</version>
+        </dependency>
 
     </dependencies>
     <build>
