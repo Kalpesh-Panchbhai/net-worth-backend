@@ -15,6 +15,7 @@ import com.networth.networthbackend.incometags.IncomeTagApiHandler;
 import com.networth.networthbackend.mf.MfAnalysisApiHandler;
 import com.networth.networthbackend.stock.StockAnalysisApiHandler;
 import com.networth.networthbackend.stock.StockPositionApiHandler;
+import com.networth.networthbackend.stock.StockAlertApiHandler;
 import com.networth.networthbackend.refresh.RefreshApiHandler;
 import com.networth.networthbackend.transactions.TransactionApiHandler;
 import com.networth.networthbackend.userconfig.UserConfigApiHandler;
@@ -60,6 +61,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, MfAnalysisApiHandler::new, "mf-analysis", "mfanalysis");
         register(map, StockAnalysisApiHandler::new, "stock-analysis", "stockanalysis");
         register(map, StockPositionApiHandler::new, "stock-portfolio", "stockportfolio", "stock-positions");
+        register(map, StockAlertApiHandler::new, "stock-alerts", "stockalerts");
         return Map.copyOf(map);
     }
 

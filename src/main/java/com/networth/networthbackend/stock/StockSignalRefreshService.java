@@ -69,16 +69,8 @@ public class StockSignalRefreshService {
         int written = signalRepository.replaceForMarket(market, actionable);
         log.info("[{}] stock signal refresh: {} scanned, {} actionable, {} written",
                 market, signals.size(), actionable.size(), written);
-
-        // Slack alert: owned stocks scope the SELL block (best-effort — a DB miss just means "show all").
-        Set<String> held = null;
-        try {
-            held = positionRepository.heldStocks(market);
-        } catch (Exception e) {
-            log.warn("[{}] could not load owned stocks for Slack filter: {}", market, e.getMessage());
-        }
-        slack.notify(market, signals, held);
-
+        // Slack alerts are dispatched separately by StockAlertService at the user-configured time,
+        // reading these freshly-stored signals — so the scan no longer sends them itself.
         return new Result(signals.size(), written);
     }
 }
