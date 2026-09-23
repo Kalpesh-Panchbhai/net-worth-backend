@@ -22,8 +22,8 @@ public class RefreshApiHandler extends EntityHandlerBase {
 
     /** Epoch millis of the next scheduled refresh, per the UI-configured {@link RefreshSchedule}. */
     private long nextScheduledRefresh() {
-        Long next = schedule.nextRunAt(System.currentTimeMillis());
-        return next == null ? 0 : next;
+        java.util.List<Long> next = schedule.nextRuns(System.currentTimeMillis(), 1);
+        return next.isEmpty() ? 0 : next.get(0);
     }
 
     @Override

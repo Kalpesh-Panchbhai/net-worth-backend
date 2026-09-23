@@ -10,6 +10,7 @@ import com.networth.networthbackend.meta.AppMetaRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -41,9 +42,12 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         JsonNode b = getJsonBody(request);
         RefreshSchedule.Config cur = schedule.get();
         int interval = b != null && b.hasNonNull("intervalHours") ? b.get("intervalHours").asInt() : cur.intervalHours();
+        int anchorHour = b != null && b.hasNonNull("anchorHour") ? b.get("anchorHour").asInt() : cur.anchorHour();
+        int anchorMinute = b != null && b.hasNonNull("anchorMinute") ? b.get("anchorMinute").asInt() : cur.anchorMinute();
+        String tz = b != null && b.hasNonNull("timezone") ? b.get("timezone").asText() : cur.timezone();
         boolean weekdaysOnly = b != null && b.has("weekdaysOnly") ? b.get("weekdaysOnly").asBoolean() : cur.weekdaysOnly();
         boolean enabled = b != null && b.has("enabled") ? b.get("enabled").asBoolean() : cur.enabled();
-        schedule.save(interval, weekdaysOnly, enabled);
+        schedule.save(interval, anchorHour, anchorMinute, tz, weekdaysOnly, enabled);
         return ok(body());
     }
 
@@ -52,6 +56,9 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         long now = System.currentTimeMillis();
         Map<String, Object> m = new HashMap<>();
         m.put("intervalHours", cfg.intervalHours());
+        m.put("anchorHour", cfg.anchorHour());
+        m.put("anchorMinute", cfg.anchorMinute());
+        m.put("timezone", cfg.timezone());
         m.put("weekdaysOnly", cfg.weekdaysOnly());
         m.put("enabled", cfg.enabled());
         m.put("allowedIntervals", RefreshSchedule.ALLOWED_INTERVALS);
@@ -61,7 +68,9 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         } catch (Exception e) {
             m.put("lastRefreshedAt", null);
         }
-        m.put("nextRefreshAt", schedule.nextRunAt(now));
+        List<Long> next = schedule.nextRuns(now, 10);
+        m.put("nextRuns", next);
+        m.put("nextRefreshAt", next.isEmpty() ? null : next.get(0));
         return m;
     }
 }
