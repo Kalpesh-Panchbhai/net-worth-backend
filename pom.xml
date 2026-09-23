@@ -85,6 +85,19 @@
             <version>5.8</version>
         </dependency>
 
+        <!-- AWS SDK v2 (EventBridge): read/update the scheduler rule from the UI. url-connection-client
+             is a dependency-light HTTP impl for Lambda. -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>eventbridge</artifactId>
+            <version>2.25.70</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+            <version>2.25.70</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -110,6 +123,11 @@
                 <version>2.4.3</version>
                 <configuration>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <!-- Merge AWS SDK v2 (and other) META-INF/services SPI files so the shaded
+                         uber-jar can locate the EventBridge client / HTTP client at runtime. -->
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    </transformers>
                 </configuration>
                 <executions>
                     <execution>

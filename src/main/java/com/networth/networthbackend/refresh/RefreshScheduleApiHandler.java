@@ -26,6 +26,7 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
 
     private final RefreshSchedule schedule = new RefreshSchedule();
     private final AppMetaRepository appMeta = new AppMetaRepository();
+    private final EventBridgeScheduler eventBridge = new EventBridgeScheduler();
 
     @Override
     public APIGatewayProxyResponseEvent handle(String action, APIGatewayProxyRequestEvent request, Context context)
@@ -48,7 +49,18 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         boolean weekdaysOnly = b != null && b.has("weekdaysOnly") ? b.get("weekdaysOnly").asBoolean() : cur.weekdaysOnly();
         boolean enabled = b != null && b.has("enabled") ? b.get("enabled").asBoolean() : cur.enabled();
         schedule.save(interval, anchorHour, anchorMinute, tz, weekdaysOnly, enabled);
-        return ok(body());
+
+        // Push the new schedule to the actual EventBridge rule so AWS fires at these times.
+        String warning = null;
+        try {
+            eventBridge.update(schedule.buildCron(schedule.get()), enabled);
+        } catch (Exception e) {
+            warning = "Saved, but updating the AWS EventBridge rule failed: " + e.getMessage();
+            log.warn(warning, e);
+        }
+        Map<String, Object> body = body();
+        if (warning != null) body.put("warning", warning);
+        return ok(body);
     }
 
     private Map<String, Object> body() {
@@ -71,6 +83,18 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         List<Long> next = schedule.nextRuns(now, 10);
         m.put("nextRuns", next);
         m.put("nextRefreshAt", next.isEmpty() ? null : next.get(0));
+
+        // Live view of the actual AWS EventBridge rule (what's really scheduled).
+        try {
+            EventBridgeScheduler.RuleInfo rule = eventBridge.describe();
+            m.put("awsCron", rule.scheduleExpression());
+            m.put("awsState", rule.state());
+            m.put("awsRuleName", EventBridgeScheduler.RULE_NAME);
+        } catch (Exception e) {
+            log.warn("Could not read EventBridge rule: {}", e.getMessage());
+            m.put("awsCron", null);
+            m.put("awsState", null);
+        }
         return m;
     }
 }

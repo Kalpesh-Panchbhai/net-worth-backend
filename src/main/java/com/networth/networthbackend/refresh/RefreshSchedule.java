@@ -129,6 +129,28 @@ public class RefreshSchedule {
         return best;
     }
 
+    /**
+     * Builds an EventBridge (UTC) cron for a config: {@code cron(min hoursCsv ? * DOW *)}. Slots are
+     * anchor + k·interval in the config timezone; converting to UTC yields a constant minute (whole-hour
+     * intervals) and a set of UTC hours. Uses the tz offset at "now" — for a DST zone the rule would
+     * need re-saving after a transition (IST has no DST, so it's exact there).
+     */
+    public String buildCron(Config cfg) {
+        ZoneId zone = safeZone(cfg.timezone());
+        int[] slotMinutes = dailySlotMinutes(cfg);
+        LocalDate today = ZonedDateTime.now(zone).toLocalDate();
+        java.util.TreeSet<Integer> utcHours = new java.util.TreeSet<>();
+        int utcMinute = 0;
+        for (int m : slotMinutes) {
+            ZonedDateTime utc = today.atStartOfDay(zone).plusMinutes(m).withZoneSameInstant(ZoneId.of("UTC"));
+            utcHours.add(utc.getHour());
+            utcMinute = utc.getMinute();
+        }
+        String hours = utcHours.stream().map(String::valueOf).reduce((a, b) -> a + "," + b).orElse("0");
+        String dow = cfg.weekdaysOnly() ? "MON-FRI" : "*";
+        return String.format("cron(%d %s ? * %s *)", utcMinute, hours, dow);
+    }
+
     /** Minutes-of-day for each slot: baseMod, baseMod+cycle, … (interval divides 24h). */
     private static int[] dailySlotMinutes(Config cfg) {
         int cycle = cfg.intervalHours() * 60;
