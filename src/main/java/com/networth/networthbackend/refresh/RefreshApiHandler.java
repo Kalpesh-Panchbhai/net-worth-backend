@@ -10,8 +10,6 @@ import com.networth.networthbackend.meta.AppMetaRepository;
 import com.networth.networthbackend.tools.DailyDataRunner;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,25 +18,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class RefreshApiHandler extends EntityHandlerBase {
 
     private final AppMetaRepository appMeta = new AppMetaRepository();
+    private final RefreshSchedule schedule = new RefreshSchedule();
 
-    /**
-     * The UTC hours the scheduled refresh runs at, mirroring the EventBridge rule
-     * {@code cron(30 0/8 ? * * *)} (every 8 hours at :30). Keep in sync with that rule.
-     */
-    private static final int[] REFRESH_HOURS_UTC = {0, 8, 16};
-    private static final int REFRESH_MINUTE_UTC = 30;
-
-    /** Epoch millis of the next scheduled refresh, derived from {@link #REFRESH_HOURS_UTC}. */
-    private static long nextScheduledRefresh() {
-        ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-        for (int dayOffset = 0; dayOffset <= 1; dayOffset++) {
-            for (int hour : REFRESH_HOURS_UTC) {
-                ZonedDateTime candidate = now.toLocalDate().plusDays(dayOffset)
-                        .atTime(hour, REFRESH_MINUTE_UTC).atZone(ZoneOffset.UTC);
-                if (candidate.isAfter(now)) return candidate.toInstant().toEpochMilli();
-            }
-        }
-        return now.plusHours(8).toInstant().toEpochMilli(); // unreachable, but a safe fallback
+    /** Epoch millis of the next scheduled refresh, per the UI-configured {@link RefreshSchedule}. */
+    private long nextScheduledRefresh() {
+        Long next = schedule.nextRunAt(System.currentTimeMillis());
+        return next == null ? 0 : next;
     }
 
     @Override

@@ -17,6 +17,7 @@ import com.networth.networthbackend.stock.StockAnalysisApiHandler;
 import com.networth.networthbackend.stock.StockPositionApiHandler;
 import com.networth.networthbackend.stock.StockAlertApiHandler;
 import com.networth.networthbackend.refresh.RefreshApiHandler;
+import com.networth.networthbackend.refresh.RefreshScheduleApiHandler;
 import com.networth.networthbackend.transactions.TransactionApiHandler;
 import com.networth.networthbackend.userconfig.UserConfigApiHandler;
 import com.networth.networthbackend.users.UserApiHandler;
@@ -56,6 +57,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, WatchlistAccountApiHandler::new, "watchlist-accounts", "watchlistaccounts");
         register(map, WatchlistApiHandler::new, "watchlists", "watchlist");
         register(map, RefreshApiHandler::new, "refresh");
+        register(map, RefreshScheduleApiHandler::new, "refresh-schedule", "refreshschedule");
         register(map, YahooSearchApiHandler::new, "yahoo-search", "yahoosearch");
         register(map, SyncMfApiHandler::new, "sync-mf", "syncmf");
         register(map, MfAnalysisApiHandler::new, "mf-analysis", "mfanalysis");
