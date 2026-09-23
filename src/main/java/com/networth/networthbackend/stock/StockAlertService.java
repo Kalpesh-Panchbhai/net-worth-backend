@@ -41,7 +41,7 @@ public class StockAlertService {
         this.slack = slack;
     }
 
-    /** Sends any alerts that are due right now. Never throws. */
+    /** Sends any alerts that are due right now (window-based). Never throws. */
     public void dispatchDue() {
         try {
             for (StockAlertConfig cfg : configRepo.findAllEnsuringDefaults()) {
@@ -53,6 +53,27 @@ public class StockAlertService {
             }
         } catch (Exception e) {
             log.error("Alert dispatch failed: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Fires one market's alert now — used when a dedicated per-market EventBridge rule triggers at
+     * the configured time. Timing is guaranteed by the rule, so this only checks enabled / weekday /
+     * not-already-sent-today. Never throws.
+     */
+    public void dispatchMarket(String market) {
+        try {
+            StockAlertConfig cfg = configRepo.findAllEnsuringDefaults().stream()
+                    .filter(c -> c.market().equalsIgnoreCase(market)).findFirst().orElse(null);
+            if (cfg == null) { log.warn("No alert config for market {}", market); return; }
+            if (!cfg.enabled()) return;
+            ZonedDateTime now = ZonedDateTime.now(safeZone(cfg.timezone()));
+            if (cfg.weekdaysOnly() && (now.getDayOfWeek() == DayOfWeek.SATURDAY || now.getDayOfWeek() == DayOfWeek.SUNDAY)) return;
+            LocalDate today = now.toLocalDate();
+            if (today.equals(cfg.lastSentDate())) return; // idempotent within the day
+            send(cfg, today);
+        } catch (Exception e) {
+            log.error("[{}] alert dispatch failed: {}", market, e.getMessage(), e);
         }
     }
 
@@ -68,11 +89,15 @@ public class StockAlertService {
         int nowMin = now.getHour() * 60 + now.getMinute();
         int cfgMin = cfg.hour() * 60 + cfg.minute();
         if (nowMin < cfgMin || nowMin >= cfgMin + WINDOW_MINUTES) return; // not in the fire window
+        send(cfg, today);
+    }
 
+    /** Posts the market's digest and stamps last-sent. Skips (without stamping) when no signals exist. */
+    private void send(StockAlertConfig cfg, LocalDate today) throws Exception {
         List<StockSignal> signals = signalRepo.findByMarket(cfg.market());
         if (signals.isEmpty()) {
-            log.warn("[{}] alert due but no signals stored yet; will retry next tick", cfg.market());
-            return; // don't stamp — retry when signals exist
+            log.warn("[{}] alert due but no signals stored yet; skipping", cfg.market());
+            return; // don't stamp — retry next time
         }
         Set<String> held = positionRepo.heldStocks(cfg.market());
         slack.notify(cfg.market(), signals, held);

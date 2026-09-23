@@ -53,7 +53,7 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
         // Push the new schedule to the actual EventBridge rule so AWS fires at these times.
         String warning = null;
         try {
-            eventBridge.update(schedule.buildCron(schedule.get()), enabled);
+            eventBridge.update(EventBridgeScheduler.RULE_NAME, schedule.buildCron(schedule.get()), enabled);
         } catch (Exception e) {
             warning = "Saved, but updating the AWS EventBridge rule failed: " + e.getMessage();
             log.warn(warning, e);
@@ -86,7 +86,7 @@ public class RefreshScheduleApiHandler extends EntityHandlerBase {
 
         // Live view of the actual AWS EventBridge rule (what's really scheduled).
         try {
-            EventBridgeScheduler.RuleInfo rule = eventBridge.describe();
+            EventBridgeScheduler.RuleInfo rule = eventBridge.describe(EventBridgeScheduler.RULE_NAME);
             m.put("awsCron", rule.scheduleExpression());
             m.put("awsState", rule.state());
             m.put("awsRuleName", EventBridgeScheduler.RULE_NAME);
