@@ -1,0 +1,40 @@
+name: Deploy Lambdas
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency: deploy-lambda
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - run: mvn -B package -DskipTests
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::287750673296:role/github-networth-deploy
+          aws-region: ap-south-1
+
+      - name: Update functions
+        run: |
+          for f in NetWorthAPIFunction NetWorthSchedulerFunction NetWorthStockAlertFunction; do
+            aws lambda update-function-code --function-name "$f" \
+              --zip-file fileb://target/net-worth-backend-1.0-SNAPSHOT.jar \
+              --query '[FunctionName,LastModified]' --output text
+            aws lambda wait function-updated --function-name "$f"
+          done
