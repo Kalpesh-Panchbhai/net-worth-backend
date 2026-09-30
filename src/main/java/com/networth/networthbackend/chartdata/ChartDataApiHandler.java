@@ -18,6 +18,7 @@ import java.util.List;
 public class ChartDataApiHandler extends EntityHandlerBase {
 
     private final ChartDataService service = new ChartDataService();
+    private final TimelineService timelineService = new TimelineService();
     private final ChartDataValidationService validationService = new ChartDataValidationService();
     private final AccountRepository accountRepository = new AccountRepository();
     private final WatchlistRepository watchlistRepository = new WatchlistRepository();
@@ -31,9 +32,32 @@ public class ChartDataApiHandler extends EntityHandlerBase {
 
         return switch (action.toLowerCase()) {
             case Constants.Actions.GET -> getChartData(request);
+            case "timeline" -> getTimeline(request);
             default ->
                     badRequest(Constants.ErrorCodes.ACTION_NOT_SUPPORTED, String.format(Constants.Messages.ACTION_NOT_SUPPORTED_FMT, "chartdata", action));
         };
+    }
+
+    /** GET /chart-data?action=timeline&watchlistId=&step= — per-holding history for the time machine. */
+    private APIGatewayProxyResponseEvent getTimeline(APIGatewayProxyRequestEvent request) throws Exception {
+        long watchlistId;
+        int step = TimelineService.DEFAULT_STEP_DAYS;
+        try {
+            watchlistId = Long.parseLong(queryParam(request, "watchlistId"));
+            String stepParam = queryParam(request, "step");
+            if (stepParam != null) step = Integer.parseInt(stepParam);
+        } catch (NumberFormatException e) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "watchlistId and step must be integers");
+        }
+        if (step < 1 || step > 366) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "step must be between 1 and 366 days");
+        }
+        Watchlist watchlist = watchlistRepository.findById(watchlistId).orElse(null);
+        if (watchlist == null) {
+            return notFound(Constants.ErrorCodes.VALIDATION_ERROR, "No watchlist with id " + watchlistId);
+        }
+        String preferred = userRepository.getPreferredCurrency(watchlist.getUserId());
+        return ok(timelineService.getWatchlistTimeline(watchlistId, step, preferred));
     }
 
     private APIGatewayProxyResponseEvent getChartData(APIGatewayProxyRequestEvent request) throws Exception {
