@@ -3,10 +3,12 @@ package com.networth.networthbackend.stock;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,17 +29,21 @@ public class StockAlertService {
     private final StockAlertConfigRepository configRepo;
     private final StockSignalRepository signalRepo;
     private final StockPositionRepository positionRepo;
+    private final StockPerformanceRepository performanceRepo;
     private final SlackNotifier slack;
 
     public StockAlertService() {
-        this(new StockAlertConfigRepository(), new StockSignalRepository(), new StockPositionRepository(), new SlackNotifier());
+        this(new StockAlertConfigRepository(), new StockSignalRepository(), new StockPositionRepository(),
+                new StockPerformanceRepository(), new SlackNotifier());
     }
 
     public StockAlertService(StockAlertConfigRepository configRepo, StockSignalRepository signalRepo,
-                             StockPositionRepository positionRepo, SlackNotifier slack) {
+                             StockPositionRepository positionRepo, StockPerformanceRepository performanceRepo,
+                             SlackNotifier slack) {
         this.configRepo = configRepo;
         this.signalRepo = signalRepo;
         this.positionRepo = positionRepo;
+        this.performanceRepo = performanceRepo;
         this.slack = slack;
     }
 
@@ -100,7 +106,16 @@ public class StockAlertService {
             return; // don't stamp — retry next time
         }
         Set<String> held = positionRepo.heldStocks(cfg.market());
-        slack.notify(cfg.market(), signals, held);
+        // Backtest stats and scan time only enrich the message; a failure to load them must not block the alert.
+        Map<String, StockPerformance> perf = Map.of();
+        Instant lastScan = null;
+        try {
+            perf = performanceRepo.byBareStock(cfg.market());
+            lastScan = signalRepo.lastScanAt(cfg.market());
+        } catch (Exception e) {
+            log.warn("[{}] could not load backtest stats for the alert: {}", cfg.market(), e.getMessage());
+        }
+        slack.notify(cfg.market(), signals, held, perf, lastScan);
         configRepo.markSent(cfg.market(), today);
         log.info("[{}] Slack alert fired at {}:{} {}", cfg.market(),
                 String.format("%02d", cfg.hour()), String.format("%02d", cfg.minute()), cfg.timezone());

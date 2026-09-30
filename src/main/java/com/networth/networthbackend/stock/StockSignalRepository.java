@@ -150,4 +150,19 @@ public class StockSignalRepository {
             }
         }
     }
+
+    /** When the market's signals were last written by a scan, or null when it has no rows. */
+    public java.time.Instant lastScanAt(String market) throws SQLException {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT MAX(updated_at) FROM " + T + " WHERE market = ?")) {
+            ps.setString(1, market);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    java.sql.Timestamp t = rs.getTimestamp(1);
+                    return t == null ? null : t.toInstant();
+                }
+                return null;
+            }
+        }
+    }
 }

@@ -7,10 +7,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,17 +32,20 @@ public class SlackNotifier {
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
 
+    private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
+
     private static final String TV_BASE = "https://www.tradingview.com/chart/?symbol=";
 
     /** Sends the alert for one market. Never throws — a Slack failure must not fail the daily job. */
-    public void notify(String market, List<StockSignal> signals, Set<String> heldStocks) {
+    public void notify(String market, List<StockSignal> signals, Set<String> heldStocks,
+                       Map<String, StockPerformance> perfByStock, Instant lastScan) {
         try {
             String webhook = webhookFor(market);
             if (webhook == null || webhook.isBlank()) {
                 log.info("[{}] Slack webhook not configured; skipping alert", market);
                 return;
             }
-            String message = buildMessage(market, signals, heldStocks);
+            String message = buildMessage(market, signals, heldStocks, perfByStock, lastScan);
             boolean ok = send(webhook, message);
             log.info("[{}] Slack alert: {}", market, ok ? "sent" : "failed");
         } catch (Exception e) {
@@ -56,7 +63,8 @@ public class SlackNotifier {
      * Builds the Slack text: BUY block then SELL block (owned only), each sorted by ticker, rendered
      * as a fixed-width table inside a code block so columns line up in Slack.
      */
-    static String buildMessage(String market, List<StockSignal> signals, Set<String> heldStocks) {
+    static String buildMessage(String market, List<StockSignal> signals, Set<String> heldStocks,
+                               Map<String, StockPerformance> perfByStock, Instant lastScan) {
         boolean us = "us".equalsIgnoreCase(market);
         String label = us ? "US" : "IN";
         String cur = us ? "$" : "Rs";
@@ -87,25 +95,37 @@ public class SlackNotifier {
 
         if (ordered.isEmpty()) {
             sb.append("\nNo actionable BUY/SELL signals.");
+            appendLastScan(sb, lastScan);
             return sb.toString();
         }
 
-        sb.append(renderTable(ordered));
+        sb.append(renderTable(ordered, perfByStock == null ? Map.of() : perfByStock));
 
         List<String> links = new ArrayList<>();
         for (StockSignal s : ordered) {
             links.add("<" + tvUrl(s.stock(), market) + "|" + s.stock() + ">");
         }
         sb.append("\n📈 *Charts:* ").append(String.join("  ·  ", links));
+        appendLastScan(sb, lastScan);
         return sb.toString();
     }
 
-    private static final String[] HEADERS = {"SIDE", "STOCK", "SECTOR", "PRICE", "SL", "TP"};
+    private static final DateTimeFormatter SCAN_FMT = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH);
+
+    private static void appendLastScan(StringBuilder sb, Instant lastScan) {
+        if (lastScan == null) return;
+        sb.append("\n_Last scan: ").append(SCAN_FMT.format(lastScan.atZone(IST))).append(" IST_");
+    }
+
+    private static final String[] HEADERS = {"SIDE", "STOCK", "SECTOR", "PRICE", "SL", "TP",
+            "WR%", "PF", "CAGR", "AVG P&L", "AVG MAXDD", "AVG RUN-UP", "AVG HOLD"};
     private static final int LEFT_ALIGN_COLS = 3;
 
-    private static String renderTable(List<StockSignal> rows) {
+    private static String renderTable(List<StockSignal> rows, Map<String, StockPerformance> perfByStock) {
         List<String[]> cells = new ArrayList<>();
         for (StockSignal s : rows) {
+            // Per-stock backtest stats of the strategy behind the signal; "-" when never backtested.
+            StockPerformance p = perfByStock.get(s.stock().toUpperCase().replace(".NS", ""));
             cells.add(new String[]{
                     s.type().toUpperCase(),
                     s.stock(),
@@ -113,6 +133,13 @@ public class SlackNotifier {
                     num(s.price()),
                     numN(s.stopLoss()),
                     numN(s.takeProfit()),
+                    p == null || p.wr() == null ? "-" : String.format(Locale.US, "%.0f%%", p.wr()),
+                    p == null ? "-" : profitFactor(p),
+                    p == null || p.cagr() == null ? "-" : String.format(Locale.US, "%.1f%%", p.cagr()),
+                    p == null ? "-" : signedPct(p.avgTradePct()),
+                    p == null ? "-" : signedPct(p.avgMaePct()),
+                    p == null ? "-" : signedPct(p.avgMfePct()),
+                    p == null || p.avgHoldDays() == null ? "-" : String.format(Locale.US, "%.0fd", p.avgHoldDays()),
             });
         }
         int ncol = HEADERS.length;
@@ -158,6 +185,14 @@ public class SlackNotifier {
 
     private static String num(double v) { return String.format(Locale.US, "%.2f", v); }
     private static String numN(Double v) { return v == null ? "-" : String.format(Locale.US, "%.2f", v); }
+    private static String signedPct(Double v) { return v == null ? "-" : String.format(Locale.US, "%+.2f%%", v); }
+
+    /** A backtest with winners and no losers has an unbounded profit factor; show it as "inf". */
+    private static String profitFactor(StockPerformance p) {
+        if (p.pf() != null && !p.pf().isInfinite()) return String.format(Locale.US, "%.2f", p.pf());
+        boolean noLosses = p.losers() != null && p.losers() == 0 && p.winners() != null && p.winners() > 0;
+        return p.pf() != null || noLosses ? "inf" : "-";
+    }
 
     /** Compact sector label: first letters of each word, e.g. "financial_services" → "FS". */
     private static String shortSector(String sector) {
