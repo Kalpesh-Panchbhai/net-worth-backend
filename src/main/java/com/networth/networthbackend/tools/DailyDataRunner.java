@@ -119,6 +119,41 @@ public class DailyDataRunner {
         new AppMetaRepository().stampRefreshNow();
     }
 
+    /**
+     * Rebuilds daily data after a transaction is added/updated, over full history (the "all"
+     * window, since a transaction may be backdated). Broker accounts refresh only the affected
+     * holding; other accounts refresh the whole account. Skips FX, MF maintenance and the Dhan API
+     * path: Dhan accounts have no transactions, so they never reach here.
+     */
+    public static void runForTransaction(long accountId, long holdingId) throws Exception {
+        int batchSize = Integer.parseInt(Constants.DailyDataRunner.DEFAULT_BATCH_SIZE);
+        try (Connection conn = Database.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement upsert = prepareUpsert(conn); PreparedStatement deletePs = prepareDeleteDaily(conn)) {
+                ProcessingContext context = new ProcessingContext(conn, upsert, deletePs, batchSize, null, LocalDate.now());
+                Map<Long, List<Tx>> txByHolding = new HashMap<>(readTransactionsByHoldingForAccount(conn, accountId));
+                boolean isBroker = Constants.Accounts.TYPE_BROKER.equalsIgnoreCase(getAccountType(conn, accountId));
+                if (isBroker) txByHolding.keySet().retainAll(Set.of(holdingId));
+                int pending = isBroker
+                        ? processBrokerAccount(context, accountId, txByHolding, 0)
+                        : processNonBrokerAccount(context, accountId, txByHolding, 0);
+                if (pending > 0) upsert.executeBatch();
+            }
+            conn.commit();
+        }
+    }
+
+    private static String getAccountType(Connection conn, long accountId) throws SQLException {
+        String sql = Constants.SQL.SELECT + Constants.DB.Accounts.COL_TYPE + Constants.SQL.FROM + Constants.DB.Accounts.TABLE + Constants.SQL.WHERE + Constants.DB.Accounts.COL_ID + Constants.SQL.EQ_PARAM;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, accountId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString(1);
+            }
+        }
+        return null;
+    }
+
     // ---- Public entrypoints ----
 
     private static String getAccountCurrency(Connection conn, long accountId) throws SQLException {

@@ -8,6 +8,7 @@ import com.networth.networthbackend.accounts.AccountRepository;
 import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.tools.DailyDataRunner;
 import com.networth.networthbackend.users.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 
@@ -116,6 +117,13 @@ public class TransactionApiHandler extends EntityHandlerBase {
         if (account != null) {
             currencyConverter.labelNative(created, account.getCurrency(), valueIsUnits(account));
         }
+        // The transaction is already committed, so a refresh failure must not fail the request;
+        // the scheduled run will pick it up later.
+        try {
+            DailyDataRunner.runForTransaction(accountId, holdingId);
+        } catch (Exception e) {
+            log.warn("Daily data refresh failed for account {} holding {} after transaction create: {}", accountId, holdingId, e.getMessage(), e);
+        }
         log.info(Constants.Logs.TRANSACTION_CREATED, created.getId(), accountId, holdingId, txnDate, invested, value, m);
         return created(created);
     }
@@ -148,9 +156,22 @@ public class TransactionApiHandler extends EntityHandlerBase {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
         }
         long id = Long.parseLong(idStr);
+        // Read the row first: once it is gone there is no way to tell which account/holding to refresh.
+        var existing = repository.findById(id);
         int affected = repository.deleteById(id);
         log.debug(Constants.Logs.TRANSACTION_DELETE_AFFECTED, affected, id);
         if (affected == 0) return notFound(Constants.ErrorCodes.NOT_FOUND, Constants.Messages.TRANSACTION_NOT_FOUND);
+        // The delete is already committed, so a refresh failure must not fail the request;
+        // the scheduled run will pick it up later.
+        if (existing.isPresent()) {
+            long accountId = existing.get().getAccountId();
+            long holdingId = existing.get().getHoldingId();
+            try {
+                DailyDataRunner.runForTransaction(accountId, holdingId);
+            } catch (Exception e) {
+                log.warn("Daily data refresh failed for account {} holding {} after transaction delete: {}", accountId, holdingId, e.getMessage(), e);
+            }
+        }
         return ApiGatewayResponses.noContent();
     }
 }

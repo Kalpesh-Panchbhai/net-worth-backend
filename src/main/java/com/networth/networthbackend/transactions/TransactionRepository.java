@@ -95,6 +95,21 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
         return queryOne(sql, ps -> ps.setLong(1, holdingId), MAPPER);
     }
 
+    public Optional<Transaction> findById(long id) throws SQLException {
+        final String sql = Constants.SQL.SELECT
+                + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Transactions.COL_ID,
+                Constants.DB.Transactions.COL_ACCOUNT_ID,
+                Constants.DB.Transactions.COL_HOLDING_ID,
+                Constants.DB.Transactions.COL_TXN_DATE,
+                Constants.DB.Transactions.COL_INVESTED,
+                Constants.DB.Transactions.COL_VALUE)
+                + Constants.SQL.FROM + Constants.DB.Transactions.TABLE
+                + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ID + Constants.SQL.EQ_PARAM
+                + Constants.SQL.LIMIT_1;
+        return queryOne(sql, ps -> ps.setLong(1, id), MAPPER);
+    }
+
     public int deleteById(long id) throws SQLException {
         final String sql = Constants.SQL.DELETE_FROM + Constants.DB.Transactions.TABLE
                 + Constants.SQL.WHERE + Constants.DB.Transactions.COL_ID + Constants.SQL.EQ_PARAM
