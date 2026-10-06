@@ -104,7 +104,21 @@ public class XirrService {
                                       Map<Long, BigDecimal> currentValueByAccount,
                                       String displayCurrency) {
         if (accountIdsByGroup == null || accountIdsByGroup.isEmpty()) return Map.of();
-        Map<Long, List<Xirr.Flow>> flows = flowsByAccount(nativeCurrencyByAccount, displayCurrency);
+        return byGroup(accountIdsByGroup, flowsByAccount(nativeCurrencyByAccount, displayCurrency), currentValueByAccount);
+    }
+
+    /**
+     * As {@link #byGroup(Map, Map, Map, String)}, but over cash flows the caller has already
+     * loaded. Callers that need the per-account flows for something else — a member row's cost
+     * basis, say — use this so the grouped query runs once rather than twice.
+     *
+     * @param flowsByAccount account id -&gt; that account's flows in the display currency
+     */
+    public <K> Map<K, Double> byGroup(Map<K, ? extends Collection<Long>> accountIdsByGroup,
+                                      Map<Long, List<Xirr.Flow>> flowsByAccount,
+                                      Map<Long, BigDecimal> currentValueByAccount) {
+        if (accountIdsByGroup == null || accountIdsByGroup.isEmpty()) return Map.of();
+        Map<Long, List<Xirr.Flow>> flows = flowsByAccount == null ? Map.of() : flowsByAccount;
         LocalDate today = LocalDate.now();
 
         Map<K, Double> out = new HashMap<>();
@@ -127,6 +141,26 @@ public class XirrService {
     /** XIRR for one already-converted cash-flow list, closing it with today's value. */
     public Double solve(List<Xirr.Flow> flows, BigDecimal currentValue) {
         return closeAndSolve(flows, currentValue, LocalDate.now());
+    }
+
+    /**
+     * Cumulative invested represented by an already-converted cash-flow list: the sum of the
+     * outflows, each translated at the rate of the date the money actually moved.
+     * <p>
+     * This is the display-currency cost basis that belongs beside {@code xirr}. Converting the
+     * stored cumulative figure at today's rate instead would retranslate years-old purchases at a
+     * rate that was never paid, which makes {@code gain} disagree in sign with the XIRR derived
+     * from the very same flows whenever the account's native currency is not the display currency.
+     * Historical translation is also what the chart series and the tax treatment of a foreign
+     * holding both use, so this keeps all three consistent.
+     *
+     * @return null when there are no flows, so the caller can keep whatever basis it already had
+     */
+    public static BigDecimal investedFromFlows(List<Xirr.Flow> flows) {
+        if (flows == null || flows.isEmpty()) return null;
+        BigDecimal sum = BigDecimal.ZERO;
+        for (Xirr.Flow f : flows) sum = sum.add(BigDecimal.valueOf(-f.amount()));
+        return sum.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     /**

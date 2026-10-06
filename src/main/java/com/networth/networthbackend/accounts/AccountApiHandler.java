@@ -78,6 +78,9 @@ public class AccountApiHandler extends EntityHandlerBase {
             if (flows == null || flows.isEmpty()) continue;
             a.setCashFlows(XirrService.toWire(flows));
             a.setXirr(xirrService.solve(flows, a.getCurrentDayValue()));
+            // The flows carry each purchase translated at the rate of its own date, so they are a
+            // truer cost basis than the cumulative figure the converter restated at today's rate.
+            SummaryCurrencyConverter.applyHistoricalInvested(a, XirrService.investedFromFlows(flows));
         }
     }
 

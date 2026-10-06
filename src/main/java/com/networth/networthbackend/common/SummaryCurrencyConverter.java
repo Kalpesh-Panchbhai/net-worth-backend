@@ -19,9 +19,17 @@ import java.util.function.Function;
  * the derived {@code gain} / {@code dayChange} fields.
  * <p>
  * Each amount is translated at the rate of the date it is stamped with: {@code currentDayValue}
- * and {@code invested} (the latest carried-forward cost basis) at today's rate,
- * {@code previousDayValue} at yesterday's. Rates come from {@link FxService}, so this makes no
- * outbound network call and needs one small, cached database read for the whole list.
+ * at today's rate and {@code previousDayValue} at yesterday's. Rates come from {@link FxService},
+ * so this makes no outbound network call and needs one small, cached database read for the whole
+ * list.
+ * <p>
+ * {@code invested} is the one amount today's rate cannot answer correctly. It is a cumulative cost
+ * basis built up over years, so translating the total at today's rate restates purchases at a rate
+ * that was never paid. Callers that can supply the historically translated basis — anything with
+ * the account's cash flows to hand — should overwrite it via
+ * {@link #applyHistoricalInvested(SummaryMetrics, BigDecimal)}; see that method for why. The
+ * today's-rate figure computed here remains the fallback for rows with no flows, where it is the
+ * only basis available.
  * <p>
  * When a rate genuinely cannot be resolved, the item keeps its native amounts and is labelled with
  * its <em>native</em> currency. Callers that aggregate must therefore check
@@ -75,6 +83,30 @@ public final class SummaryCurrencyConverter {
     /** True when the item's amounts are in {@code preferredCurrency} and safe to aggregate. */
     public static boolean convertedToPreferred(SummaryMetrics item, String preferredCurrency) {
         return FxService.normalize(preferredCurrency).equals(item.getDisplayCurrency());
+    }
+
+    /**
+     * Replaces {@code invested} with a cost basis translated at the rates in force when the money
+     * actually moved, and re-derives {@code gain} from it.
+     * <p>
+     * {@link #convert} can only translate the stored cumulative basis at today's rate, which for a
+     * foreign-currency account reports a cost that was never paid: a holding bought for $1000 when
+     * the rate was 70 is restated as if ₹88,000 had been spent rather than ₹70,000. The FX gain the
+     * user genuinely earned then disappears from {@code gain}, and — because {@link XirrService}
+     * translates each flow at its own date — {@code gain} can come out negative while {@code xirr}
+     * from the same money is positive. That is the disagreement this removes.
+     * <p>
+     * Historical translation is also the market convention (performance reporting, and the INR cost
+     * basis a foreign holding is taxed on) and what the chart series already uses, so this is what
+     * makes the summary card, the chart and the XIRR agree.
+     * <p>
+     * A no-op when {@code invested} is null, which is how a caller signals it has no flows for the
+     * row: the today's-rate basis is then left in place rather than blanked.
+     */
+    public static void applyHistoricalInvested(SummaryMetrics item, BigDecimal invested) {
+        if (item == null || invested == null) return;
+        item.setInvested(scale(invested));
+        deriveTotals(item);
     }
 
     /** Fills {@code gain} and {@code dayChange} from the (already converted) amounts. */

@@ -136,7 +136,11 @@ public class HoldingApiHandler extends EntityHandlerBase {
         if (flowsByHolding.isEmpty()) return;
         for (HoldingSummary h : holdings) {
             if (!SummaryCurrencyConverter.convertedToPreferred(h, preferredCurrency)) continue;
-            h.setXirr(xirrService.solve(flowsByHolding.get(h.getId()), h.getCurrentDayValue()));
+            List<Xirr.Flow> flows = flowsByHolding.get(h.getId());
+            h.setXirr(xirrService.solve(flows, h.getCurrentDayValue()));
+            // Same historical cost basis the account summary uses, so a holding's gain and its
+            // XIRR cannot disagree in sign for a foreign-currency account.
+            SummaryCurrencyConverter.applyHistoricalInvested(h, XirrService.investedFromFlows(flows));
         }
     }
 

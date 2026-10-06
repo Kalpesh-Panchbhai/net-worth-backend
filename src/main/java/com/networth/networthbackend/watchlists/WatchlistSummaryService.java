@@ -1,6 +1,7 @@
 package com.networth.networthbackend.watchlists;
 
 import com.networth.networthbackend.common.SummaryCurrencyConverter;
+import com.networth.networthbackend.common.Xirr;
 import com.networth.networthbackend.common.XirrService;
 import com.networth.networthbackend.fx.FxService;
 import com.networth.networthbackend.users.UserRepository;
@@ -69,14 +70,8 @@ public class WatchlistSummaryService {
         Map<Long, BigDecimal> valueByAccount = new LinkedHashMap<>();
         Map<Long, Set<Long>> eligibleAccountsByWatchlist = new LinkedHashMap<>();
 
-        for (Map.Entry<Long, WatchlistSummary> entry : byWatchlist.entrySet()) {
-            List<WatchlistAccountRow> members = membersByWatchlist.getOrDefault(entry.getKey(), List.of());
-            int skipped = SummaryCurrencyConverter.aggregateInto(entry.getValue(), members, preferred).size();
-            if (skipped > 0) {
-                log.warn("Watchlist {}: excluded {} member account(s) from the total, no FX rate to {}",
-                        entry.getKey(), skipped, preferred);
-            }
-            for (WatchlistAccountRow member : members) {
+        for (Map.Entry<Long, List<WatchlistAccountRow>> entry : membersByWatchlist.entrySet()) {
+            for (WatchlistAccountRow member : entry.getValue()) {
                 if (!SummaryCurrencyConverter.convertedToPreferred(member, preferred)) continue;
                 if (!XirrService.isEligible(member.getType(), member.isNeedsDailyData())) continue;
                 currencyByAccount.put(member.getAccountId(), member.getCurrency());
@@ -87,9 +82,31 @@ public class WatchlistSummaryService {
             }
         }
 
-        if (!currencyByAccount.isEmpty()) {
+        // Load the cash flows before aggregating, not after: each member's cost basis has to be
+        // restated from its own flows (translated at the dates the money moved) before the rows are
+        // summed, or the watchlist total inherits the today's-rate basis from its members and its
+        // gain contradicts the XIRR pooled from those same flows.
+        Map<Long, List<Xirr.Flow>> flowsByAccount = currencyByAccount.isEmpty()
+                ? Map.of() : xirrService.flowsByAccount(currencyByAccount, preferred);
+        for (List<WatchlistAccountRow> members : membersByWatchlist.values()) {
+            for (WatchlistAccountRow member : members) {
+                SummaryCurrencyConverter.applyHistoricalInvested(
+                        member, XirrService.investedFromFlows(flowsByAccount.get(member.getAccountId())));
+            }
+        }
+
+        for (Map.Entry<Long, WatchlistSummary> entry : byWatchlist.entrySet()) {
+            List<WatchlistAccountRow> members = membersByWatchlist.getOrDefault(entry.getKey(), List.of());
+            int skipped = SummaryCurrencyConverter.aggregateInto(entry.getValue(), members, preferred).size();
+            if (skipped > 0) {
+                log.warn("Watchlist {}: excluded {} member account(s) from the total, no FX rate to {}",
+                        entry.getKey(), skipped, preferred);
+            }
+        }
+
+        if (!flowsByAccount.isEmpty()) {
             Map<Long, Double> xirrByWatchlist = xirrService.byGroup(
-                    eligibleAccountsByWatchlist, currencyByAccount, valueByAccount, preferred);
+                    eligibleAccountsByWatchlist, flowsByAccount, valueByAccount);
             for (Map.Entry<Long, WatchlistSummary> entry : byWatchlist.entrySet()) {
                 entry.getValue().setXirr(xirrByWatchlist.get(entry.getKey()));
             }
