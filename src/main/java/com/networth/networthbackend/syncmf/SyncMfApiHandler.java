@@ -8,6 +8,7 @@ import com.networth.networthbackend.api.EntityHandlerBase;
 import com.networth.networthbackend.common.Constants;
 import com.networth.networthbackend.db.Database;
 import com.networth.networthbackend.service.KiteApiClient;
+import com.networth.networthbackend.tools.DailyDataRunner;
 import com.zerodhatech.kiteconnect.kitehttp.exceptions.KiteException;
 import com.zerodhatech.models.Holding;
 import com.zerodhatech.models.MFHolding;
@@ -183,6 +184,7 @@ public class SyncMfApiHandler extends EntityHandlerBase {
 
         JsonNode diffsNode = json.get("diffs");
         int inserted = 0;
+        Set<Long> affectedHoldings = new LinkedHashSet<>();
 
         try (Connection conn = Database.getConnection()) {
             for (JsonNode d : diffsNode) {
@@ -230,10 +232,12 @@ public class SyncMfApiHandler extends EntityHandlerBase {
                     ps.executeUpdate();
                 }
                 inserted++;
+                affectedHoldings.add(holdingId);
                 log.info("Upserted transaction: holdingId={}, date={}, invested={}, units={}", holdingId, txnDate, kiteInvested, kiteUnits);
             }
         }
 
+        refreshDailyData(accountId, affectedHoldings);
         return ok(Map.of("inserted", inserted));
     }
 
@@ -318,6 +322,7 @@ public class SyncMfApiHandler extends EntityHandlerBase {
         BigDecimal invested = json.get("invested").decimalValue();
         BigDecimal value = json.get("value").decimalValue();
         LocalDate today = LocalDate.now();
+        Set<Long> affectedHoldings = new LinkedHashSet<>();
 
         try (Connection conn = Database.getConnection()) {
             // Get or create default holding for this account
@@ -358,9 +363,26 @@ public class SyncMfApiHandler extends EntityHandlerBase {
                 ps.executeUpdate();
             }
             log.info("Stock sync: accountId={}, date={}, invested={}, value={}", accountId, today, invested, value);
+            affectedHoldings.add(holdingId);
         }
 
+        refreshDailyData(accountId, affectedHoldings);
         return ok(Map.of("synced", true, "date", today.toString()));
+    }
+
+    /**
+     * Rebuilds daily data for the holdings a sync just wrote transactions for. The sync's own
+     * connection is already closed, so each rebuild runs in its own transaction. A failure here
+     * must not fail the sync: the transactions are committed, and the scheduled run will catch up.
+     */
+    private void refreshDailyData(long accountId, Set<Long> holdingIds) {
+        for (long holdingId : holdingIds) {
+            try {
+                DailyDataRunner.runForTransaction(accountId, holdingId);
+            } catch (Exception e) {
+                log.warn("Daily data refresh failed for account {} holding {} after sync: {}", accountId, holdingId, e.getMessage(), e);
+            }
+        }
     }
 
     // --- DB helpers ---
