@@ -21,7 +21,8 @@ import java.util.UUID;
  * <pre>
  *   GET    /stock-portfolio?market=in          — positions + valuation summary
  *   POST   /stock-portfolio  {market, stock, sector?, strategy?, entryDate?, entryPrice?, quantity?, notes?}
- *   PUT    /stock-portfolio  {id, ...fields}   — edit (e.g. close a position: status=closed, exitPrice, exitDate)
+ *   PUT    /stock-portfolio  {id, ...fields}   — partial edit; only the fields sent are changed
+ *                                               (e.g. close a position: status=closed, exitPrice, exitDate)
  *   DELETE /stock-portfolio  {id}
  * </pre>
  */
@@ -95,11 +96,26 @@ public class StockPositionApiHandler extends EntityHandlerBase {
         JsonNode b = getJsonBody(request);
         String id = text(b, "id");
         if (id == null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "id is required");
-        String market = "us".equalsIgnoreCase(text(b, "market")) ? "us" : "in";
-        // Full replace of the mutable fields (client sends the whole position).
-        StockPosition p = new StockPosition(id, market, text(b, "stock"), text(b, "sector"), text(b, "strategy"),
-                date(b, "entryDate"), dbl(b, "entryPrice"), dbl(b, "quantity"), text(b, "notes"),
-                textOr(b, "status", "open"), dbl(b, "exitPrice"), date(b, "exitDate"));
+        StockPosition existing = positions.findById(id);
+        if (existing == null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "No position with id " + id);
+        // Merge, not replace: the close-position dialog sends only {id, market, stock, status, exitPrice,
+        // exitDate}, so a full replace wiped entryPrice/quantity/sector/strategy and with them the
+        // realized P&L of the trade that was just closed. Fields absent from the body keep their
+        // stored value; a field sent as JSON null is an explicit clear.
+        String market = b.hasNonNull("market")
+                ? ("us".equalsIgnoreCase(text(b, "market")) ? "us" : "in")
+                : existing.market();
+        StockPosition p = new StockPosition(id, market,
+                merge(b, "stock", existing.stock()),
+                merge(b, "sector", existing.sector()),
+                merge(b, "strategy", existing.strategy()),
+                mergeDate(b, "entryDate", existing.entryDate()),
+                mergeDbl(b, "entryPrice", existing.entryPrice()),
+                mergeDbl(b, "quantity", existing.quantity()),
+                merge(b, "notes", existing.notes()),
+                merge(b, "status", existing.status()),
+                mergeDbl(b, "exitPrice", existing.exitPrice()),
+                mergeDate(b, "exitDate", existing.exitDate()));
         positions.upsert(p);
         return list(withMarket(request, market));
     }
@@ -147,8 +163,16 @@ public class StockPositionApiHandler extends EntityHandlerBase {
     private static Double round(Double v) { return v == null ? null : Math.round(v * 100.0) / 100.0; }
     private static double round(double v) { return Math.round(v * 100.0) / 100.0; }
     private static String text(JsonNode n, String f) { return n != null && n.hasNonNull(f) ? n.get(f).asText() : null; }
-    private static String textOr(JsonNode n, String f, String d) { String v = text(n, f); return v == null ? d : v; }
     private static Double dbl(JsonNode n, String f) { return n != null && n.hasNonNull(f) ? n.get(f).asDouble() : null; }
+
+    /**
+     * Patch semantics for {@link #update}: field missing from the body keeps {@code current},
+     * field present (including an explicit {@code null}) takes the body's value.
+     */
+    private static boolean sent(JsonNode n, String f) { return n != null && n.has(f); }
+    private static String merge(JsonNode n, String f, String current) { return sent(n, f) ? text(n, f) : current; }
+    private static Double mergeDbl(JsonNode n, String f, Double current) { return sent(n, f) ? dbl(n, f) : current; }
+    private static LocalDate mergeDate(JsonNode n, String f, LocalDate current) { return sent(n, f) ? date(n, f) : current; }
     private static LocalDate date(JsonNode n, String f) {
         String s = text(n, f);
         try { return s == null || s.isBlank() ? null : LocalDate.parse(s); } catch (Exception e) { return null; }

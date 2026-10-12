@@ -41,6 +41,17 @@ public class StockPositionRepository {
         return out;
     }
 
+    /** One position by id, or {@code null} when it no longer exists. */
+    public StockPosition findById(String id) throws SQLException {
+        String sql = "SELECT " + COLS + " FROM " + T + " WHERE id = ?";
+        try (Connection c = Database.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? map(rs) : null;
+            }
+        }
+    }
+
     /** Open positions' tickers for a market, suffix-stripped + uppercased to match signal stocks. */
     public Set<String> heldStocks(String market) throws SQLException {
         Set<String> out = new LinkedHashSet<>();
