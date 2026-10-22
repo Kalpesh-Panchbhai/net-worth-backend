@@ -30,18 +30,7 @@ public class BankEmailRules {
             // PPF only changes on deposits/yearly interest, so an unchanged balance is not re-recorded.
             new BankEmailRule("ICICI PPF statement", "estatement@icici.bank.in",
                     Pattern.compile("^ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true),
-            // TEMPORARY: forwarded ICICI statements for end-to-end testing. Remove after testing.
-            new BankEmailRule("ICICI savings statement (test fwd)", "ikalpesh10@gmail.com",
-                    Pattern.compile("^Fwd:\\s*ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.icici()),
-            new BankEmailRule("ICICI PPF statement (test fwd)", "ikalpesh10@gmail.com",
-                    Pattern.compile("^Fwd:\\s*ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true),
-            // TEMPORARY: forwarded SBI statements for end-to-end testing. Remove after testing.
-            new BankEmailRule("SBI savings statement (test fwd)", "ikalpesh10@gmail.com",
-                    Pattern.compile("^Fwd:\\s*E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.sbi())
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true)
     );
 
     /** Every rule matching the message's headers (one statement can update several accounts). */
