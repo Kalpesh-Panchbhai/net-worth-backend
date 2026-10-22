@@ -47,6 +47,12 @@ public class GmailSyncService {
             log.info("Gmail sync initialised at history id {}", notifiedHistoryId);
             return;
         }
+        // Gmail also notifies for mailbox changes outside the watched label. When the cursor is already
+        // at or past the notified id, everything up to it was processed, so skip the Gmail calls.
+        if (new BigDecimal(notifiedHistoryId).compareTo(new BigDecimal(start)) <= 0) {
+            log.debug("Gmail notification history id {} already covered by {}; skipping", notifiedHistoryId, start);
+            return;
+        }
         GmailClient.HistoryPage page;
         try {
             page = gmail.addedSince(start);
