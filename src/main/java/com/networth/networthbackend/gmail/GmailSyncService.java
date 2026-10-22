@@ -47,7 +47,7 @@ public class GmailSyncService {
             log.info("Gmail sync initialised at history id {}", notifiedHistoryId);
             return;
         }
-        // Gmail also notifies for mailbox changes outside the watched label. When the cursor is already
+        // Gmail also notifies for changes other than new messages. When the cursor is already
         // at or past the notified id, everything up to it was processed, so skip the Gmail calls.
         if (new BigDecimal(notifiedHistoryId).compareTo(new BigDecimal(start)) <= 0) {
             log.debug("Gmail notification history id {} already covered by {}; skipping", notifiedHistoryId, start);
@@ -62,7 +62,7 @@ public class GmailSyncService {
             appMeta.set(KEY_HISTORY_ID, notifiedHistoryId);
             return;
         }
-        log.info("Gmail notification history id {}: {} new labelled message(s) since {}",
+        log.info("Gmail notification history id {}: {} new message(s) since {}",
                 notifiedHistoryId, page.addedMessageIds().size(), start);
         for (String id : page.addedMessageIds()) {
             handle(id);
