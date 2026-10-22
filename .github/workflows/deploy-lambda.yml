@@ -23,7 +23,7 @@ jobs:
           java-version: 17
           cache: maven
 
-      - run: mvn -B package -DskipTests
+      - run: mvn -B -q package -Dmaven.test.skip=true
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
