@@ -21,11 +21,19 @@ public class BankEmailRules {
             // Monthly password-protected PDF statement -> savings account ending in the PDF's account number
             new BankEmailRule("SBI savings statement", "cbssbi.cas@alerts.sbi.bank.in",
                     Pattern.compile("^E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), new SbiStatementParser()),
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.sbi()),
+            // "ICICI Bank Statement from September 01, 2026 to September 30, 2026 for XXXXXXXX0509" (PDF attached)
+            new BankEmailRule("ICICI savings statement", "estatement@icici.bank.in",
+                    Pattern.compile("^ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.icici()),
+            // TEMPORARY: forwarded ICICI statements for end-to-end testing. Remove after testing.
+            new BankEmailRule("ICICI savings statement (test fwd)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^Fwd:\\s*ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.icici()),
             // TEMPORARY: forwarded SBI statements for end-to-end testing. Remove after testing.
             new BankEmailRule("SBI savings statement (test fwd)", "ikalpesh10@gmail.com",
                     Pattern.compile("^Fwd:\\s*E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), new SbiStatementParser())
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.sbi())
     );
 
     /** First rule matching the message's headers, or null. */
