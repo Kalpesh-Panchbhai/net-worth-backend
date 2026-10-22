@@ -16,6 +16,10 @@ public class BankEmailRules {
             // "Important : New bill for your Axis Bank card XXXX-2293 is here" -> card account ending 2293
             new BankEmailRule("CRED card bill", "protect@cred.club",
                     Pattern.compile("^Important\\s*:\\s*New bill for your ", Pattern.CASE_INSENSITIVE),
+                    new CardLast4Resolver(), new CredBillParser()),
+            // TEMPORARY: forwarded CRED bills for end-to-end testing. Remove after testing.
+            new BankEmailRule("CRED card bill (test fwd)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^Fwd:\\s*Important\\s*:\\s*New bill for your ", Pattern.CASE_INSENSITIVE),
                     new CardLast4Resolver(), new CredBillParser())
     );
 
