@@ -95,9 +95,9 @@ public class GmailSyncService {
 
         BankBalanceParser.ParsedBalance p = parsed.get();
         AccountResolver.Target t = target.get();
-        // A balance changes the holding's value, not what was invested, so carry invested forward.
-        BigDecimal invested = transactions.findLatestByHoldingId(t.holdingId())
-                .map(Transaction::getInvested).orElse(p.balance());
+        // Cards record invested = value; elsewhere a balance changes value, not what was invested.
+        BigDecimal invested = t.investedEqualsValue() ? p.balance()
+                : transactions.findLatestByHoldingId(t.holdingId()).map(Transaction::getInvested).orElse(p.balance());
         transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
         log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
 
