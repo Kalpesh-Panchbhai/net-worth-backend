@@ -29,6 +29,8 @@ public class GmailClient {
     static final String ENV_CLIENT_SECRET = "GMAIL_CLIENT_SECRET";
     static final String ENV_REFRESH_TOKEN = "GMAIL_REFRESH_TOKEN";
     static final String ENV_PUBSUB_TOPIC = "GMAIL_PUBSUB_TOPIC";
+    /** Name of the Gmail label to watch (a filter applies it to bank emails); INBOX when unset. */
+    static final String ENV_WATCH_LABEL = "GMAIL_WATCH_LABEL";
 
     private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     private static final String API = "https://gmail.googleapis.com/gmail/v1/users/me";
@@ -36,6 +38,7 @@ public class GmailClient {
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
 
+    private static volatile String watchLabelId;
     private static volatile String accessToken;
     private static volatile Instant accessTokenExpiry = Instant.EPOCH;
 
@@ -50,12 +53,12 @@ public class GmailClient {
     public record HistoryPage(List<String> addedMessageIds, String historyId) {
     }
 
-    /** Starts (or renews) push notifications for INBOX to the configured Pub/Sub topic. Returns the current history id. */
+    /** Starts (or renews) push notifications for the watched label to the configured Pub/Sub topic. Returns the current history id. */
     public String watch() throws IOException, InterruptedException {
         String topic = requireEnv(ENV_PUBSUB_TOPIC);
         String body = Jsons.MAPPER.writeValueAsString(java.util.Map.of(
                 "topicName", topic,
-                "labelIds", List.of("INBOX"),
+                "labelIds", List.of(watchLabelId()),
                 "labelFilterBehavior", "INCLUDE"));
         JsonNode res = send(authed(API + "/watch").POST(HttpRequest.BodyPublishers.ofString(body))
                 .header("Content-Type", "application/json").build());
@@ -63,13 +66,13 @@ public class GmailClient {
         return res.path("historyId").asText();
     }
 
-    /** All INBOX messages added after {@code startHistoryId}, following pagination. */
+    /** All messages with the watched label added after {@code startHistoryId}, following pagination. */
     public HistoryPage addedSince(String startHistoryId) throws IOException, InterruptedException {
         List<String> ids = new ArrayList<>();
         String pageToken = null;
         String latest = startHistoryId;
         do {
-            String url = API + "/history?historyTypes=messageAdded&labelId=INBOX&startHistoryId=" + enc(startHistoryId)
+            String url = API + "/history?historyTypes=messageAdded&labelId=" + enc(watchLabelId()) + "&startHistoryId=" + enc(startHistoryId)
                     + (pageToken == null ? "" : "&pageToken=" + enc(pageToken));
             JsonNode res = send(authed(url).GET().build());
             for (JsonNode h : res.path("history")) {
@@ -122,6 +125,17 @@ public class GmailClient {
             pdfs.add(Base64.getUrlDecoder().decode(att.path("data").asText()));
         }
         return pdfs;
+    }
+
+    /** Id of the label named in {@value #ENV_WATCH_LABEL} (the API wants ids like "Label_12"), or INBOX when unset. */
+    private String watchLabelId() throws IOException, InterruptedException {
+        if (watchLabelId != null) return watchLabelId;
+        String name = System.getenv(ENV_WATCH_LABEL);
+        if (name == null || name.isBlank()) return watchLabelId = "INBOX";
+        for (JsonNode l : send(authed(API + "/labels").GET().build()).path("labels")) {
+            if (name.equalsIgnoreCase(l.path("name").asText())) return watchLabelId = l.path("id").asText();
+        }
+        throw new IOException("Gmail label '" + name + "' not found");
     }
 
     private static void collectPdfIds(JsonNode part, List<String> ids) {

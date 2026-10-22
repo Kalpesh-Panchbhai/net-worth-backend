@@ -13,7 +13,7 @@ import java.util.Base64;
 import java.util.Map;
 
 /**
- * POST /gmail-webhook — the Pub/Sub push endpoint Gmail notifies on every new INBOX message.
+ * POST /gmail-webhook — the Pub/Sub push endpoint Gmail notifies on every new message with the watched label.
  * The push carries only {@code {emailAddress, historyId}}; the actual work is in
  * {@link GmailSyncService}. A non-2xx reply makes Pub/Sub redeliver, which is what we want for
  * transient failures; a bad or missing token gets 403 so forged calls are dropped.
