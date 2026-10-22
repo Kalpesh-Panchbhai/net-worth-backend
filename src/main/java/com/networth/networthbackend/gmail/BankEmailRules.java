@@ -18,19 +18,10 @@ public class BankEmailRules {
             new BankEmailRule("ICICI card alert", "credit_cards@icici.bank.in",
                     Pattern.compile("^Transaction alert for your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
                     new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "ICICI Bank"), new IciciCardAlertParser()),
-            // TEMP: same ICICI alert forwarded from a personal address for testing; remove after verifying
-            new BankEmailRule("ICICI card alert (test)", "ikalpesh10@gmail.com",
-                    Pattern.compile("Transaction alert for your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
-                    new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "ICICI Bank"), new IciciCardAlertParser()),
             // "INR 105 spent on credit card no. XX6769" or "Transaction alert on Axis Bank Credit Card"; the limit
             // is shared by all the holder's Axis cards -> one combined card account
             new BankEmailRule("Axis card alert", "alerts@axis.bank.in",
                     Pattern.compile("^(INR\\s+[\\d,.]+\\s+spent on credit card no\\.|Transaction alert on Axis Bank Credit Card)",
-                            Pattern.CASE_INSENSITIVE),
-                    new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "Axis Bank"), new AxisCardAlertParser()),
-            // TEMP: same Axis alert forwarded from a personal address for testing; remove after verifying
-            new BankEmailRule("Axis card alert (test)", "ikalpesh10@gmail.com",
-                    Pattern.compile("(INR\\s+[\\d,.]+\\s+spent on credit card no\\.|Transaction alert on Axis Bank Credit Card)",
                             Pattern.CASE_INSENSITIVE),
                     new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "Axis Bank"), new AxisCardAlertParser()),
             // Monthly password-protected PDF statement -> savings account ending in the PDF's account number
