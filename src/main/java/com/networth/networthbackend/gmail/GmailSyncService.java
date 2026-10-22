@@ -86,20 +86,28 @@ public class GmailSyncService {
             return;
         }
 
+        Optional<AccountResolver.Target> target = rule.account().resolve(msg);
+        if (target.isEmpty()) {
+            log.warn("[{}] message {} matched but no single account fits subject '{}'", rule.name(), messageId, msg.subject());
+            slack(":warning: " + rule.name() + ": no unique account found for \"" + msg.subject() + "\"");
+            return;
+        }
+
         BankBalanceParser.ParsedBalance p = parsed.get();
+        AccountResolver.Target t = target.get();
         // A balance changes the holding's value, not what was invested, so carry invested forward.
-        BigDecimal invested = transactions.findLatestByHoldingId(rule.holdingId())
+        BigDecimal invested = transactions.findLatestByHoldingId(t.holdingId())
                 .map(Transaction::getInvested).orElse(p.balance());
-        transactions.upsert(rule.accountId(), rule.holdingId(), p.asOf(), invested, p.balance());
-        log.info("[{}] balance set to {} as of {} from message {}", rule.name(), p.balance(), p.asOf(), messageId);
+        transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
+        log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
 
         // The balance is committed; a refresh failure is picked up by the next scheduled run.
         try {
-            DailyDataRunner.runForTransaction(rule.accountId(), rule.holdingId());
+            DailyDataRunner.runForTransaction(t.accountId(), t.holdingId());
         } catch (Exception e) {
             log.warn("[{}] daily data refresh failed after balance update: {}", rule.name(), e.getMessage(), e);
         }
-        slack(":bank: " + rule.name() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");
+        slack(":bank: " + t.label() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");
     }
 
     /** Gmail history ids are increasing integers sent as strings; never move the cursor backwards. */

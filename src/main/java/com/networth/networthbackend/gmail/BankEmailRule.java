@@ -8,11 +8,10 @@ import java.util.regex.Pattern;
  * @param name      label used in logs and Slack, e.g. "HDFC savings"
  * @param sender    exact sender address (not the display name, which anyone can spoof)
  * @param subject   must be found somewhere in the subject
- * @param accountId account whose balance this updates
- * @param holdingId holding inside that account that carries the balance
+ * @param account   picks the account/holding the balance goes to
  * @param parser    extracts the balance from the email body
  */
-public record BankEmailRule(String name, String sender, Pattern subject, long accountId, long holdingId,
+public record BankEmailRule(String name, String sender, Pattern subject, AccountResolver account,
                             BankBalanceParser parser) {
 
     public boolean matches(GmailMessage m) {

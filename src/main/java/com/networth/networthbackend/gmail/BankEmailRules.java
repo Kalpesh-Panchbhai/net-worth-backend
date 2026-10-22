@@ -3,6 +3,7 @@ package com.networth.networthbackend.gmail;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * The hardcoded allow-list of bank emails. Every new inbox message is checked against these by
@@ -11,10 +12,11 @@ import java.util.List;
 @UtilityClass
 public class BankEmailRules {
 
-    // Example — fill in the real sender, subject, account/holding ids and balance regex per bank:
-    // new BankEmailRule("HDFC savings", "alerts@hdfcbank.net", java.util.regex.Pattern.compile("(?i)account update"),
-    //         12L, 34L, new RegexBalanceParser("Avl\\s*Bal[:\\s]*(?:INR|Rs\\.?)\\s*([\\d,]+(?:\\.\\d{1,2})?)")),
     public static final List<BankEmailRule> RULES = List.of(
+            // "Important : New bill for your Axis Bank card XXXX-2293 is here" -> card account ending 2293
+            new BankEmailRule("CRED card bill", "protect@cred.club",
+                    Pattern.compile("^Important\\s*:\\s*New bill for your ", Pattern.CASE_INSENSITIVE),
+                    new CardLast4Resolver(), new CredBillParser())
     );
 
     /** First rule matching the message's headers, or null. */
