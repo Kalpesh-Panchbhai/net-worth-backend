@@ -32,9 +32,13 @@ jobs:
 
       - name: Update functions
         run: |
-          for f in NetWorthAPIFunction NetWorthSchedulerFunction NetWorthStockAlertFunction; do
-            aws lambda update-function-code --function-name "$f" \
-              --zip-file fileb://target/net-worth-backend-1.0-SNAPSHOT.jar \
-              --query '[FunctionName,LastModified]' --output text
-            aws lambda wait function-updated --function-name "$f"
+          fns="NetWorthAPIFunction NetWorthSchedulerFunction NetWorthStockAlertFunction"
+          pids=()
+          for f in $fns; do
+            ( aws lambda update-function-code --function-name "$f" \
+                --zip-file fileb://target/net-worth-backend-1.0-SNAPSHOT.jar \
+                --query '[FunctionName,LastModified]' --output text \
+              && aws lambda wait function-updated --function-name "$f" ) &
+            pids+=($!)
           done
+          for p in "${pids[@]}"; do wait "$p"; done
