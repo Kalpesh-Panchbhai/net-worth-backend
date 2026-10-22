@@ -56,6 +56,8 @@ public class GmailSyncService {
             appMeta.set(KEY_HISTORY_ID, notifiedHistoryId);
             return;
         }
+        log.info("Gmail notification history id {}: {} new labelled message(s) since {}",
+                notifiedHistoryId, page.addedMessageIds().size(), start);
         for (String id : page.addedMessageIds()) {
             handle(id);
         }
