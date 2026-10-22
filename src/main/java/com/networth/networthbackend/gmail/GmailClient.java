@@ -93,7 +93,7 @@ public class GmailClient {
         JsonNode headers = res.path("payload").path("headers");
         return new GmailMessage(id, header(headers, "From"), header(headers, "Subject"),
                 header(headers, "Authentication-Results"),
-                Instant.ofEpochMilli(res.path("internalDate").asLong()), null);
+                Instant.ofEpochMilli(res.path("internalDate").asLong()), null, List.of());
     }
 
     /** The message's body as plain text: text/plain parts if present, else HTML with tags stripped. */
@@ -109,6 +109,27 @@ public class GmailClient {
                 .replace("&nbsp;", " ")
                 .replace("&amp;", "&")
                 .replaceAll("\\s+", " ");
+    }
+
+    /** Raw bytes of every PDF attachment on the message. */
+    public List<byte[]> pdfAttachments(String id) throws IOException, InterruptedException {
+        JsonNode res = send(authed(API + "/messages/" + enc(id) + "?format=full").GET().build());
+        List<String> attachmentIds = new ArrayList<>();
+        collectPdfIds(res.path("payload"), attachmentIds);
+        List<byte[]> pdfs = new ArrayList<>();
+        for (String aid : attachmentIds) {
+            JsonNode att = send(authed(API + "/messages/" + enc(id) + "/attachments/" + enc(aid)).GET().build());
+            pdfs.add(Base64.getUrlDecoder().decode(att.path("data").asText()));
+        }
+        return pdfs;
+    }
+
+    private static void collectPdfIds(JsonNode part, List<String> ids) {
+        String mime = part.path("mimeType").asText("");
+        String name = part.path("filename").asText("");
+        String aid = part.path("body").path("attachmentId").asText(null);
+        if (aid != null && (mime.equalsIgnoreCase("application/pdf") || name.toLowerCase().endsWith(".pdf"))) ids.add(aid);
+        for (JsonNode child : part.path("parts")) collectPdfIds(child, ids);
     }
 
     private static void collectParts(JsonNode part, StringBuilder plain, StringBuilder html) {

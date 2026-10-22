@@ -1,5 +1,6 @@
 package com.networth.networthbackend.gmail;
 
+import com.networth.networthbackend.common.Constants;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -16,7 +17,15 @@ public class BankEmailRules {
             // "Important : New bill for your Axis Bank card XXXX-2293 is here" -> card account ending 2293
             new BankEmailRule("CRED card bill", "protect@cred.club",
                     Pattern.compile("^Important\\s*:\\s*New bill for your ", Pattern.CASE_INSENSITIVE),
-                    new CardLast4Resolver(), new CredBillParser())
+                    new Last4Resolver(Last4Resolver.TYPE_CREDIT_CARD), new CredBillParser()),
+            // Monthly password-protected PDF statement -> savings account ending in the PDF's account number
+            new BankEmailRule("SBI savings statement", "cbssbi.cas@alerts.sbi.bank.in",
+                    Pattern.compile("^E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), new SbiStatementParser()),
+            // TEMPORARY: forwarded SBI statements for end-to-end testing. Remove after testing.
+            new BankEmailRule("SBI savings statement (test fwd)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^Fwd:\\s*E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), new SbiStatementParser())
     );
 
     /** First rule matching the message's headers, or null. */

@@ -1,6 +1,7 @@
 package com.networth.networthbackend.gmail;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * One Gmail message as the sync sees it. Header-only fetches leave {@code body} null; the body is
@@ -8,8 +9,10 @@ import java.time.Instant;
  *
  * @param authResults the raw {@code Authentication-Results} header, used for the DMARC check
  * @param body        the plain-text body (HTML parts are reduced to text), or null if not fetched
+ * @param pdfs        raw bytes of each PDF attachment, or empty if not fetched
  */
-public record GmailMessage(String id, String from, String subject, String authResults, Instant receivedAt, String body) {
+public record GmailMessage(String id, String from, String subject, String authResults, Instant receivedAt, String body,
+                           List<byte[]> pdfs) {
 
     /** The bare address from a {@code From} header: {@code "HDFC Bank <alerts@hdfcbank.net>"} -> {@code alerts@hdfcbank.net}. */
     public String fromAddress() {
@@ -26,6 +29,10 @@ public record GmailMessage(String id, String from, String subject, String authRe
     }
 
     public GmailMessage withBody(String newBody) {
-        return new GmailMessage(id, from, subject, authResults, receivedAt, newBody);
+        return new GmailMessage(id, from, subject, authResults, receivedAt, newBody, pdfs);
+    }
+
+    public GmailMessage withPdfs(List<byte[]> newPdfs) {
+        return new GmailMessage(id, from, subject, authResults, receivedAt, body, newPdfs);
     }
 }

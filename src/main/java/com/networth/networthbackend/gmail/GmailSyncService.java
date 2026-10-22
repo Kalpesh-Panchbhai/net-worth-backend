@@ -79,14 +79,16 @@ public class GmailSyncService {
             return;
         }
 
-        Optional<BankBalanceParser.ParsedBalance> parsed = rule.parser().parse(msg.withBody(gmail.body(messageId)));
+        GmailMessage full = msg.withBody(gmail.body(messageId));
+        if (rule.parser().needsPdfs()) full = full.withPdfs(gmail.pdfAttachments(messageId));
+        Optional<BankBalanceParser.ParsedBalance> parsed = rule.parser().parse(full);
         if (parsed.isEmpty()) {
             log.warn("[{}] message {} matched but no balance could be parsed", rule.name(), messageId);
             slack(":warning: " + rule.name() + ": bank email matched but the balance could not be parsed. Subject: " + msg.subject());
             return;
         }
 
-        Optional<AccountResolver.Target> target = rule.account().resolve(msg);
+        Optional<AccountResolver.Target> target = rule.account().resolve(msg, parsed.get());
         if (target.isEmpty()) {
             log.warn("[{}] message {} matched but no single account fits subject '{}'", rule.name(), messageId, msg.subject());
             slack(":warning: " + rule.name() + ": no unique account found for \"" + msg.subject() + "\"");

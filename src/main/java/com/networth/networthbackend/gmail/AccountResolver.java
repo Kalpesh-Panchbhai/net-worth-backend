@@ -15,5 +15,5 @@ public interface AccountResolver {
     }
 
     /** Empty when the email cannot be tied to exactly one account. */
-    Optional<Target> resolve(GmailMessage message) throws SQLException;
+    Optional<Target> resolve(GmailMessage message, BankBalanceParser.ParsedBalance parsed) throws SQLException;
 }
