@@ -49,6 +49,27 @@ public class TransactionRepository extends JdbcRepository<Transaction> {
                 .build();
     }
 
+    /** Inserts the row, or overwrites invested/value when the holding already has one on that date. */
+    public void upsert(long accountId, long holdingId, LocalDate txnDate, BigDecimal invested, BigDecimal value) throws SQLException {
+        final String sql = Constants.SQL.INSERT_INTO + Constants.DB.Transactions.TABLE +
+                Constants.SQL.OPEN_PAREN + String.join(Constants.SQL.COMMA_SPACE,
+                Constants.DB.Transactions.COL_ACCOUNT_ID,
+                Constants.DB.Transactions.COL_HOLDING_ID,
+                Constants.DB.Transactions.COL_TXN_DATE,
+                Constants.DB.Transactions.COL_INVESTED,
+                Constants.DB.Transactions.COL_VALUE) + Constants.SQL.CLOSE_PAREN +
+                Constants.SQL.VALUES + "(?,?,?,?,?)" +
+                " ON DUPLICATE KEY UPDATE " + Constants.DB.Transactions.COL_INVESTED + " = VALUES(" + Constants.DB.Transactions.COL_INVESTED + "), "
+                + Constants.DB.Transactions.COL_VALUE + " = VALUES(" + Constants.DB.Transactions.COL_VALUE + ")";
+        execute(sql, ps -> {
+            ps.setLong(1, accountId);
+            ps.setLong(2, holdingId);
+            ps.setDate(3, Date.valueOf(txnDate));
+            ps.setBigDecimal(4, invested);
+            ps.setBigDecimal(5, value);
+        });
+    }
+
     public List<Transaction> listByAccountId(long accountId) throws SQLException {
         final String sql = Constants.SQL.SELECT
                 + String.join(Constants.SQL.COMMA_SPACE,
