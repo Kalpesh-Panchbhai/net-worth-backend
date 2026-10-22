@@ -39,6 +39,13 @@ public class PdfStatementParser implements BankBalanceParser {
                 "as\\s+on\\s+([A-Za-z]+\\s+\\d{1,2},\\s*\\d{4})", "MMMM d, yyyy");
     }
 
+    /** ICICI PPF row in the same statement summary: "PPF A/c XXXXXXXX3662 3,76,824.00". */
+    public static PdfStatementParser iciciPpf() {
+        return new PdfStatementParser("ICICI_STATEMENT_PASSWORD",
+                "PPF\\s+A/c\\s+X{3,}(\\d{4})\\s+(-?[\\d,]+(?:\\.\\d{1,2})?)",
+                "as\\s+on\\s+([A-Za-z]+\\s+\\d{1,2},\\s*\\d{4})", "MMMM d, yyyy");
+    }
+
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
     private final String passwordEnv;

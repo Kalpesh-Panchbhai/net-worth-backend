@@ -26,21 +26,26 @@ public class BankEmailRules {
             new BankEmailRule("ICICI savings statement", "estatement@icici.bank.in",
                     Pattern.compile("^ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
                     new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.icici()),
+            // Same ICICI statement also lists the PPF balance -> OTHER account ending in the PPF number.
+            // PPF only changes on deposits/yearly interest, so an unchanged balance is not re-recorded.
+            new BankEmailRule("ICICI PPF statement", "estatement@icici.bank.in",
+                    Pattern.compile("^ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true),
             // TEMPORARY: forwarded ICICI statements for end-to-end testing. Remove after testing.
             new BankEmailRule("ICICI savings statement (test fwd)", "ikalpesh10@gmail.com",
                     Pattern.compile("^Fwd:\\s*ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
                     new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.icici()),
+            new BankEmailRule("ICICI PPF statement (test fwd)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^Fwd:\\s*ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true),
             // TEMPORARY: forwarded SBI statements for end-to-end testing. Remove after testing.
             new BankEmailRule("SBI savings statement (test fwd)", "ikalpesh10@gmail.com",
                     Pattern.compile("^Fwd:\\s*E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
                     new Last4Resolver(Constants.Accounts.TYPE_SAVINGS), PdfStatementParser.sbi())
     );
 
-    /** First rule matching the message's headers, or null. */
-    public static BankEmailRule match(GmailMessage m) {
-        for (BankEmailRule r : RULES) {
-            if (r.matches(m)) return r;
-        }
-        return null;
+    /** Every rule matching the message's headers (one statement can update several accounts). */
+    public static List<BankEmailRule> match(GmailMessage m) {
+        return RULES.stream().filter(r -> r.matches(m)).toList();
     }
 }

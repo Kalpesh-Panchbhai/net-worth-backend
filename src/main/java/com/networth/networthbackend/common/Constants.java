@@ -195,6 +195,7 @@ public class Constants {
     public static class Accounts {
         public static final String TYPE_BROKER = "BROKER";
         public static final String TYPE_SAVINGS = "SAVINGS";
+        public static final String TYPE_OTHER = "OTHER";
         public static final String AGG_HOLDING_NAME = "Account Aggregate";
         public static final String AGG_HOLDING_SYMBOL = "__ACCT__";
     }

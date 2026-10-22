@@ -12,8 +12,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Turns "the mailbox changed" into balance updates. Lists messages added since the last stored
@@ -69,19 +71,26 @@ public class GmailSyncService {
     private void handle(String messageId) throws Exception {
         GmailMessage msg = gmail.headers(messageId);
         if (msg == null) return; // deleted before we got to it
-        BankEmailRule rule = BankEmailRules.match(msg);
-        if (rule == null) return; // not a bank email: never fetch its body
+        List<BankEmailRule> rules = BankEmailRules.match(msg);
+        if (rules.isEmpty()) return; // not a bank email: never fetch its body
+        String names = rules.stream().map(BankEmailRule::name).collect(Collectors.joining(", "));
 
         if (!msg.dmarcPassed()) {
-            log.warn("[{}] message {} from {} failed DMARC; ignoring", rule.name(), messageId, msg.fromAddress());
-            slack(":rotating_light: " + rule.name() + ": email claiming to be from " + msg.fromAddress()
+            log.warn("[{}] message {} from {} failed DMARC; ignoring", names, messageId, msg.fromAddress());
+            slack(":rotating_light: " + names + ": email claiming to be from " + msg.fromAddress()
                     + " failed DMARC and was ignored.");
             return;
         }
 
+        // Fetched once and shared by every matching rule.
         GmailMessage full = msg.withBody(gmail.body(messageId));
-        if (rule.parser().needsPdfs()) full = full.withPdfs(gmail.pdfAttachments(messageId));
-        Optional<BankBalanceParser.ParsedBalance> parsed = rule.parser().parse(full);
+        if (rules.stream().anyMatch(r -> r.parser().needsPdfs())) full = full.withPdfs(gmail.pdfAttachments(messageId));
+        for (BankEmailRule rule : rules) apply(rule, full);
+    }
+
+    private void apply(BankEmailRule rule, GmailMessage msg) throws Exception {
+        String messageId = msg.id();
+        Optional<BankBalanceParser.ParsedBalance> parsed = rule.parser().parse(msg);
         if (parsed.isEmpty()) {
             log.warn("[{}] message {} matched but no balance could be parsed", rule.name(), messageId);
             slack(":warning: " + rule.name() + ": bank email matched but the balance could not be parsed. Subject: " + msg.subject());
@@ -97,9 +106,15 @@ public class GmailSyncService {
 
         BankBalanceParser.ParsedBalance p = parsed.get();
         AccountResolver.Target t = target.get();
+        Optional<Transaction> latest = transactions.findLatestByHoldingId(t.holdingId());
+        if (rule.skipIfUnchanged() && latest.isPresent() && latest.get().getValue() != null
+                && latest.get().getValue().compareTo(p.balance()) == 0) {
+            log.info("[{}] {} balance unchanged at {}; nothing recorded", rule.name(), t.label(), p.balance());
+            return;
+        }
         // Cards record invested = value; elsewhere a balance changes value, not what was invested.
         BigDecimal invested = t.investedEqualsValue() ? p.balance()
-                : transactions.findLatestByHoldingId(t.holdingId()).map(Transaction::getInvested).orElse(p.balance());
+                : latest.map(Transaction::getInvested).orElse(p.balance());
         transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
         log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
 
