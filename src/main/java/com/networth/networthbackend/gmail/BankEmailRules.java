@@ -30,7 +30,15 @@ public class BankEmailRules {
             // PPF only changes on deposits/yearly interest, so an unchanged balance is not re-recorded.
             new BankEmailRule("ICICI PPF statement", "estatement@icici.bank.in",
                     Pattern.compile("^ICICI Bank Statement from ", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true)
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), PdfStatementParser.iciciPpf(), true),
+            // NPS statement PDF -> OTHER account ending in the PRAN; contribution is invested, valuation is value
+            new BankEmailRule("NPS statement", "kcra@kfintech.com",
+                    Pattern.compile("^Monthly Transaction Statement for your NPS account", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), new NpsStatementParser()),
+            // TEMPORARY: forwarded NPS statements for end-to-end testing. Remove after testing.
+            new BankEmailRule("NPS statement (test fwd)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^Fwd:\\s*Monthly Transaction Statement for your NPS account", Pattern.CASE_INSENSITIVE),
+                    new Last4Resolver(Constants.Accounts.TYPE_OTHER), new NpsStatementParser())
     );
 
     /** Every rule matching the message's headers (one statement can update several accounts). */

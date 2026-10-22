@@ -112,8 +112,10 @@ public class GmailSyncService {
             log.info("[{}] {} balance unchanged at {}; nothing recorded", rule.name(), t.label(), p.balance());
             return;
         }
-        // Cards record invested = value; elsewhere a balance changes value, not what was invested.
+        // Cards record invested = value; a stated invested amount wins; elsewhere a balance changes
+        // value, not what was invested.
         BigDecimal invested = t.investedEqualsValue() ? p.balance()
+                : p.invested() != null ? p.invested()
                 : latest.map(Transaction::getInvested).orElse(p.balance());
         transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
         log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);

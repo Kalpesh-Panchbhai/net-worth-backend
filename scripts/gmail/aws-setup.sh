@@ -7,7 +7,7 @@
 # Usage (values from gcp-setup.sh and get-refresh-token.py):
 #   GMAIL_CLIENT_ID=... GMAIL_CLIENT_SECRET=... GMAIL_REFRESH_TOKEN=... \
 #   GMAIL_PUBSUB_TOPIC=... GMAIL_PUSH_AUDIENCE=... GMAIL_PUSH_SA_EMAIL=... \
-#   [GMAIL_SLACK_WEBHOOK_URL=...] [SBI_STATEMENT_PASSWORD=...] [ICICI_STATEMENT_PASSWORD=...] scripts/gmail/aws-setup.sh
+#   [GMAIL_SLACK_WEBHOOK_URL=...] [SBI_STATEMENT_PASSWORD=...] [ICICI_STATEMENT_PASSWORD=...] [NPS_STATEMENT_PASSWORD=...] scripts/gmail/aws-setup.sh
 # Prereqs: aws CLI with credentials for account 287750673296, jq.
 set -euo pipefail
 
@@ -48,11 +48,12 @@ NEW_VARS="$(jq -n \
   --arg a "$GMAIL_CLIENT_ID" --arg b "$GMAIL_CLIENT_SECRET" --arg c "$GMAIL_REFRESH_TOKEN" \
   --arg d "$GMAIL_PUBSUB_TOPIC" --arg e "$GMAIL_PUSH_AUDIENCE" --arg f "$GMAIL_PUSH_SA_EMAIL" \
   --arg g "${GMAIL_SLACK_WEBHOOK_URL:-}" --arg h "${SBI_STATEMENT_PASSWORD:-}" \
-  --arg i "${ICICI_STATEMENT_PASSWORD:-}" \
+  --arg i "${ICICI_STATEMENT_PASSWORD:-}" --arg j "${NPS_STATEMENT_PASSWORD:-}" \
   '{GMAIL_CLIENT_ID:$a, GMAIL_CLIENT_SECRET:$b, GMAIL_REFRESH_TOKEN:$c, GMAIL_PUBSUB_TOPIC:$d,
     GMAIL_PUSH_AUDIENCE:$e, GMAIL_PUSH_SA_EMAIL:$f} + (if $g == "" then {} else {GMAIL_SLACK_WEBHOOK_URL:$g} end)
     + (if $h == "" then {} else {SBI_STATEMENT_PASSWORD:$h} end)
-    + (if $i == "" then {} else {ICICI_STATEMENT_PASSWORD:$i} end)')"
+    + (if $i == "" then {} else {ICICI_STATEMENT_PASSWORD:$i} end)
+    + (if $j == "" then {} else {NPS_STATEMENT_PASSWORD:$j} end)')"
 for FN in "$API_FN" "$SCHED_FN"; do
   CURRENT="$(aws lambda get-function-configuration --function-name "$FN" --query 'Environment.Variables' --output json)"
   [ "$CURRENT" = "null" ] && CURRENT="{}"

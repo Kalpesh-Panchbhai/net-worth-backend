@@ -11,10 +11,15 @@ public interface BankBalanceParser {
      * @param balance the balance in the account's own currency
      * @param asOf         the date the balance applies to
      * @param accountLast4 last 4 digits of the account number when the content names it, else null
+     * @param invested     amount invested when the content states it, else null (carried forward)
      */
-    record ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4) {
+    record ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4, BigDecimal invested) {
         public ParsedBalance(BigDecimal balance, LocalDate asOf) {
-            this(balance, asOf, null);
+            this(balance, asOf, null, null);
+        }
+
+        public ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4) {
+            this(balance, asOf, accountLast4, null);
         }
     }
 
