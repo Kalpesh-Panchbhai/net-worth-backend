@@ -14,11 +14,6 @@ import java.util.regex.Pattern;
 public class BankEmailRules {
 
     public static final List<BankEmailRule> RULES = List.of(
-            // "Important : New bill for your Axis Bank card XXXX-2293 is here" -> card account ending 2293.
-            // ICICI cards are tracked from transaction alerts instead, so their bills are skipped.
-            new BankEmailRule("CRED card bill", "protect@cred.club",
-                    Pattern.compile("^Important\\s*:\\s*New bill for your (?!ICICI)", Pattern.CASE_INSENSITIVE),
-                    new Last4Resolver(Last4Resolver.TYPE_CREDIT_CARD), new CredBillParser()),
             // Every ICICI card alert states the limit shared by all the holder's cards -> one combined card account
             new BankEmailRule("ICICI card alert", "credit_cards@icici.bank.in",
                     Pattern.compile("^Transaction alert for your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
@@ -27,6 +22,17 @@ public class BankEmailRules {
             new BankEmailRule("ICICI card alert (test)", "ikalpesh10@gmail.com",
                     Pattern.compile("Transaction alert for your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
                     new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "ICICI Bank"), new IciciCardAlertParser()),
+            // "INR 105 spent on credit card no. XX6769" or "Transaction alert on Axis Bank Credit Card"; the limit
+            // is shared by all the holder's Axis cards -> one combined card account
+            new BankEmailRule("Axis card alert", "alerts@axis.bank.in",
+                    Pattern.compile("^(INR\\s+[\\d,.]+\\s+spent on credit card no\\.|Transaction alert on Axis Bank Credit Card)",
+                            Pattern.CASE_INSENSITIVE),
+                    new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "Axis Bank"), new AxisCardAlertParser()),
+            // TEMP: same Axis alert forwarded from a personal address for testing; remove after verifying
+            new BankEmailRule("Axis card alert (test)", "ikalpesh10@gmail.com",
+                    Pattern.compile("(INR\\s+[\\d,.]+\\s+spent on credit card no\\.|Transaction alert on Axis Bank Credit Card)",
+                            Pattern.CASE_INSENSITIVE),
+                    new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "Axis Bank"), new AxisCardAlertParser()),
             // Monthly password-protected PDF statement -> savings account ending in the PDF's account number
             new BankEmailRule("SBI savings statement", "cbssbi.cas@alerts.sbi.bank.in",
                     Pattern.compile("^E-account statement for your SBI account", Pattern.CASE_INSENSITIVE),
