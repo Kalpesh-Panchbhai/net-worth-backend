@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * every Axis card of the holder, so the figure covers all of them. Dated on "Date and time: 15-10-2026" /
  * "Date &amp; Time: 21-10-2026" when present, else the day the email arrived (IST); later alerts that day
  * overwrite earlier ones. The purchase itself ("INR 105 spent on credit card no. XX6769" in the subject, or
- * "Transaction Amount: INR 105" / "Merchant Name: SWIGGY" in the body) is returned as the spend.
+ * "Transaction Amount: INR 105" in the body) is returned as the spend.
  */
 public class AxisCardAlertParser implements BankBalanceParser {
 
@@ -33,11 +33,6 @@ public class AxisCardAlertParser implements BankBalanceParser {
     private static final Pattern SPENT = Pattern.compile(
             "(?:INR\\s*([\\d,]+(?:\\.\\d{1,2})?)\\s+spent|Transaction\\s+Amount\\s*:?\\s*INR\\s*([\\d,]+(?:\\.\\d{1,2})?))",
             Pattern.CASE_INSENSITIVE);
-    private static final Pattern MERCHANT_NAME = Pattern.compile(
-            "Merchant\\s+Name\\s*:\\s*([^\\r\\n<]+?)\\s*(?:[\\r\\n<]|$)", Pattern.CASE_INSENSITIVE);
-    // "... INR 105 at SWIGGY on 15-10-2026"
-    private static final Pattern MERCHANT_AT = Pattern.compile(
-            "INR\\s*[\\d,]+(?:\\.\\d{1,2})?\\s+at\\s+(.+?)\\s+on\\s+\\d", Pattern.CASE_INSENSITIVE);
     private static final Pattern CARD_LAST4 = Pattern.compile("\\bXX(\\d{4})\\b", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -62,9 +57,7 @@ public class AxisCardAlertParser implements BankBalanceParser {
         } catch (NumberFormatException e) {
             return null;
         }
-        String merchant = group(MERCHANT_NAME, message.body());
-        if (merchant == null) merchant = group(MERCHANT_AT, message.body());
-        return new Spend(amount, merchant, group(CARD_LAST4, text));
+        return new Spend(amount, group(CARD_LAST4, text));
     }
 
     private static String group(Pattern pattern, String text) {

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * it is money owed. The limits are shared by every ICICI card of the primary holder, so the figure covers
  * all of them. Dated on the transaction date ("on Oct 21, 2026 at 07:59:08") when present, else the day
  * the email arrived (IST); later alerts that day overwrite earlier ones. The purchase itself ("used for a
- * transaction of INR 1,250.00 ... Info: AMAZON" or "INR 1,250.00 spent using ICICI Bank Card XX1234") is
+ * transaction of INR 1,250.00" or "INR 1,250.00 spent using ICICI Bank Card XX1234") is
  * returned as the spend.
  */
 public class IciciCardAlertParser implements BankBalanceParser {
@@ -33,8 +33,6 @@ public class IciciCardAlertParser implements BankBalanceParser {
     private static final Pattern SPENT = Pattern.compile(
             "(?:transaction\\s+of\\s+INR\\s*([\\d,]+(?:\\.\\d{1,2})?)|INR\\s*([\\d,]+(?:\\.\\d{1,2})?)\\s+spent)",
             Pattern.CASE_INSENSITIVE);
-    private static final Pattern MERCHANT = Pattern.compile(
-            "Info\\s*:\\s*([^\\r\\n<]+?)\\s*(?:\\.\\s|\\.?$|[\\r\\n<])", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
     private static final Pattern CARD_LAST4 = Pattern.compile("\\bXX(\\d{4})\\b", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
     private static final DateTimeFormatter LONG = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
@@ -59,7 +57,7 @@ public class IciciCardAlertParser implements BankBalanceParser {
         } catch (NumberFormatException e) {
             return null;
         }
-        return new Spend(amount, group(MERCHANT, message.body()), group(CARD_LAST4, message.body()));
+        return new Spend(amount, group(CARD_LAST4, message.body()));
     }
 
     private static String group(Pattern pattern, String text) {

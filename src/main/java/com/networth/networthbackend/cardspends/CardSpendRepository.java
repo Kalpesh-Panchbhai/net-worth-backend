@@ -17,8 +17,6 @@ import java.util.List;
  */
 public class CardSpendRepository extends JdbcRepository<CardSpendRepository.CardTotal> {
 
-    private static final int MERCHANT_MAX = 150;
-
     /**
      * One credit card account of the user with its spend in a date range and its latest balance
      * (the used limit, negative).
@@ -28,18 +26,14 @@ public class CardSpendRepository extends JdbcRepository<CardSpendRepository.Card
 
     /** Stores the purchase unless this message was already recorded. */
     public void insertIgnore(long accountId, String gmailMessageId, LocalDate spentOn, BankBalanceParser.Spend spend) throws SQLException {
-        String merchant = spend.merchant();
-        if (merchant != null && merchant.length() > MERCHANT_MAX) merchant = merchant.substring(0, MERCHANT_MAX);
-        String m = merchant;
-        execute("INSERT IGNORE INTO card_spends (account_id, gmail_message_id, amount, merchant, card_last4, spent_on)"
-                        + " VALUES (?, ?, ?, ?, ?, ?)",
+        execute("INSERT IGNORE INTO card_spends (account_id, gmail_message_id, amount, card_last4, spent_on)"
+                        + " VALUES (?, ?, ?, ?, ?)",
                 ps -> {
                     ps.setLong(1, accountId);
                     ps.setString(2, gmailMessageId);
                     ps.setBigDecimal(3, spend.amount());
-                    ps.setString(4, m);
-                    ps.setString(5, spend.cardLast4());
-                    ps.setDate(6, Date.valueOf(spentOn));
+                    ps.setString(4, spend.cardLast4());
+                    ps.setDate(5, Date.valueOf(spentOn));
                 });
     }
 

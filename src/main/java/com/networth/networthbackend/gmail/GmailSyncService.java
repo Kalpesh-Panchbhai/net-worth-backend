@@ -133,7 +133,7 @@ public class GmailSyncService {
         log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
         if (p.spend() != null) {
             cardSpends.insertIgnore(t.accountId(), messageId, p.asOf(), p.spend());
-            log.info("[{}] {} spend of {} at {} recorded from message {}", rule.name(), t.label(), p.spend().amount(), p.spend().merchant(), messageId);
+            log.info("[{}] {} spend of {} recorded from message {}", rule.name(), t.label(), p.spend().amount(), messageId);
         }
 
         // The balance is committed; a refresh failure is picked up by the next scheduled run.
@@ -146,7 +146,6 @@ public class GmailSyncService {
             LocalDate monthStart = p.asOf().withDayOfMonth(1);
             BigDecimal monthTotal = cardSpends.sumBetween(t.accountId(), monthStart, p.asOf().withDayOfMonth(p.asOf().lengthOfMonth()));
             slack(":credit_card: " + t.label() + ": " + p.spend().amount().toPlainString() + " spent"
-                    + (p.spend().merchant() != null ? " at " + p.spend().merchant() : "")
                     + " on " + p.asOf() + "; " + monthTotal.stripTrailingZeros().toPlainString() + " this month; balance " + p.balance().toPlainString());
         } else {
             slack(":bank: " + t.label() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");

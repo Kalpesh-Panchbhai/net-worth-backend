@@ -36,10 +36,9 @@ public interface BankBalanceParser {
      * One card purchase.
      *
      * @param amount    amount spent, positive
-     * @param merchant  where it was spent when the alert names it, else null
      * @param cardLast4 last 4 digits of the card used when the alert names them, else null
      */
-    record Spend(BigDecimal amount, String merchant, String cardLast4) {
+    record Spend(BigDecimal amount, String cardLast4) {
     }
 
     /** True when the balance is in a PDF attachment, so the sync must download attachments too. */

@@ -151,7 +151,6 @@ CREATE TABLE IF NOT EXISTS card_spends
     account_id       BIGINT UNSIGNED NOT NULL,
     gmail_message_id VARCHAR(64)     NOT NULL,
     amount           DECIMAL(20, 4)  NOT NULL,
-    merchant         VARCHAR(150)    NULL,
     card_last4       CHAR(4)         NULL,
     spent_on         DATE            NOT NULL,
     created_at       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
