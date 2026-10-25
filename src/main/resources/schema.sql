@@ -144,6 +144,29 @@ CREATE TABLE IF NOT EXISTS transactions
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+-- One row per credit card purchase alert; the Gmail message id makes a re-processed email a no-op.
+CREATE TABLE IF NOT EXISTS card_spends
+(
+    id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    account_id       BIGINT UNSIGNED NOT NULL,
+    gmail_message_id VARCHAR(64)     NOT NULL,
+    amount           DECIMAL(20, 4)  NOT NULL,
+    merchant         VARCHAR(150)    NULL,
+    card_last4       CHAR(4)         NULL,
+    spent_on         DATE            NOT NULL,
+    created_at       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+
+    CONSTRAINT fk_card_spends_account
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
+            ON DELETE CASCADE,
+
+    UNIQUE KEY uk_card_spends_message (gmail_message_id),
+    KEY idx_card_spends_account_date (account_id, spent_on)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS watchlists
 (
     id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

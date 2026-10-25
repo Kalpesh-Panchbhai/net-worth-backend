@@ -15,7 +15,8 @@ import java.util.regex.Pattern;
  * Stores the used limit (total - available) negated, since it is money owed. The limits are shared by
  * every Axis card of the holder, so the figure covers all of them. Dated on "Date and time: 15-10-2026" /
  * "Date &amp; Time: 21-10-2026" when present, else the day the email arrived (IST); later alerts that day
- * overwrite earlier ones.
+ * overwrite earlier ones. The purchase itself ("INR 105 spent on credit card no. XX6769" in the subject, or
+ * "Transaction Amount: INR 105" / "Merchant Name: SWIGGY" in the body) is returned as the spend.
  */
 public class AxisCardAlertParser implements BankBalanceParser {
 
@@ -29,6 +30,15 @@ public class AxisCardAlertParser implements BankBalanceParser {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern TXN_DATE = Pattern.compile(
             "Date\\s*(?:and|&|&amp;)\\s*time\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPENT = Pattern.compile(
+            "(?:INR\\s*([\\d,]+(?:\\.\\d{1,2})?)\\s+spent|Transaction\\s+Amount\\s*:?\\s*INR\\s*([\\d,]+(?:\\.\\d{1,2})?))",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern MERCHANT_NAME = Pattern.compile(
+            "Merchant\\s+Name\\s*:\\s*([^\\r\\n<]+?)\\s*(?:[\\r\\n<]|$)", Pattern.CASE_INSENSITIVE);
+    // "... INR 105 at SWIGGY on 15-10-2026"
+    private static final Pattern MERCHANT_AT = Pattern.compile(
+            "INR\\s*[\\d,]+(?:\\.\\d{1,2})?\\s+at\\s+(.+?)\\s+on\\s+\\d", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CARD_LAST4 = Pattern.compile("\\bXX(\\d{4})\\b", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     @Override
@@ -38,7 +48,28 @@ public class AxisCardAlertParser implements BankBalanceParser {
         Optional<BigDecimal> total = amount(TOTAL, message.body());
         if (available.isEmpty() || total.isEmpty()) return Optional.empty();
         BigDecimal used = total.get().subtract(available.get());
-        return Optional.of(new ParsedBalance(used.negate(), txnDate(message)));
+        return Optional.of(new ParsedBalance(used.negate(), txnDate(message), spend(message)));
+    }
+
+    /** Null when neither the subject nor the body states the amount spent. */
+    private static Spend spend(GmailMessage message) {
+        String text = (message.subject() == null ? "" : message.subject()) + "\n" + message.body();
+        Matcher m = SPENT.matcher(text);
+        if (!m.find()) return null;
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal((m.group(1) != null ? m.group(1) : m.group(2)).replace(",", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        String merchant = group(MERCHANT_NAME, message.body());
+        if (merchant == null) merchant = group(MERCHANT_AT, message.body());
+        return new Spend(amount, merchant, group(CARD_LAST4, text));
+    }
+
+    private static String group(Pattern pattern, String text) {
+        Matcher m = pattern.matcher(text);
+        return m.find() ? m.group(1).trim() : null;
     }
 
     private static LocalDate txnDate(GmailMessage message) {

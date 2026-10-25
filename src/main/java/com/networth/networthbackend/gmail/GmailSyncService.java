@@ -1,5 +1,6 @@
 package com.networth.networthbackend.gmail;
 
+import com.networth.networthbackend.cardspends.CardSpendRepository;
 import com.networth.networthbackend.meta.AppMetaRepository;
 import com.networth.networthbackend.tools.DailyDataRunner;
 import com.networth.networthbackend.transactions.Transaction;
@@ -12,6 +13,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * The history id is advanced only after every message in the window was handled, so a failure
  * makes Pub/Sub redeliver and the same window is retried. Reprocessing is harmless: the balance is
  * an upsert on (holding, date), so a retry rewrites the same value (and may repeat the Slack post).
+ * A card purchase the alert reports is stored once per message id, so a retry does not count it twice.
  */
 @Slf4j
 public class GmailSyncService {
@@ -37,6 +40,7 @@ public class GmailSyncService {
     private final GmailClient gmail = new GmailClient();
     private final AppMetaRepository appMeta = new AppMetaRepository();
     private final TransactionRepository transactions = new TransactionRepository();
+    private final CardSpendRepository cardSpends = new CardSpendRepository();
 
     /** Handles one push notification. {@code notifiedHistoryId} is the mailbox's history id at notification time. */
     public synchronized void onNotification(String notifiedHistoryId) throws Exception {
@@ -127,6 +131,10 @@ public class GmailSyncService {
                 : latest.map(Transaction::getInvested).orElse(p.balance());
         transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
         log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
+        if (p.spend() != null) {
+            cardSpends.insertIgnore(t.accountId(), messageId, p.asOf(), p.spend());
+            log.info("[{}] {} spend of {} at {} recorded from message {}", rule.name(), t.label(), p.spend().amount(), p.spend().merchant(), messageId);
+        }
 
         // The balance is committed; a refresh failure is picked up by the next scheduled run.
         try {
@@ -134,7 +142,15 @@ public class GmailSyncService {
         } catch (Exception e) {
             log.warn("[{}] daily data refresh failed after balance update: {}", rule.name(), e.getMessage(), e);
         }
-        slack(":bank: " + t.label() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");
+        if (p.spend() != null) {
+            LocalDate monthStart = p.asOf().withDayOfMonth(1);
+            BigDecimal monthTotal = cardSpends.sumBetween(t.accountId(), monthStart, p.asOf().withDayOfMonth(p.asOf().lengthOfMonth()));
+            slack(":credit_card: " + t.label() + ": " + p.spend().amount().toPlainString() + " spent"
+                    + (p.spend().merchant() != null ? " at " + p.spend().merchant() : "")
+                    + " on " + p.asOf() + "; " + monthTotal.stripTrailingZeros().toPlainString() + " this month; balance " + p.balance().toPlainString());
+        } else {
+            slack(":bank: " + t.label() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");
+        }
     }
 
     /** Gmail history ids are increasing integers sent as strings; never move the cursor backwards. */

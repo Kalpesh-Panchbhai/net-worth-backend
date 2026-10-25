@@ -8,6 +8,7 @@ import com.networth.networthbackend.accounts.AccountApiHandler;
 import com.networth.networthbackend.chartdata.ChartDataApiHandler;
 import com.networth.networthbackend.common.ApiGatewayResponses;
 import com.networth.networthbackend.common.Constants;
+import com.networth.networthbackend.cardspends.CardSpendApiHandler;
 import com.networth.networthbackend.gmail.GmailWebhookApiHandler;
 import com.networth.networthbackend.holdings.HoldingApiHandler;
 import com.networth.networthbackend.incomes.IncomeApiHandler;
@@ -66,6 +67,7 @@ public class EntityHandler implements RequestHandler<APIGatewayProxyRequestEvent
         register(map, StockPositionApiHandler::new, "stock-portfolio", "stockportfolio", "stock-positions");
         register(map, StockAlertApiHandler::new, "stock-alerts", "stockalerts");
         register(map, GmailWebhookApiHandler::new, "gmail-webhook");
+        register(map, CardSpendApiHandler::new, "card-spends", "cardspends");
         return Map.copyOf(map);
     }
 
