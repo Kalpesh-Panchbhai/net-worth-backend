@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * every Axis card of the holder, so the figure covers all of them. Dated on "Date and time: 15-10-2026" /
  * "Date &amp; Time: 21-10-2026" when present, else the day the email arrived (IST); later alerts that day
  * overwrite earlier ones. The purchase itself ("INR 105 spent on credit card no. XX6769" in the subject, or
- * "Transaction Amount: INR 105" in the body) is returned as the spend.
+ * "Transaction amount (INR): INR 115868.52" in the body) is returned as the spend.
  */
 public class AxisCardAlertParser implements BankBalanceParser {
 
@@ -31,7 +31,7 @@ public class AxisCardAlertParser implements BankBalanceParser {
     private static final Pattern TXN_DATE = Pattern.compile(
             "Date\\s*(?:and|&|&amp;)\\s*time\\s*:\\s*(\\d{2}-\\d{2}-\\d{4})", Pattern.CASE_INSENSITIVE);
     private static final Pattern SPENT = Pattern.compile(
-            "(?:INR\\s*([\\d,]+(?:\\.\\d{1,2})?)\\s+spent|Transaction\\s+Amount\\s*:?\\s*INR\\s*([\\d,]+(?:\\.\\d{1,2})?))",
+            "(?:INR\\s*([\\d,]+(?:\\.\\d{1,2})?)\\s+spent|Transaction\\s+Amount\\s*(?:\\(INR\\))?\\s*:?\\s*(?:INR\\s*)?([\\d,]+(?:\\.\\d{1,2})?))",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern CARD_LAST4 = Pattern.compile("\\bXX(\\d{4})\\b", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter DMY = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -48,7 +48,9 @@ public class AxisCardAlertParser implements BankBalanceParser {
 
     /** Null when neither the subject nor the body states the amount spent. */
     private static Spend spend(GmailMessage message) {
-        String text = (message.subject() == null ? "" : message.subject()) + "\n" + message.body();
+        // HTML bodies pad values with &nbsp; ("Transaction amount (INR):&nbsp; INR 115868.52").
+        String text = ((message.subject() == null ? "" : message.subject()) + "\n" + message.body())
+                .replace("&nbsp;", " ").replace('\u00a0', ' ');
         Matcher m = SPENT.matcher(text);
         if (!m.find()) return null;
         BigDecimal amount;

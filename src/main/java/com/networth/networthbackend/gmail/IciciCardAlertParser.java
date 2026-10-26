@@ -49,7 +49,9 @@ public class IciciCardAlertParser implements BankBalanceParser {
 
     /** Null when the body does not state the amount spent. */
     private static Spend spend(GmailMessage message) {
-        Matcher m = SPENT.matcher(message.body());
+        // HTML bodies may pad values with &nbsp;.
+        String text = message.body().replace("&nbsp;", " ").replace('\u00a0', ' ');
+        Matcher m = SPENT.matcher(text);
         if (!m.find()) return null;
         BigDecimal amount;
         try {
@@ -57,7 +59,7 @@ public class IciciCardAlertParser implements BankBalanceParser {
         } catch (NumberFormatException e) {
             return null;
         }
-        return new Spend(amount, group(CARD_LAST4, message.body()));
+        return new Spend(amount, group(CARD_LAST4, text));
     }
 
     private static String group(Pattern pattern, String text) {
