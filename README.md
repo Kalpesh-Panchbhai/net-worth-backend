@@ -59,7 +59,8 @@ does.
 ## Database migrations
 
 Schema changes go in `scripts/migrations/` as a new `.sql` file. On every push to `main`, the
-`migrate` job in `deploy-lambda.yml` runs `scripts/migrate.sh` before the Lambdas deploy: it applies
+deploy job in `deploy-lambda.yml` runs `scripts/migrate.sh` before updating the Lambdas (only when the
+push changed `scripts/migrations/` or the script itself): it applies
 each file not yet recorded in the `schema_migrations` table, in the order git added them, and a
 failure stops the deploy. Never edit a file once it has run; the job fails on a changed checksum.
 The job reads `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME` from repository secrets.
