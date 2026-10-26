@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
  *   mvn -q compile
  *   java -cp target/classes:$(cat cp.txt) com.networth.networthbackend.mf.MfMetricsRecomputeRunner
  * </pre>
- * Prefer this for the first population after deploying {@code scripts/add-mf-metrics.sql}: the pass
+ * Prefer this for the first population after deploying {@code scripts/migrations/add-mf-metrics.sql}: the pass
  * fetches every fund's NAV history (~2 minutes) and so will not fit API Gateway's 29-second timeout
  * if triggered through {@code POST /refresh}. It runs nightly on its own via {@code DailyDataRunner}.
  * Idempotent — re-run it freely.

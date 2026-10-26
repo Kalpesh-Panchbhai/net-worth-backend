@@ -56,9 +56,18 @@ table has no rows for a pair â€” a fresh deployment before the first daily run â
 bootstrapped from the provider once per JVM and persisted, so freshness degrades before correctness
 does.
 
+## Database migrations
+
+Schema changes go in `scripts/migrations/` as a new `.sql` file. On every push to `main`, the
+`migrate` job in `deploy-lambda.yml` runs `scripts/migrate.sh` before the Lambdas deploy: it applies
+each file not yet recorded in the `schema_migrations` table, in the order git added them, and a
+failure stops the deploy. Never edit a file once it has run; the job fails on a changed checksum.
+Files listed in `scripts/migrations/baseline.txt` predate this and are recorded without running.
+The job reads `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` and `DB_NAME` from repository secrets.
+
 ## Deploying this change
 
-1. Apply `scripts/add-fx-rates-daily.sql` (idempotent; also present in `src/main/resources/schema.sql`).
+1. Apply `scripts/migrations/add-fx-rates-daily.sql` (idempotent; also present in `src/main/resources/schema.sql`).
 2. Deploy, then fill the table by running `DailyDataRunner.main` directly. Prefer that over
    `POST /refresh` for the first run: the job is synchronous inside the request, and a full-history
    pass will not fit API Gateway's 29-second integration timeout, so the caller gets a 504 with no

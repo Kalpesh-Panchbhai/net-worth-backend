@@ -3,7 +3,7 @@
 -- key. Idempotent (ON DUPLICATE KEY UPDATE) — safe to re-run to pick up last-minute writes before
 -- the old table is dropped.
 --
--- Prerequisite: user_config must already exist (scripts/add-user-config.sql).
+-- Prerequisite: user_config must already exist (scripts/migrations/add-user-config.sql).
 -- After verifying the copy, drop the old table:  DROP TABLE insights_layout;
 
 INSERT INTO user_config (user_id, config_key, config_json)

@@ -257,7 +257,7 @@ public class Constants {
 
         /**
          * AMFI mutual-fund scheme master, one row per Direct+Growth share class.
-         * See {@code scripts/add-mf-schemes.sql} for why the ingest is scoped that narrowly.
+         * See {@code scripts/migrations/add-mf-schemes.sql} for why the ingest is scoped that narrowly.
          */
         @UtilityClass
         public static class MfSchemes {
