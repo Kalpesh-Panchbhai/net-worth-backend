@@ -30,6 +30,9 @@ import java.util.Optional;
  * ({@code {"monthlyLimit": 40000}}); without one, the budget fields are null. {@code month} defaults to the
  * current month (IST).
  *
+ * <p>Card numbers: {@code GET /card-spends/{userId}?action=cards} lists each account's card last-4s seen
+ * on its spends, most recently used first ({@code accountId, cardLast4, lastUsed}).
+ *
  * <p>Individual spends: {@code GET /card-spends/{userId}?action=list&month=&accountId=} lists them,
  * {@code POST /card-spends} adds one by hand ({@code accountId, amount, spentOn, cardLast4}),
  * {@code PATCH /card-spends/{id}} edits one (an email row is then flagged {@code edited}) and
@@ -46,6 +49,7 @@ public class CardSpendApiHandler extends EntityHandlerBase {
 
     private final CardSpendRepository repository = new CardSpendRepository();
     private final CardSpendEntryRepository entries = new CardSpendEntryRepository();
+    private final CardNumberRepository cardNumbers = new CardNumberRepository();
     private final AccountRepository accountRepository = new AccountRepository();
     private final UserConfigRepository userConfig = new UserConfigRepository();
 
@@ -57,6 +61,7 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         return switch (action.toLowerCase()) {
             case Constants.Actions.GET -> summary(request);
             case "list" -> list(request);
+            case "cards" -> cards(request);
             case Constants.Actions.CREATE -> create(request);
             case Constants.Actions.UPDATE -> update(request);
             case Constants.Actions.DELETE -> delete(request);
@@ -135,6 +140,21 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         ArrayNode out = MAPPER.createArrayNode();
         for (CardSpendEntryRepository.CardSpend s : entries.listForUser(userId, accountId, month.atDay(1), month.atEndOfMonth())) {
             out.add(toJson(s));
+        }
+        return ok(out);
+    }
+
+    private APIGatewayProxyResponseEvent cards(APIGatewayProxyRequestEvent request) throws Exception {
+        Long userId = parsePathId(request);
+        if (userId == null) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.PATH_ID_REQUIRED);
+        }
+        ArrayNode out = MAPPER.createArrayNode();
+        for (CardNumberRepository.CardNumber c : cardNumbers.listForUser(userId)) {
+            out.addObject()
+                    .put("accountId", c.accountId())
+                    .put("cardLast4", c.cardLast4())
+                    .put("lastUsed", c.lastUsed().toString());
         }
         return ok(out);
     }

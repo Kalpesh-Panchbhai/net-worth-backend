@@ -170,7 +170,8 @@ CREATE TABLE IF NOT EXISTS card_spends
             ON DELETE CASCADE,
 
     UNIQUE KEY uk_card_spends_message (gmail_message_id),
-    KEY idx_card_spends_account_date (account_id, spent_on)
+    KEY idx_card_spends_account_date (account_id, spent_on),
+    KEY idx_card_spends_account_card_date (account_id, card_last4, spent_on)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
