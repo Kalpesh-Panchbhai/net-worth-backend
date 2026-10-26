@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS transactions
 
 -- One row per credit card purchase, read from an alert email or entered by hand (no message id).
 -- The Gmail message id makes a re-processed email a no-op; edited marks an email row changed by hand.
+-- A refund is its own row with a negative amount, linked to its purchase by refund_of; it counts in
+-- the purchase's month, so a failed payment refunded next month still nets to zero.
 CREATE TABLE IF NOT EXISTS card_spends
 (
     id               BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -155,11 +157,16 @@ CREATE TABLE IF NOT EXISTS card_spends
     card_last4       CHAR(4)         NULL,
     spent_on         DATE            NOT NULL,
     edited           TINYINT(1)      NOT NULL DEFAULT 0,
+    refund_of        BIGINT UNSIGNED NULL,
     created_at       TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
 
     CONSTRAINT fk_card_spends_account
         FOREIGN KEY (account_id) REFERENCES accounts (id)
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_card_spends_refund_of
+        FOREIGN KEY (refund_of) REFERENCES card_spends (id)
             ON DELETE CASCADE,
 
     UNIQUE KEY uk_card_spends_message (gmail_message_id),

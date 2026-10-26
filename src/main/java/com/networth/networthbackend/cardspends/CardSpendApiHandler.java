@@ -33,7 +33,10 @@ import java.util.Optional;
  * <p>Individual spends: {@code GET /card-spends/{userId}?action=list&month=&accountId=} lists them,
  * {@code POST /card-spends} adds one by hand ({@code accountId, amount, spentOn, cardLast4}),
  * {@code PATCH /card-spends/{id}} edits one (an email row is then flagged {@code edited}) and
- * {@code DELETE /card-spends/{id}} removes one. Debt is untouched by these, since it comes from the
+ * {@code DELETE /card-spends/{id}} removes one (and its refunds). A refund is created with
+ * {@code refundOf} set to the purchase id plus a positive {@code amount} and {@code spentOn}; it is stored
+ * negative on the purchase's card, can never exceed what is left to refund, and counts in the purchase's
+ * month. Debt is untouched by these, since it comes from the
  * card's balance, not from the spend rows.
  */
 public class CardSpendApiHandler extends EntityHandlerBase {
@@ -141,9 +144,22 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         if (json == null) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, Constants.Messages.REQUEST_BODY_REQUIRED);
         }
+        if (json.hasNonNull("refundOf")) {
+            if (!json.get("refundOf").canConvertToLong()) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "refundOf must be a spend id");
+            Optional<CardSpendEntryRepository.CardSpend> purchase = entries.findById(json.get("refundOf").asLong());
+            if (purchase.isEmpty() || purchase.get().refundOf() != null || purchase.get().amount().signum() <= 0) {
+                return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "refundOf must be a purchase");
+            }
+            String error = refundError(json, purchase.get(), null);
+            if (error != null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, error);
+            CardSpendEntryRepository.CardSpend p = purchase.get();
+            long id = entries.create(p.accountId(), json.get("amount").decimalValue().negate(), p.cardLast4(),
+                    LocalDate.parse(json.get("spentOn").asText()), p.id());
+            return created(toJson(entries.findById(id).orElseThrow()));
+        }
         SpendInput in = parseInput(json);
         if (in.error() != null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, in.error());
-        long id = entries.create(in.accountId(), in.amount(), in.cardLast4(), in.spentOn());
+        long id = entries.create(in.accountId(), in.amount(), in.cardLast4(), in.spentOn(), null);
         return created(toJson(entries.findById(id).orElseThrow()));
     }
 
@@ -158,6 +174,15 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         }
         Optional<CardSpendEntryRepository.CardSpend> existing = entries.findById(id);
         if (existing.isEmpty()) return notFound(Constants.ErrorCodes.NOT_FOUND, "No card spend with id " + id);
+        if (existing.get().refundOf() != null) {
+            // A refund only changes its amount and date; it stays on its purchase's card.
+            CardSpendEntryRepository.CardSpend purchase = entries.findById(existing.get().refundOf()).orElseThrow();
+            String error = refundError(json, purchase, id);
+            if (error != null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, error);
+            entries.update(id, purchase.accountId(), json.get("amount").decimalValue().negate(), purchase.cardLast4(),
+                    LocalDate.parse(json.get("spentOn").asText()));
+            return ok(toJson(entries.findById(id).orElseThrow()));
+        }
         SpendInput in = parseInput(json);
         if (in.error() != null) return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, in.error());
         // Moving a spend to another user's card would leak it across accounts.
@@ -165,7 +190,12 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         if (from.isPresent() && from.get().getUserId() != in.account().getUserId()) {
             return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "accountId must be one of your credit card accounts");
         }
+        BigDecimal refunded = entries.refundedTotal(id, null);
+        if (in.amount().compareTo(refunded) < 0) {
+            return badRequest(Constants.ErrorCodes.VALIDATION_ERROR, "amount cannot be less than the " + refunded.stripTrailingZeros().toPlainString() + " already refunded");
+        }
         entries.update(id, in.accountId(), in.amount(), in.cardLast4(), in.spentOn());
+        entries.moveRefunds(id, in.accountId(), in.cardLast4());
         return ok(toJson(entries.findById(id).orElseThrow()));
     }
 
@@ -211,6 +241,24 @@ public class CardSpendApiHandler extends EntityHandlerBase {
         return new SpendInput(account, amountNode.decimalValue(), last4.isEmpty() ? null : last4, spentOn, null);
     }
 
+    /** Why a refund body cannot be applied to {@code purchase}, or null; {@code refundId} is the refund being edited. */
+    private String refundError(JsonNode json, CardSpendEntryRepository.CardSpend purchase, Long refundId) throws Exception {
+        JsonNode amountNode = json.get("amount");
+        if (amountNode == null || !amountNode.isNumber() || amountNode.decimalValue().signum() <= 0) {
+            return "amount must be a positive number";
+        }
+        try {
+            LocalDate.parse(json.path("spentOn").asText(""));
+        } catch (DateTimeParseException e) {
+            return "spentOn must be a date (YYYY-MM-DD)";
+        }
+        BigDecimal left = purchase.amount().subtract(entries.refundedTotal(purchase.id(), refundId));
+        if (amountNode.decimalValue().compareTo(left) > 0) {
+            return "refund cannot be more than the " + left.stripTrailingZeros().toPlainString() + " left to refund";
+        }
+        return null;
+    }
+
     private ObjectNode toJson(CardSpendEntryRepository.CardSpend s) {
         return MAPPER.createObjectNode()
                 .put("id", s.id())
@@ -220,7 +268,8 @@ public class CardSpendApiHandler extends EntityHandlerBase {
                 .put("cardLast4", s.cardLast4())
                 .put("spentOn", s.spentOn().toString())
                 .put("source", s.fromEmail() ? "email" : "manual")
-                .put("edited", s.edited());
+                .put("edited", s.edited())
+                .put("refundOf", s.refundOf());
     }
 
     private YearMonth parseMonth(APIGatewayProxyRequestEvent request, LocalDate today) {

@@ -37,9 +37,14 @@ public class CardSpendRepository extends JdbcRepository<CardSpendRepository.Card
                 });
     }
 
-    /** Total spent on one account between the two dates, both inclusive. */
+    /**
+     * Total spent on one account between the two dates, both inclusive, net of refunds. A refund
+     * (negative amount) counts on its purchase's date.
+     */
     public BigDecimal sumBetween(long accountId, LocalDate from, LocalDate to) throws SQLException {
-        return queryOne("SELECT COALESCE(SUM(amount), 0) FROM card_spends WHERE account_id = ? AND spent_on BETWEEN ? AND ?",
+        return queryOne("SELECT COALESCE(SUM(s.amount), 0) FROM card_spends s"
+                        + " LEFT JOIN card_spends p ON p.id = s.refund_of"
+                        + " WHERE s.account_id = ? AND COALESCE(p.spent_on, s.spent_on) BETWEEN ? AND ?",
                 ps -> {
                     ps.setLong(1, accountId);
                     ps.setDate(2, Date.valueOf(from));
@@ -51,12 +56,13 @@ public class CardSpendRepository extends JdbcRepository<CardSpendRepository.Card
 
     /**
      * Every active credit card account of the user with what was spent between the two dates (both
-     * inclusive) and the latest recorded balance of its aggregate holding (0 when none yet).
+     * inclusive, net of refunds counted on their purchase's date) and the latest recorded balance of its aggregate holding (0 when none yet).
      */
     public List<CardTotal> totalsForUser(long userId, LocalDate from, LocalDate to) throws SQLException {
         return queryList("SELECT a.id, a.name,"
                         + " (SELECT COALESCE(SUM(s.amount), 0) FROM card_spends s"
-                        + "   WHERE s.account_id = a.id AND s.spent_on BETWEEN ? AND ?) AS spent,"
+                        + "   LEFT JOIN card_spends p ON p.id = s.refund_of"
+                        + "   WHERE s.account_id = a.id AND COALESCE(p.spent_on, s.spent_on) BETWEEN ? AND ?) AS spent,"
                         + " COALESCE((SELECT t.value FROM transactions t"
                         + "   WHERE t.holding_id = h.id ORDER BY t.txn_date DESC LIMIT 1), 0) AS balance"
                         + " FROM accounts a"
