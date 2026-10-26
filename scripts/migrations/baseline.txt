@@ -11,5 +11,4 @@ add-stock-analytics.sql
 add-stock-signals.sql
 add-user-config.sql
 add-user-preferred-currency.sql
-baseline.txt
 migrate-insights-layout-to-user-config.sql

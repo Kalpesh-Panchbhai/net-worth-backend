@@ -17,7 +17,7 @@ db -e "CREATE TABLE IF NOT EXISTS schema_migrations (
          applied_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP)"
 
 while read -r name; do
-  [ -n "$name" ] && db -e "INSERT IGNORE INTO schema_migrations (filename, checksum) VALUES ('$name', '$(sum "$dir/$name")')"
+  [[ "$name" == *.sql ]] && db -e "INSERT IGNORE INTO schema_migrations (filename, checksum) VALUES ('$name', '$(sum "$dir/$name")')"
 done < "$dir/baseline.txt"
 
 # Oldest first by the commit that added each file; a file not committed yet goes last.
