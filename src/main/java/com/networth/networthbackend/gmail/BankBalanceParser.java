@@ -13,22 +13,29 @@ public interface BankBalanceParser {
      * @param accountLast4 last 4 digits of the account number when the content names it, else null
      * @param invested     amount invested when the content states it, else null (carried forward)
      * @param spend        the card purchase a transaction alert reports, else null
+     * @param payment      the card bill payment a payment email reports, else null; the email states no
+     *                     balance, so {@code balance} is null and the payment is added to the latest one
      */
-    record ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4, BigDecimal invested, Spend spend) {
+    record ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4, BigDecimal invested, Spend spend,
+                         BigDecimal payment) {
         public ParsedBalance(BigDecimal balance, LocalDate asOf) {
-            this(balance, asOf, null, null, null);
+            this(balance, asOf, null, null, null, null);
         }
 
         public ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4) {
-            this(balance, asOf, accountLast4, null, null);
+            this(balance, asOf, accountLast4, null, null, null);
         }
 
         public ParsedBalance(BigDecimal balance, LocalDate asOf, String accountLast4, BigDecimal invested) {
-            this(balance, asOf, accountLast4, invested, null);
+            this(balance, asOf, accountLast4, invested, null, null);
         }
 
         public ParsedBalance(BigDecimal balance, LocalDate asOf, Spend spend) {
-            this(balance, asOf, null, null, spend);
+            this(balance, asOf, null, null, spend, null);
+        }
+
+        public static ParsedBalance payment(BigDecimal payment, LocalDate asOf) {
+            return new ParsedBalance(null, asOf, null, null, null, payment);
         }
     }
 

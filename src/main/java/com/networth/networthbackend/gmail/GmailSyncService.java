@@ -28,11 +28,14 @@ import java.util.stream.Collectors;
  * makes Pub/Sub redeliver and the same window is retried. Reprocessing is harmless: the balance is
  * an upsert on (holding, date), so a retry rewrites the same value (and may repeat the Slack post).
  * A card purchase the alert reports is stored once per message id, so a retry does not count it twice.
+ * A card payment is added to the latest balance, so it is likewise claimed once per message id first.
  */
 @Slf4j
 public class GmailSyncService {
 
     static final String KEY_HISTORY_ID = "gmail_history_id";
+    /** app_meta key marking a card payment email as applied, suffixed with its Gmail message id. */
+    static final String KEY_PAYMENT_PREFIX = "gmail_payment_";
     static final String ENV_SLACK_WEBHOOK = "GMAIL_SLACK_WEBHOOK_URL";
 
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -119,18 +122,30 @@ public class GmailSyncService {
         BankBalanceParser.ParsedBalance p = parsed.get();
         AccountResolver.Target t = target.get();
         Optional<Transaction> latest = transactions.findLatestByHoldingId(t.holdingId());
+        BigDecimal balance = p.balance();
+        if (p.payment() != null) {
+            // A payment is added to the latest balance, so it must apply once: claim the message first.
+            String key = KEY_PAYMENT_PREFIX + messageId;
+            if (appMeta.get(key) != null) {
+                log.info("[{}] message {} payment already applied; skipping", rule.name(), messageId);
+                return;
+            }
+            appMeta.set(key, p.payment().toPlainString());
+            BigDecimal previous = latest.map(Transaction::getValue).orElse(BigDecimal.ZERO);
+            balance = previous.add(p.payment());
+        }
         if (rule.skipIfUnchanged() && latest.isPresent() && latest.get().getValue() != null
-                && latest.get().getValue().compareTo(p.balance()) == 0) {
-            log.info("[{}] {} balance unchanged at {}; nothing recorded", rule.name(), t.label(), p.balance());
+                && latest.get().getValue().compareTo(balance) == 0) {
+            log.info("[{}] {} balance unchanged at {}; nothing recorded", rule.name(), t.label(), balance);
             return;
         }
         // Cards record invested = value; a stated invested amount wins; elsewhere a balance changes
         // value, not what was invested.
-        BigDecimal invested = t.investedEqualsValue() ? p.balance()
+        BigDecimal invested = t.investedEqualsValue() ? balance
                 : p.invested() != null ? p.invested()
-                : latest.map(Transaction::getInvested).orElse(p.balance());
-        transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, p.balance());
-        log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), p.balance(), p.asOf(), messageId);
+                : latest.map(Transaction::getInvested).orElse(balance);
+        transactions.upsert(t.accountId(), t.holdingId(), p.asOf(), invested, balance);
+        log.info("[{}] {} balance set to {} as of {} from message {}", rule.name(), t.label(), balance, p.asOf(), messageId);
         if (p.spend() != null) {
             cardSpends.insertIgnore(t.accountId(), messageId, p.asOf(), p.spend());
             log.info("[{}] {} spend of {} recorded from message {}", rule.name(), t.label(), p.spend().amount(), messageId);
@@ -146,9 +161,12 @@ public class GmailSyncService {
             LocalDate monthStart = p.asOf().withDayOfMonth(1);
             BigDecimal monthTotal = cardSpends.sumBetween(t.accountId(), monthStart, p.asOf().withDayOfMonth(p.asOf().lengthOfMonth()));
             slack(":credit_card: " + t.label() + ": " + p.spend().amount().toPlainString() + " spent"
-                    + " on " + p.asOf() + "; " + monthTotal.stripTrailingZeros().toPlainString() + " this month; balance " + p.balance().toPlainString());
+                    + " on " + p.asOf() + "; " + monthTotal.stripTrailingZeros().toPlainString() + " this month; balance " + balance.toPlainString());
+        } else if (p.payment() != null) {
+            slack(":white_check_mark: " + t.label() + ": payment of " + p.payment().toPlainString() + " received on "
+                    + p.asOf() + "; balance " + balance.toPlainString());
         } else {
-            slack(":bank: " + t.label() + " balance updated to " + p.balance().toPlainString() + " (as of " + p.asOf() + ")");
+            slack(":bank: " + t.label() + " balance updated to " + balance.toPlainString() + " (as of " + p.asOf() + ")");
         }
     }
 
