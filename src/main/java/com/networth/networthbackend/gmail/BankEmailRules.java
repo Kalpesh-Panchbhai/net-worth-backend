@@ -23,6 +23,10 @@ public class BankEmailRules {
             new BankEmailRule("ICICI card payment", "credit_cards@icici.bank.in",
                     Pattern.compile("^Payment received on your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
                     new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "ICICI Bank"), new IciciCardPaymentParser()),
+            // TEMPORARY: forwarded ICICI payment emails from the owner's own address, to test the rule above
+            new BankEmailRule("ICICI card payment (test)", "ikalpesh10@gmail.com",
+                    Pattern.compile("^(Fwd?:\\s*)?Payment received on your ICICI Bank Credit Card", Pattern.CASE_INSENSITIVE),
+                    new NameResolver(Last4Resolver.TYPE_CREDIT_CARD, "ICICI Bank"), new IciciCardPaymentParser()),
             // "INR 105 spent on credit card no. XX6769" or "Transaction alert on Axis Bank Credit Card"; the limit
             // is shared by all the holder's Axis cards -> one combined card account
             new BankEmailRule("Axis card alert", "alerts@axis.bank.in",
